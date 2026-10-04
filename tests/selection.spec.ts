@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { openWoods } from "./ui-helpers";
 async function fixture(page:Page) {
   await page.goto("/");await page.waitForFunction(()=>!!(window as any).timber);
   return page.evaluate(()=>{
@@ -16,6 +17,97 @@ async function fixture(page:Page) {
 const selected=(page:Page)=>page.evaluate(()=>[...(window as any).timber.editor.selection].sort());
 const pieces=(page:Page)=>page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].sort((a:any,b:any)=>a.id.localeCompare(b.id)));
 async function selectPair(page:Page,s:any) {await page.mouse.click(s.a.x,s.a.y);await page.keyboard.down("Control");await page.mouse.click(s.b.x,s.b.y);await page.keyboard.up("Control");}
+async function elevatedPair(page:Page) {
+  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+  await page.evaluate(()=>{
+    const e=(window as any).timber.editor;
+    e.world.load([
+      {id:'a',item:'post',wood:'oak',position:[-3,8,1],rotation:[0,0,0]},
+      {id:'b',item:'post',wood:'birch',position:[3,8,-1],rotation:[0,1,0]},
+      {id:'c',item:'tiny-tile',wood:'walnut',position:[12,.1,12],rotation:[0,0,0]},
+    ],[12]);e.pickSelections(['a','b']);
+  });
+}
+
+test('group rotate and tilt keep the assembly together and undo as whole actions',async({page})=>{
+  await elevatedPair(page);const original=await pieces(page);
+  await expect(page.locator('#rotate')).toBeVisible();await expect(page.locator('#tilt')).toBeVisible();
+  await page.locator('#rotate').click();
+  const yawed=await pieces(page);expect(yawed.slice(0,2).map((p:any)=>p.position)).toEqual([[1,8,3],[-1,8,-3]]);
+  await page.keyboard.press('t');const tilted=await pieces(page);
+  expect(tilted.slice(0,2).map((p:any)=>p.position)).toEqual([[1,5,0],[-1,11,0]]);
+  expect(tilted[2]).toEqual(original[2]);expect(await selected(page)).toEqual(['a','b']);
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(yawed);
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);
+  await page.locator('#redo').click();await page.locator('#redo').click();expect(await pieces(page)).toEqual(tilted);
+});
+
+test('group turns reject ground, plot and outsider collisions without partial edits',async({page})=>{
+  await elevatedPair(page);
+  for (const issue of ['overlap','below ground','active plots']) {
+    await page.evaluate((issue)=>{
+      const e=(window as any).timber.editor;
+      const member=(id:string,position:number[])=>({id,item:'post',wood:'oak',position,rotation:[0,0,0]});
+      const pair=issue==='active plots' ? [member('a',[17,8,-3]),member('b',[17,8,3])]
+        : issue==='below ground' ? [member('a',[-3,2,3]),member('b',[3,2,-3])]
+        : [member('a',[-3,8,1]),member('b',[3,8,-1]),{id:'c',item:'tiny-floor',wood:'walnut',position:[1,8,3],rotation:[0,0,0]}];
+      e.world.load(pair,[12]);e.pickSelections(['a','b']);
+    },issue);
+    const before=await pieces(page);await page.keyboard.press(issue==='below ground'?'t':'r');
+    expect(await pieces(page)).toEqual(before);await expect(page.locator('#toast')).toContainText(issue);
+    await expect(page.locator('#undo')).toBeDisabled();
+  }
+});
+
+test('group wood changes show mixed finishes and preserve undo, outsiders and saves',async({page})=>{
+  await elevatedPair(page);const original=await pieces(page);
+  await expect(page.locator('#wood-name')).toHaveText('Mixed woods');await openWoods(page);
+  await expect(page.locator('[data-wood].active')).toHaveCount(0);
+  await page.locator('[data-wood="pine"]').click();const recolored=await pieces(page);
+  expect(recolored.slice(0,2).map((p:any)=>p.wood)).toEqual(['pine','pine']);expect(recolored[2]).toEqual(original[2]);
+  expect(recolored.map((p:any)=>[p.id,p.position,p.rotation])).toEqual(original.map((p:any)=>[p.id,p.position,p.rotation]));
+  await expect(page.locator('#wood-name')).toHaveText('Pine');
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);await expect(page.locator('#wood-name')).toHaveText('Mixed woods');
+  await page.locator('#redo').click();expect(await pieces(page)).toEqual(recolored);
+  await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+  await page.reload();await page.waitForFunction(()=>!!(window as any).timber);expect(await pieces(page)).toEqual(recolored);
+});
+
+test('held group copies can turn and recolor without modifying their originals',async({page})=>{
+  await elevatedPair(page);const original=await pieces(page);await page.locator('#duplicate-tool').click();
+  await page.locator('#hold-position').click();await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await openWoods(page);await page.locator('[data-wood="pine"]').click();
+  expect(await pieces(page)).toEqual(original);
+  expect(await page.evaluate(()=>(window as any).timber.editor.groupPreview.map((p:any)=>[p.position,p.wood]))).toEqual([[[1,5,0],'pine'],[[-1,11,0],'pine']]);
+  await page.locator('#commit-preview').click();const copies=(await pieces(page)).filter((p:any)=>!['a','b','c'].includes(p.id));
+  expect(copies).toHaveLength(2);expect(copies.every((p:any)=>p.wood==='pine')).toBe(true);
+  expect((await pieces(page)).filter((p:any)=>['a','b','c'].includes(p.id))).toEqual(original);
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);
+  await page.evaluate(()=>(window as any).timber.editor.pickSelections(['a','b']));
+  await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();await page.keyboard.press('r');
+  await openWoods(page);await page.locator('[data-wood="walnut"]').click();await page.keyboard.press('Escape');
+  expect(await pieces(page)).toEqual(original);
+});
+
+test('surface-following group preview retains turns and wood on subsequent positions',async({page})=>{
+  const s=await fixture(page);await selectPair(page,s);const original=await pieces(page);
+  await page.locator('#duplicate-tool').click();await page.mouse.move(s.copy.x,s.copy.y);
+  await page.keyboard.press('r');await openWoods(page);await page.locator('[data-wood="pine"]').click();
+  await page.mouse.move(s.move.x,s.move.y);
+  const preview=await page.evaluate(()=>(window as any).timber.editor.groupPreview);
+  expect(preview.map((p:any)=>p.position)).toEqual([[-3,.5,9],[-3,.5,3]]);
+  expect(preview.map((p:any)=>p.wood)).toEqual(['pine','pine']);expect(await pieces(page)).toEqual(original);
+  await page.mouse.click(s.move.x,s.move.y);expect(await pieces(page)).toHaveLength(5);
+});
+
+test('held group move commits rotation, tilt and finish with one undo',async({page})=>{
+  await elevatedPair(page);const original=await pieces(page);
+  await page.locator('#move-tool').click();await page.locator('#hold-position').click();
+  await page.keyboard.press('r');await page.keyboard.press('t');await openWoods(page);await page.locator('[data-wood="pine"]').click();
+  expect(await pieces(page)).toEqual(original);await page.locator('#commit-preview').click();
+  const moved=await pieces(page);expect(moved.slice(0,2).map((p:any)=>[p.position,p.wood])).toEqual([[[1,5,0],'pine'],[[-1,11,0],'pine']]);
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);
+});
 
 test("Ctrl-click adds and removes separate blueprints without double-click pickup",async({page})=>{
   const s=await fixture(page);await selectPair(page,s);

@@ -13,7 +13,7 @@ import { loadProject, saveProject } from "./storage";
 import { parseProject, type Project } from "./project";
 import { ALL_PLOTS, inferPlots } from "./plots";
 import { pieceBounds } from "./world";
-import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateSelection } from "./selection";
+import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateSelection, rotateSelection } from "./selection";
 import { snapBlueprintOnSurface } from "./collision";
 import type { AxisDrag } from "./move-gizmo";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -161,6 +161,9 @@ export class Editor {
   inspect() {
     const pieces = this.selectedPieces;
     const multi = pieces.length > 1;
+    const finishPieces=this.groupPlacement
+      ? this.groupPreview.length ? this.groupPreview : this.groupPlacement.source : pieces;
+    const mixedWood=multi && new Set(finishPieces.map(p=>p.wood)).size>1;
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
     if (p && !this.placing) {
       this.item = p.item;
@@ -175,27 +178,29 @@ export class Editor {
     $("hold-position").setAttribute("aria-pressed", String(this.held));
     $("commit-preview").hidden = !this.held;
     $("nudge-label").textContent = this.placing ? "Adjust preview · 1 stud" : "Move selection · 1 stud";
-    $("wood-color").style.background = WOOD_MAP.get(this.wood)!.color;
+    const displayedWood=multi ? finishPieces[0]?.wood ?? this.wood : this.wood;
+    $("wood-color").style.background = mixedWood
+      ? "linear-gradient(135deg, #d7c59a 50%, #694028 50%)" : WOOD_MAP.get(displayedWood)!.color;
     if (!(p || this.placing)) this.panel("woods", false);
     const item = ITEMS.get(this.item)!;
     ($("piece-preview") as HTMLImageElement).src = this.thumbnails.get(
       item.id,
     )!;
     $("piece-name").textContent = multi ? `${pieces.length} blueprints selected` : item.name;
-    $("piece-size").textContent = multi ? "Move, copy or delete together" : item.size.join(" × ") + " studs";
+    $("piece-size").textContent = multi ? "Rotate, tilt, move or finish together" : item.size.join(" × ") + " studs";
     $("piece-category").textContent = multi ? "GROUP SELECTION" : item.category.toUpperCase();
     $("piece-preview").hidden = multi;
-    $("wood-picker").hidden = multi;
-    $("rotate-controls").hidden = multi;
+    $("wood-picker").hidden = false;
+    $("rotate-controls").hidden = false;
     $("place-selected").hidden = multi;
     $("selection-hint").hidden = !multi;
     $("selection-count").hidden = !pieces.length;
     $("selection-count").textContent = `${pieces.length} selected`;
-    $("wood-name").textContent = WOOD_MAP.get(this.wood)!.name;
+    $("wood-name").textContent = mixedWood ? "Mixed woods" : WOOD_MAP.get(displayedWood)!.name;
     document
       .querySelectorAll<HTMLElement>("[data-wood]")
       .forEach((b) =>
-        b.classList.toggle("active", b.dataset.wood === this.wood),
+        b.classList.toggle("active", !mixedWood && b.dataset.wood === displayedWood),
       );
     $("transform-section").hidden = !(p || this.placing);
     $("coordinates-details").hidden = !p || multi || this.placing;
@@ -246,8 +251,6 @@ export class Editor {
       this.groupPreview = [];
       this.moving = null;
     }
-    $("placement-rotate").hidden = !!this.groupPlacement;
-    $("placement-tilt").hidden = !!this.groupPlacement;
     this.lastPointer = "";
     this.inspect();
   }
@@ -316,14 +319,16 @@ export class Editor {
       this.syncGizmo();
       return;
     }
-    if (!this.pointer) return;
     if (this.groupPlacement) {
-      const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
-      this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
-        snapMovement(Number($<HTMLInputElement>("elevation").value) || 0)) : [];
+      if (this.pointer) {
+        const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
+        this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
+          snapMovement(Number($<HTMLInputElement>("elevation").value) || 0)) : [];
+      }
       this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
       return;
     }
+    if (!this.pointer) return;
     const pick = this.view.pick(...this.pointer, this.moving);
     if (!pick) {
       this.ghost = null;
@@ -435,8 +440,21 @@ export class Editor {
     }
   }
   rotate(axis: number) {
-    if (this.selection.size > 1 || this.groupPlacement) {
-      this.toast("Select one blueprint to rotate or tilt it.");
+    if (this.groupPlacement) {
+      this.groupPlacement.source=rotateSelection(this.groupPlacement.source,axis);
+      this.groupPreview=rotateSelection(this.groupPreview,axis);
+      this.lastPointer="";
+      this.updateGhost();this.inspect();
+      return;
+    }
+    if (this.selectedPieces.length>1 && !this.placing) {
+      const before=this.selectedPieces,after=rotateSelection(before,axis),ignore=new Set(this.selection);
+      const issue=after.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
+      if (issue) {
+        this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE
+          : "Cannot rotate here: the selection would overlap another blueprint.");return;
+      }
+      this.world.execute(after.map((p,i)=>({before:before[i],after:p})));
       return;
     }
     if (this.placing) {
@@ -463,6 +481,18 @@ export class Editor {
       this.rotation = turnRotation(this.rotation, axis);
       this.toast("Choose a blueprint to place it.");
     }
+  }
+  changeWood(wood: string) {
+    if (!WOOD_MAP.has(wood)) return;
+    this.wood=wood;
+    if (this.groupPlacement) {
+      this.groupPlacement.source=this.groupPlacement.source.map(p=>({...p,wood}));
+      this.groupPreview=this.groupPreview.map(p=>({...p,wood}));
+    } else if (!this.placing) {
+      const changes=this.selectedPieces.filter(p=>p.wood!==wood).map(p=>({before:p,after:{...p,wood}}));
+      this.world.execute(changes);
+    }
+    this.panel("woods",false);this.inspect();this.updateGhost();
   }
   move(copy = false) {
     if (this.groupPlacement) return;
@@ -688,16 +718,9 @@ export class Editor {
       this.catalog();
     };
     $("woods").onclick = (e) => {
-      if (this.selection.size > 1) return;
       const b = (e.target as HTMLElement).closest<HTMLElement>("[data-wood]");
       if (!b) return;
-      this.wood = b.dataset.wood!;
-      const p = this.selected ? this.world.pieces.get(this.selected) : null;
-      if (p && !this.placing)
-        this.world.execute([{ before: p, after: { ...p, wood: this.wood } }]);
-      this.panel("woods", false);
-      this.inspect();
-      this.updateGhost();
+      this.changeWood(b.dataset.wood!);
     };
     const actions: Record<string, () => unknown> = {
       "select-tool": () => this.pickSelection(null),

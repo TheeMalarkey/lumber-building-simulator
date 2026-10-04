@@ -1,10 +1,46 @@
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera, Vector3 } from "three";
 import { World, type Piece } from "../src/world";
-import { selectionBounds, translateSelection, placeSelectionOnSurface, selectInRectangle } from "../src/selection";
+import { selectionBounds, translateSelection, placeSelectionOnSurface, selectInRectangle, rotateSelection } from "../src/selection";
+import { quaternionRotation } from "../src/placement";
 
 const piece = (id: string, x: number, z = 0): Piece => ({id,item:"small-floor",wood:id === "a" ? "oak" : "birch",position:[x,.5,z],rotation:[0,id === "a" ? 1 : 0,0]});
 describe("group selection", () => {
+  const assembly: Piece[] = [
+    {id:"ramp-a",item:"4-4-wedge",wood:"oak",position:[-3,8,1],rotation:[1,0,0]},
+    {id:"ramp-b",item:"4-4-wedge",wood:"birch",position:[3,8,-1],rotation:[0,1,0]},
+  ];
+  it.each([
+    [0,[[-3,7,0],[3,9,0]]],
+    [1,[[1,8,3],[-1,8,-3]]],
+    [2,[[0,5,1],[0,11,-1]]],
+  ])("turns the assembly around its shared center on axis %i", (axis, positions) => {
+    const turned = rotateSelection(assembly,axis as number);
+    expect(turned.map(p=>p.position)).toEqual((positions as number[][]).map(p=>p.map(v=>v===0?0:v)));
+    expect(turned.map(p=>[p.id,p.item,p.wood])).toEqual(assembly.map(p=>[p.id,p.item,p.wood]));
+    const unit=new Vector3().setComponent(axis as number,1);
+    for (let i=0;i<2;i++) {
+      const before=new Vector3(0,0,-1).applyEuler(quaternionRotation(assembly[i].rotation)).applyAxisAngle(unit,Math.PI/2);
+      const after=new Vector3(0,0,-1).applyEuler(quaternionRotation(turned[i].rotation));
+      expect(after.distanceTo(before)).toBeLessThan(1e-8);
+    }
+    expect(assembly.map(p=>p.position)).toEqual([[-3,8,1],[3,8,-1]]);
+  });
+  it("restores fractional offsets and every member's orientation after four group turns", () => {
+    const original=translateSelection(assembly,[.5,.1,-.5]);
+    for (const axis of [0,1]) {
+      let rotated=original;
+      for (let n=0;n<4;n++) rotated=rotateSelection(rotated,axis);
+      expect(rotated.map(p=>p.position)).toEqual(original.map(p=>p.position));
+      for (let i=0;i<2;i++) {
+        for (const point of [[0,0,-1],[1,0,0]]) {
+          const before=new Vector3(...point).applyEuler(quaternionRotation(original[i].rotation));
+          const after=new Vector3(...point).applyEuler(quaternionRotation(rotated[i].rotation));
+          expect(after.distanceTo(before)).toBeLessThan(1e-8);
+        }
+      }
+    }
+  });
   it("keeps relative offsets, rotations and finishes when moving mixed pieces", () => {
     const original = [piece("a",-3), {...piece("b",3),item:"tiny-tile",position:[3,.1,0] as [number,number,number]}];
     const moved = translateSelection(original,[7,2,-5]);

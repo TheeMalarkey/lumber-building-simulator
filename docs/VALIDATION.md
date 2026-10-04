@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 86 passing core tests and 40 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 90 passing core tests and 46 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -103,7 +103,7 @@ Ctrl-click toggles individual pieces, and Ctrl-left-drag adds intersecting bluep
 
 Six browser scenarios and five core cases cover additive/reversed rectangles, toggle selection without accidental pickup, orbit isolation, group move/copy/delete, retained offsets/rotations/finishes, collision rejection, full-group ground and plot validation, cancellation, one-step history, and saved group copies. A 200-piece rendering check verifies one combined outline buffer and two preview instance batches for two blueprint types. This checks batching, not a new large-scene FPS benchmark. Rectangle queries run only on release, and unchanged outline geometry is reused.
 
-Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Rotation, tilt, finish, and numeric coordinate editing remain single-piece actions. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.
+Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Group rotation, tilt and finish editing were added in the follow-up below; numeric coordinate editing remains single-piece. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.
 
 ## Jump pose correction — 2026-10-04
 
@@ -119,3 +119,14 @@ Hold a placement with L to stop surface following and adjust it with the arrows 
 Eleven additional core regressions cover complementary wedges, rotated slope clearance, stair-tread contact, furniture openings, ramp walking and camera clearance. Nine additional browser scenarios cover the arrow controls on all axes, single/group edits, one-step history, ground/plot/overlap rejection, cancellation, held copies, camera isolation, floating-origin alignment, fallback buttons and compact layout. All 86 core tests, 40 browser scenarios and the production build passed. The separate production UI check imports a fixture, builds three raised steps, fits complementary wedges by dragging an arrow, and verifies exported positions without a development debug API. Reproduce with `node scripts/verify-precision-live.mjs`; screenshot: `artifacts/precision-building.png`.
 
 A focused CPU sample with 2,000 stored mixed blueprints measured approximately 0.1 ms median and p95 for physics plus follow-camera collision over 210 warm samples. The character reaches an obstacle during this sample; these are not moving-through-dense-scenes or whole-frame FPS results. Historical rendering benchmarks above predate these changes. Physical touch devices and exact live LT2 snapping remain unverified.
+
+
+## Group rotation, tilt and wood — 2026-10-04
+
+Rotate/R and Tilt/T now turn each selected blueprint's position and orientation around the assembly bounds center. The existing world-axis quarter-turn behavior and save format are retained. Placed selections validate every candidate against outside blueprints, the ground and active plots before one combined history action; any failure leaves all members untouched. Move/copy previews retain their adjusted orientations and finishes when the pointer changes surfaces, and cancelling them preserves the originals.
+
+The wood picker applies a chosen finish to every selected blueprint in one undoable edit. Mixed finishes show Mixed woods with no active swatch; undo restores each member's previous wood. Single-piece editing remains available. Numeric coordinates remain single-piece controls.
+
+Four core cases cover all three rotation axes, unchanged originals, per-member orientation composition and four-turn restoration with fractional offsets. Six browser cases exercise group rotate/tilt, atomic rejection, mixed finish display, one-step undo/redo, save/reload, transformed and recolored copies, cursor-following previews and held moves. The separate production check verifies visible controls and exported poses without a development API, including compact-screen layout. Reproduce with `node scripts/verify-group-edit-live.mjs`; screenshot: `artifacts/group-editing.png`. Group calculations run only when editing; no additional per-frame simulation or render batches were added.
+
+All 90 core tests, 46 browser scenarios, the production build and the separately served production group-edit check passed.

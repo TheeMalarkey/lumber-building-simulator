@@ -1,6 +1,6 @@
-import { Box3, Frustum, Matrix4, PerspectiveCamera } from "three";
+import { Box3, Frustum, Matrix4, PerspectiveCamera, Vector3 } from "three";
 import { type Vec3 } from "./catalog";
-import { round, snapMovement } from "./placement";
+import { round, snapMovement, turnRotation } from "./placement";
 import { pieceBounds, type Piece, type World } from "./world";
 import { surfaceSupport } from "./collision";
 
@@ -14,6 +14,17 @@ export function selectionBounds(pieces: readonly Piece[]) {
 }
 export function translateSelection(pieces: readonly Piece[], delta: Vec3): Piece[] {
   return pieces.map(p=>({...p,position:p.position.map((v,i)=>round(v+delta[i])) as Vec3,rotation:[...p.rotation]}));
+}
+/** Turn positions and each piece's orientation together around the assembly bounds center. */
+export function rotateSelection(pieces: readonly Piece[], axis: number): Piece[] {
+  if (!pieces.length) return [];
+  const center=new Vector3(...selectionBounds(pieces).center);
+  const unit=new Vector3().setComponent(axis,1);
+  return pieces.map(p=>({...p,
+    position:new Vector3(...p.position).sub(center).applyAxisAngle(unit,Math.PI/2).add(center)
+      .toArray().map(v=>round(v)||0) as Vec3,
+    rotation:turnRotation(p.rotation,axis),
+  }));
 }
 export function placeSelectionOnSurface(pieces: readonly Piece[], point: Vec3, normal: Vec3, elevation=0): Piece[] {
   const b=selectionBounds(pieces);
