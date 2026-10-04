@@ -9,7 +9,13 @@ import {
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { type CatalogItem, ITEMS, stairTreadCount } from "./catalog";
 import { applyPhysicalUVs, TEXTURE_TILE_STUDS } from "./texture-uv";
+import { solidFromGeometry, type Solid } from "./solid";
 const cache = new Map<string, BufferGeometry>();
+const collisionCache = new Map<string, Solid[]>();
+export function collisionPartsFor(id: string) {
+  if (!collisionCache.has(id)) geometryFor(id);
+  return collisionCache.get(id)!;
+}
 export function geometryFor(id: string): BufferGeometry {
   if (cache.has(id)) return cache.get(id)!;
   const item = ITEMS.get(id)!;
@@ -225,7 +231,7 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       const basin = new BufferGeometry();
       basin.setAttribute("position",new Float32BufferAttribute(vertices,3));
       basin.computeVertexNormals(); applyPhysicalUVs(basin,[2.5,.5,2.7]);
-      basin.userData.surface=3; parts.push(basin);
+      basin.userData.surface=3; basin.userData.collisionShell=true; parts.push(basin);
       cylinder(.13,.025,0,.093,0,"y",1);
       cylinder(.16,.45,0,.725,-1.6,"y",2);
       box(.24,.12,.95,0,.94,-1.25,2);
@@ -239,6 +245,7 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
 
   // Consolidate components by surface: one instanced draw per surface per
   // item/wood/chunk, never a separate mesh or material per placed component.
+  collisionCache.set(item.id, parts.flatMap(solidFromGeometry));
   const surfaces = [...new Set(parts.map(g => g.userData.surface ?? 0))].sort();
   const ordered = surfaces.flatMap(surface => parts.filter(g => (g.userData.surface ?? 0) === surface));
   const flat = ordered.map(g => g.index ? g.toNonIndexed() : g);

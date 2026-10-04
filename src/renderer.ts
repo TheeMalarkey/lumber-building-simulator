@@ -8,6 +8,7 @@ import { CameraController } from "./camera";
 import { Terrain } from "./terrain";
 import { PLOT_SIZE } from "./plots";
 import { GRID_FRAGMENT } from "./grid";
+import { MoveGizmo } from "./move-gizmo";
 import { pieceBounds } from "./world";
 export interface Pick {
   point: Vec3;
@@ -19,6 +20,7 @@ export class Viewport {
   scene = new T.Scene();
   camera: CameraController;
   worldRoot = new T.Group();
+  gizmo = new MoveGizmo();
   materials = makeMaterials();
   hardwareMaterials = makeBlueprintHardwareMaterials();
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
@@ -136,7 +138,7 @@ export class Viewport {
     this.worldRoot.add(this.selection);
     this.selectionLines.visible = false;
     this.selectionLines.renderOrder = 10;
-    this.worldRoot.add(this.selectionLines, this.groupGhosts);
+    this.worldRoot.add(this.selectionLines, this.groupGhosts, this.gizmo.root);
     new ResizeObserver(() => this.resize()).observe(element);
     this.resize();
     this.renderer.setAnimationLoop(() => this.tick());
@@ -414,6 +416,7 @@ export class Viewport {
     this.onFrame();
     this.sync();
     const camera = this.camera.camera;
+    this.gizmo.update(camera, this.element.clientHeight);
     this.terrain.followCamera(camera.position.x, camera.position.z);
     this.origin.set(
       Math.floor(camera.position.x / CHUNK) * CHUNK,

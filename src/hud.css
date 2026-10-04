@@ -74,6 +74,15 @@
 .game-hud #snap { font-size: 10px; }
 .game-hud .inspector section { padding: 0; border: 0; }
 .game-hud .coordinates { display: flex; gap: 6px; }
+#nudge-label { display: block; font-size: 11px; color: var(--hud-text); margin-bottom: 7px; }
+.nudge-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.nudge-buttons button, #hold-position { min-height: 33px; padding: 6px; border: 1px solid var(--hud-border); font-size: 11px; }
+.nudge-hint { font-size: 10px; color: var(--hud-muted); margin: 7px 0 0; }
+#coordinates-details, #step-buttons-details { margin-top: 8px; }
+#coordinates-details summary, #step-buttons-details summary { cursor: pointer; font-size: 10px; color: var(--hud-muted); margin-bottom: 6px; }
+#preview-controls { display: flex; gap: 6px; }
+#hold-position { flex: 1; }
+#hold-position[aria-pressed="true"] { background: #536a40; }
 .game-hud .coordinates label { min-width: 0; flex: 1; color: var(--hud-muted); background: #1119108c; border: 1px solid var(--hud-border); padding: 5px; }
 .game-hud .coordinates input { width: 100%; border: 0; padding: 4px 0; background: none; font-size: 11px; }
 #selection-actions { display: flex; align-items: center; gap: 4px; }

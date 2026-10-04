@@ -53,6 +53,30 @@ describe("jump animation", () => {
 });
 
 describe("walk physics", () => {
+  it("walks up the actual wedge slope and down again", () => {
+    const walker = setup([piece("ramp", "4-4-wedge", [0,2,0])]);
+    walker.spawn(new Vector3(0,0,4));
+    run(walker,.23,new Vector3(0,0,-1));
+    expect(walker.position.z).toBeLessThan(1);
+    expect(walker.position.y).toBeGreaterThan(1);
+    expect(walker.position.y).toBeLessThan(4);
+    expect(walker.canOccupy(walker.position)).toBe(true);
+    run(walker,.4,new Vector3(0,0,1));run(walker,.5);
+    expect(walker.position.y).toBe(0);
+  });
+  it("walks through space below a raised tabletop but blocks its legs", () => {
+    const walker = setup([piece("table", "long-table", [0,5,0])]);
+    walker.spawn(new Vector3(0,0,8));
+    run(walker,.7,new Vector3(0,0,-1));
+    expect(walker.position.z).toBeLessThan(-2);
+    expect(walker.position.y).toBe(0);
+    expect(walker.canOccupy(new Vector3(3.75,2,1.75))).toBe(false);
+  });
+  it("keeps the follow camera in empty space above a slope", () => {
+    const walker = setup([piece("ramp","4-4-wedge",[0,2,0])]);
+    const camera=walker.cameraPosition(new Vector3(0,3.5,5),new Vector3(0,3.5,1));
+    expect(camera.z).toBeCloseTo(1);
+  });
   it("does not step onto raised land when a ceiling leaves no standing clearance", () => {
     const world = new World();
     world.load([piece("roof", "large-floor", [-16, 5.7, 0])], [12]);
@@ -140,7 +164,7 @@ describe("walk physics", () => {
     const walker = setup([piece("wall", "smooth-wall", [0, 4, 0])]);
     expect(walker.spawn(new Vector3(0, 30, 0))).toBe(true);
     expect(walker.canOccupy(walker.position)).toBe(true);
-    expect(walker.position.y).toBe(8);
+    expect(walker.position.y).toBeCloseTo(8, 8);
     expect(walker.grounded).toBe(true);
   });
   it("does not step through a low ceiling", () => {

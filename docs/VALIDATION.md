@@ -1,4 +1,4 @@
-# Validation — 2026-10-03
+# Validation — 2026-10-04
 
 ## Implemented and checked
 
@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 75 passing core tests and 31 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 86 passing core tests and 40 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -65,12 +65,12 @@ A separate code reviewer found history notification timing, finish edits leaking
 ## Remaining limits and fidelity gates
 
 - Exact LT2 pivots, fine geometry, rotation behavior, and snap increments have not been verified in a live LT2 client. The UI identifies reconstructed details; source coverage is in `reference/catalog-audit.json`.
-- Walk mode reconstructs Roblox-style movement and a classic block character. Stairs use individual tread collision boxes; wedges and decorative furniture use conservative outer bounds. Ladder climbing and exact Roblox character physics are not implemented.
+- Walk mode reconstructs Roblox-style movement and a classic block character. Walking and follow-camera collision now use model components, including ramps, stair treads and furniture openings. The player body remains a simple volume. Ladder climbing and exact Roblox character physics are not implemented.
 - The public wiki table and linked thumbnails were accessible through the browser during the fidelity audit. All 69 names, dimensions and wood requirements match an independent transcription. The 2022 thumbnail revisions establish visible reference forms, not certification of current-game accuracy.
 - World records and spatial indices stay in RAM. Distant GPU chunks unload, but disk-paged world records and a distant overview proxy are not implemented.
 - Saves are debounced, atomic whole-project IndexedDB snapshots with a preceding backup. Incremental chunk persistence and worker-driven large imports/exports are not implemented. Large file operations may briefly block input.
 - The current graphics backend is WebGL 2. WebGPU fallback was deferred in favor of a single tested renderer.
-- Collision checks are mandatory for new placement, moving, duplication, rotation, and numeric position edits. Checks use reference bounding volumes, so insertion into an empty space inside a fence or furniture frame may be conservatively rejected. Existing saved/imported projects are retained as authored; the fix does not delete or rearrange old overlapping pieces.
+- Collision checks are mandatory for new placement, moving, duplication, rotation, and numeric position edits. Spatial and outer-bounds filtering is followed by convex component checks derived from the rendering recipes. Touching faces and open furniture spaces remain usable. Ground and active-plot checks still require the full blueprint bounds to fit. Existing saved/imported projects are retained as authored; the fix does not delete or rearrange old overlapping pieces.
 - Adaptive quality currently reduces resolution under sustained load; it does not automatically restore resolution. Selecting a quality preset resets it.
 - The only file-size guard is a 256 MB import safety budget; there is no placed-piece cap; active land is limited to a 5×5 layout of 40×40-stud plots. Actual capacity depends on hardware and storage.
 - The application is a static website with local and GitHub Pages deployment. Accounts, cloud project storage, cross-device synchronization, machinery simulation, and Roblox integration are not implemented.
@@ -108,3 +108,14 @@ Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.
 ## Jump pose correction — 2026-10-04
 
 The airborne limb angles now respect the avatar's local forward direction: hands rise in front of the shoulders and feet trail behind. Four regressions check actual limb endpoints during ascent and descent at each cardinal heading, plus return to idle after landing. All 75 core tests, both walk browser scenarios, and the production build passed. A Space-key jump was also inspected in the rendered browser scene. Jump speed, gravity, collisions, and the walking cycle are unchanged.
+
+
+## Axis movement and shape collision — 2026-10-04
+
+Selected blueprints and groups now expose labeled X/Y/Z drag arrows. Drags use world axes and one-stud increments while retaining fractional surface offsets. Invalid destinations are previewed in red and rejected on release. Escape, focus loss and pointer cancellation discard a drag; each accepted move creates one history action. Arrows keep a consistent screen size across camera distances and use absolute-world picking alongside the floating render origin. The six optional movement buttons and single-piece coordinates are collapsed by default.
+
+Hold a placement with L to stop surface following and adjust it with the arrows before choosing Place here. Held copies allow repeated up-one/across-one construction without temporary supports. Surface snapping uses support vertices from the actual model components. Collision checks share these same components with walking and the follow camera, preserving wedge slopes, stair treads and furniture openings. Cylinders use their rendered polygonal hulls; the recessed sink bowl uses thin triangle shells. Spatial and bounding-box rejection precede precise checks, and transformed hulls are cached for at most 1,024 pieces.
+
+Eleven additional core regressions cover complementary wedges, rotated slope clearance, stair-tread contact, furniture openings, ramp walking and camera clearance. Nine additional browser scenarios cover the arrow controls on all axes, single/group edits, one-step history, ground/plot/overlap rejection, cancellation, held copies, camera isolation, floating-origin alignment, fallback buttons and compact layout. All 86 core tests, 40 browser scenarios and the production build passed. The separate production UI check imports a fixture, builds three raised steps, fits complementary wedges by dragging an arrow, and verifies exported positions without a development debug API. Reproduce with `node scripts/verify-precision-live.mjs`; screenshot: `artifacts/precision-building.png`.
+
+A focused CPU sample with 2,000 stored mixed blueprints measured approximately 0.1 ms median and p95 for physics plus follow-camera collision over 210 warm samples. The character reaches an obstacle during this sample; these are not moving-through-dense-scenes or whole-frame FPS results. Historical rendering benchmarks above predate these changes. Physical touch devices and exact live LT2 snapping remain unverified.

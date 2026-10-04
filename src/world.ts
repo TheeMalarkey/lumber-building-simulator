@@ -1,6 +1,7 @@
 import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize } from "./placement";
 import { connectedPlots, coveredByPlots, touchesPlot, validatePlots } from "./plots";
+import { solidOverlap } from "./collision";
 export interface Piece {
   id: string;
   item: string;
@@ -214,7 +215,7 @@ export class World {
             (min, axis) =>
               min < other.max[axis] - 0.0001 &&
               candidate.max[axis] > other.min[axis] + 0.0001,
-          )
+          ) && solidOverlap(piece, this.pieces.get(id)!)
         )
           return "overlap";
       }

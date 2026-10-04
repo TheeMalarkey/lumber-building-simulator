@@ -9,6 +9,8 @@ export default defineConfig({
     "walk.spec.ts",
     "plots.spec.ts",
     "selection.spec.ts",
+    "precision.spec.ts",
+    "gizmo.spec.ts",
   ],
   timeout: 40000,
   workers: 1,

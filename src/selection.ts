@@ -2,6 +2,7 @@ import { Box3, Frustum, Matrix4, PerspectiveCamera } from "three";
 import { type Vec3 } from "./catalog";
 import { round, snapMovement } from "./placement";
 import { pieceBounds, type Piece, type World } from "./world";
+import { surfaceSupport } from "./collision";
 
 export function selectionBounds(pieces: readonly Piece[]) {
   const min: Vec3 = [Infinity,Infinity,Infinity], max: Vec3 = [-Infinity,-Infinity,-Infinity];
@@ -18,7 +19,7 @@ export function placeSelectionOnSurface(pieces: readonly Piece[], point: Vec3, n
   const b=selectionBounds(pieces);
   const axis=normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
   const center=point.map((v,i)=>snapMovement(v,b.center[i])) as Vec3;
-  const support=normal.reduce((sum,n,i)=>sum+Math.abs(n)*b.size[i]/2,0);
+  const support=surfaceSupport(pieces,b.center,normal);
   const plane=point.reduce((sum,v,i)=>sum+v*normal[i],0);
   const tangent=center.reduce((sum,v,i)=>sum+(i===axis?0:v*normal[i]),0);
   center[axis]=(plane+support-tangent)/normal[axis];

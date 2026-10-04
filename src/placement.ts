@@ -21,6 +21,7 @@ export function snapOnSurface(
   normal: Vec3,
   size: Vec3,
   step: number,
+  supportDistance?: number,
 ): Vec3 {
   const axis = normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));
   // Snap the footprint edge, keeping odd-width pieces inside grid cells.
@@ -28,7 +29,7 @@ export function snapOnSurface(
   const result = point.map(
     (v, i) => Math.round((v - size[i] / 2) / step) * step + size[i] / 2,
   ) as Vec3;
-  const support = normal.reduce(
+  const support = supportDistance ?? normal.reduce(
     (sum, n, i) => sum + (Math.abs(n) * size[i]) / 2,
     0,
   );

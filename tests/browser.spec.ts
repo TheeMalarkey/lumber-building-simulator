@@ -1,4 +1,4 @@
-import { openBuild, openMenu, openWoods } from "./ui-helpers";
+import { openBuild, openMenu, openWoods, openCoordinates } from "./ui-helpers";
 import { test, expect } from "@playwright/test";
 test("rotate then tilt tips blueprints sideways in previews and placed edits", async ({ page }) => {
   await page.goto("/"); await page.waitForFunction(() => !!(window as any).timber);
@@ -74,7 +74,9 @@ test("ground boundary blocks placement, moving, numeric edits, and tilting below
   });
   await page.locator("#tilt").click();
   await expect(page.locator("#toast")).toContainText("ground");
+  await openCoordinates(page);
   await page.locator("#pos-1").fill("-0.9");
+  await openCoordinates(page);
   await page.locator("#pos-1").press("Tab");
   await expect(page.locator("#pos-1")).toHaveValue("0.1");
   await page.locator("#move-tool").click();
@@ -279,13 +281,19 @@ test("placement, position controls, and elevation move in whole studs", async ({
     ]);
     e.pickSelection("tile");
   });
+  await openCoordinates(page);
   await page.locator("#pos-1").press("ArrowUp");
+  await openCoordinates(page);
   await page.locator("#pos-1").press("Tab");
   await expect(page.locator("#pos-1")).toHaveValue("1.1");
+  await openCoordinates(page);
   await page.locator("#pos-1").press("ArrowDown");
+  await openCoordinates(page);
   await page.locator("#pos-1").press("Tab");
   await expect(page.locator("#pos-1")).toHaveValue("0.1");
+  await openCoordinates(page);
   await page.locator("#pos-0").fill("2.7");
+  await openCoordinates(page);
   await page.locator("#pos-0").press("Tab");
   await expect(page.locator("#pos-0")).toHaveValue("3");
   await page.locator("#place-selected").click();
@@ -391,7 +399,9 @@ test("rotation and numeric movement cannot intersect another piece", async ({
       () => (window as any).timber.editor.world.pieces.get("a").rotation,
     ),
   ).toEqual([0, 0, 0]);
+  await openCoordinates(page);
   await page.locator("#pos-2").fill("2");
+  await openCoordinates(page);
   await page.locator("#pos-2").press("Tab");
   await expect(page.locator("#pos-2")).toHaveValue("0");
   expect(
@@ -513,7 +523,9 @@ test("place rotate recolor move delete undo and export preserve a real build", a
   await page.keyboard.press("r");
   await openWoods(page);
   await page.locator('[data-wood="cherry"]').click();
+  await openCoordinates(page);
   await page.locator("#pos-0").fill("12");
+  await openCoordinates(page);
   await page.locator("#pos-0").press("Tab");
   await canvas.focus();
   await page.keyboard.press("Control+z");

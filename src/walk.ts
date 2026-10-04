@@ -1,39 +1,18 @@
-import { Box3, BoxGeometry, BufferGeometry, Float32BufferAttribute, Euler, Group, Mesh, MeshStandardMaterial, PlaneGeometry, Raycaster, Vector3 } from "three";
+import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, PlaneGeometry, Raycaster, Vector3 } from "three";
 import classicHead from "./assets/classic-head.json";
-import { ITEMS, stairTreadCount, type Vec3 } from "./catalog";
-import type { Piece, World } from "./world";
+import { type Vec3 } from "./catalog";
+import type { World } from "./world";
 import { landHeight } from "./plots";
+import { expandedPlanes, insidePlanes, placementSolids, rayEntry, verticalRange, type CollisionPlane } from "./collision";
 
 // R6 head center is 4.5 studs; the classic visible mesh extends to 5.252.
 export const WALK_EYE_HEIGHT = 4.5;
 export const WALK_HEIGHT = 5.26;
 export const WALK_RADIUS = 0.95;
 export const WALK_STEP = 1.05;
-type Bounds = { min: Vec3; max: Vec3 };
 const EPS = 0.00001;
-const stairCache = new WeakMap<Piece, Bounds[]>();
-
-// Stairs use their actual treads. Other shapes deliberately use the world's
-// conservative cached bounds (including wedges and decorative furniture).
-function collisionBoxes(world: World, piece: Piece): Bounds[] {
-  const item = ITEMS.get(piece.item)!;
-  if (item.shape !== "stairs") return [world.bounds.get(piece.id)!];
-  const cached = stairCache.get(piece);
-  if (cached) return cached;
-  const [w, h, d] = item.size, count = stairTreadCount(item);
-  const rotation = new Euler(...(piece.rotation.map(v => v * Math.PI / 2) as Vec3), "YXZ");
-  const boxes: Bounds[] = [];
-  for (let i = 0; i < count; i++) {
-    const height = h * (i + 1) / count, z = d / 2 - (i + 0.5) * d / count;
-    const box = new Box3();
-    for (const x of [-w / 2, w / 2]) for (const y of [-h / 2, -h / 2 + height])
-      for (const zz of [z - d / count / 2, z + d / count / 2])
-        box.expandByPoint(new Vector3(x, y, zz).applyEuler(rotation).add(new Vector3(...piece.position)));
-    boxes.push({ min: box.min.toArray() as Vec3, max: box.max.toArray() as Vec3 });
-  }
-  stairCache.set(piece, boxes);
-  return boxes;
-}
+const BODY_HALF: Vec3 = [WALK_RADIUS,WALK_HEIGHT/2,WALK_RADIUS];
+const CAMERA_HALF: Vec3 = [.25,.25,.25];
 
 /** Rendering-independent feet-position controller, in absolute world studs. */
 export class WalkPhysics {
@@ -41,14 +20,21 @@ export class WalkPhysics {
   velocity = new Vector3();
   grounded = false;
   constructor(readonly world: World) {}
-  private nearby(position = this.position, extra = 0) {
-    return this.world.query([position.x, position.y + WALK_HEIGHT / 2, position.z], WALK_HEIGHT + extra)
-      .flatMap(piece => collisionBoxes(this.world, piece));
+  private nearby(position = this.position, extra = 0, halfSize = BODY_HALF) {
+    const center:Vec3=[position.x,position.y+WALK_HEIGHT/2,position.z], radius=WALK_HEIGHT+extra;
+    return this.world.query(center,radius)
+      .filter(piece=>{
+        const b=this.world.bounds.get(piece.id)!;
+        return center.every((v,i)=>b.min[i]<=v+radius && b.max[i]>=v-radius);
+      })
+      .flatMap(piece => placementSolids(piece).map(s=>expandedPlanes(s,halfSize)));
   }
-  private overlaps(position: Vector3, box: Bounds) {
-    return position.x + WALK_RADIUS > box.min[0] + EPS && position.x - WALK_RADIUS < box.max[0] - EPS &&
-      position.z + WALK_RADIUS > box.min[2] + EPS && position.z - WALK_RADIUS < box.max[2] - EPS &&
-      position.y + WALK_HEIGHT > box.min[1] + EPS && position.y < box.max[1] - EPS;
+  private overlaps(position: Vector3, planes: CollisionPlane[]) {
+    return insidePlanes(planes,position.clone().setY(position.y+WALK_HEIGHT/2));
+  }
+  private heights(planes: CollisionPlane[], position: Vector3) {
+    const range=verticalRange(planes,position.x,position.z);
+    return range ? {min:range.min-WALK_HEIGHT/2,max:range.max-WALK_HEIGHT/2} : null;
   }
   canOccupy(position: Vector3) {
     return position.y >= landHeight(position.x, position.z, this.world.plots) - EPS && !this.nearby(position).some(box => this.overlaps(position, box));
@@ -63,9 +49,10 @@ export class WalkPhysics {
         const x = reference.x + Math.cos(angle) * ring * 2.2;
         const z = reference.z + Math.sin(angle) * ring * 2.2;
         const supports = this.world.rayCandidates([x, top, z], [0, -1, 0], top)
-          .flatMap(hit => collisionBoxes(this.world, hit.piece))
-          .filter(box => x >= box.min[0] && x <= box.max[0] && z >= box.min[2] && z <= box.max[2])
-          .map(box => box.max[1]).filter(y => y >= 0 && y <= top);
+          .flatMap(hit => placementSolids(hit.piece).map(s=>expandedPlanes(s,BODY_HALF)))
+          .map(planes=>verticalRange(planes,x,z))
+          .filter(range=>range!==null)
+          .map(range=>range.max-WALK_HEIGHT/2).filter(y => y >= 0 && y <= top);
         for (const y of [landHeight(x, z, this.world.plots), ...supports.sort((a, b) => b - a)]) {
           const candidate = new Vector3(x, y, z);
           if (this.canOccupy(candidate)) {
@@ -103,7 +90,7 @@ export class WalkPhysics {
         }
         const blocked = boxes.filter(box => this.overlaps(candidate, box));
         if (blocked.length && this.grounded) {
-          const height = Math.max(...blocked.map(box => box.max[1]));
+          const height = Math.max(...blocked.map(planes => this.heights(planes,candidate)!.max));
           const lifted = candidate.clone().setY(height);
           const above = this.position.clone().setY(height);
           if (height > this.position.y && height - this.position.y <= WALK_STEP + EPS &&
@@ -112,10 +99,14 @@ export class WalkPhysics {
             continue;
           }
         }
-        const index = axis === "x" ? 0 : 2;
-        for (const box of blocked) candidate[axis] = amount > 0
-          ? Math.min(candidate[axis], box.min[index] - WALK_RADIUS)
-          : Math.max(candidate[axis], box.max[index] + WALK_RADIUS);
+        const origin=this.position.clone().setY(this.position.y+WALK_HEIGHT/2);
+        const direction=new Vector3().setComponent(axis === "x" ? 0 : 2,Math.sign(amount));
+        let travel=Math.abs(amount);
+        for (const planes of blocked) {
+          const entry=rayEntry(planes,origin,direction,travel);
+          if (entry!==null) travel=Math.min(travel,entry);
+        }
+        candidate[axis]=this.position[axis]+Math.sign(amount)*travel;
         this.position.copy(candidate);
       }
       this.velocity.y -= 196.2 * step;
@@ -124,12 +115,13 @@ export class WalkPhysics {
       this.grounded = false;
       for (const box of boxes) {
         if (!this.overlaps(this.position, box)) continue;
-        if (amount < 0 && oldY >= box.max[1] - EPS) {
-          this.position.y = Math.max(this.position.y, box.max[1]);
+        const range=this.heights(box,this.position)!;
+        if (amount < 0 && oldY >= range.max - EPS) {
+          this.position.y = Math.max(this.position.y, range.max);
           this.velocity.y = 0;
           this.grounded = true;
-        } else if (amount > 0 && oldY + WALK_HEIGHT <= box.min[1] + EPS) {
-          this.position.y = Math.min(this.position.y, box.min[1] - WALK_HEIGHT);
+        } else if (amount > 0 && oldY <= range.min + EPS) {
+          this.position.y = Math.min(this.position.y, range.min);
           this.velocity.y = 0;
         }
       }
@@ -142,21 +134,11 @@ export class WalkPhysics {
     if (!length) return target.clone();
     const direction = delta.clone().divideScalar(length);
     let distance = length;
-    // An expanded-box ray leaves room for the camera's near plane.
+    // Clip against expanded convex model parts, so openings stay open.
     const midpoint = target.clone().add(desired).multiplyScalar(0.5);
-    for (const box of this.nearby(midpoint, length / 2)) {
-      let near = 0, far = length;
-      for (let axis = 0; axis < 3; axis++) {
-        const origin = target.getComponent(axis), d = direction.getComponent(axis);
-        const min = box.min[axis] - 0.25, max = box.max[axis] + 0.25;
-        if (Math.abs(d) < EPS) { if (origin < min || origin > max) far = -1; }
-        else {
-          const a = (min - origin) / d, b = (max - origin) / d;
-          near = Math.max(near, Math.min(a, b));
-          far = Math.min(far, Math.max(a, b));
-        }
-      }
-      if (near <= far && far >= 0) distance = Math.min(distance, Math.max(0, near - 0.05));
+    for (const planes of this.nearby(midpoint,length/2,CAMERA_HALF)) {
+      const entry=rayEntry(planes,target,direction,length);
+      if (entry!==null) distance=Math.min(distance,Math.max(0,entry-.05));
     }
     if (direction.y < 0) distance = Math.min(distance, Math.max(0, (target.y - 0.3) / -direction.y));
     return target.clone().addScaledVector(direction, distance);

@@ -3,10 +3,7 @@ import { CATALOG, ITEMS, WOOD_MAP, type Vec3 } from "./catalog";
 import { World, type Piece } from "./world";
 import { Viewport } from "./renderer";
 import {
-  rotatedSize,
-  snapOnSurface,
   round,
-  STUD_STEP,
   snapMovement,
   turnRotation,
 } from "./placement";
@@ -16,7 +13,9 @@ import { loadProject, saveProject } from "./storage";
 import { parseProject, type Project } from "./project";
 import { ALL_PLOTS, inferPlots } from "./plots";
 import { pieceBounds } from "./world";
-import { placeSelectionOnSurface, selectionBounds, selectInRectangle } from "./selection";
+import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateSelection } from "./selection";
+import { snapBlueprintOnSurface } from "./collision";
+import type { AxisDrag } from "./move-gizmo";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
@@ -41,6 +40,7 @@ export class Editor {
   placing = false;
   moving: string | null = null;
   ghost: Piece | null = null;
+  held = false;
   orbit = false;
   pointer: [number, number] | null = null;
   dirty = false;
@@ -169,7 +169,12 @@ export class Editor {
     }
     $("edit-panel").hidden = !(p || this.placing) || !$("build-panel").hidden;
     $("selection-actions").hidden = !p || this.placing;
-    $("elevation-row").hidden = !this.placing;
+    $("elevation-row").hidden = !this.placing || this.held;
+    $("preview-controls").hidden = !this.placing;
+    $("hold-position").textContent = this.held ? "Release position (L)" : "Hold position (L)";
+    $("hold-position").setAttribute("aria-pressed", String(this.held));
+    $("commit-preview").hidden = !this.held;
+    $("nudge-label").textContent = this.placing ? "Adjust preview · 1 stud" : "Move selection · 1 stud";
     $("wood-color").style.background = WOOD_MAP.get(this.wood)!.color;
     if (!(p || this.placing)) this.panel("woods", false);
     const item = ITEMS.get(this.item)!;
@@ -192,7 +197,8 @@ export class Editor {
       .forEach((b) =>
         b.classList.toggle("active", b.dataset.wood === this.wood),
       );
-    $("transform-section").hidden = !p || multi || this.placing;
+    $("transform-section").hidden = !(p || this.placing);
+    $("coordinates-details").hidden = !p || multi || this.placing;
     if (p)
       for (let i = 0; i < 3; i++) {
         const input = $<HTMLInputElement>(`pos-${i}`);
@@ -201,6 +207,7 @@ export class Editor {
         input.value = String(p.position[i]);
       }
     this.view.selectMany(pieces);
+    this.syncGizmo();
     $("place-selected").innerHTML = icon("plus") + " Place blueprint";
   }
   updateWorldUI() {
@@ -216,6 +223,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
+    this.held = false;
     this.placing = placing;
     this.orbit = false;
     this.view.camera.orbitMode(false);
@@ -298,7 +306,17 @@ export class Editor {
     this.updateWorldUI();
   }
   updateGhost() {
-    if (!this.placing || !this.pointer) return;
+    if (!this.placing) return;
+    if (this.held) {
+      if (this.groupPlacement) this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
+      else if (this.ghost) {
+        this.ghost = {...this.ghost,wood:this.wood,rotation:[...this.rotation]};
+        this.view.showGhost(this.ghost,this.valid(this.ghost));
+      }
+      this.syncGizmo();
+      return;
+    }
+    if (!this.pointer) return;
     if (this.groupPlacement) {
       const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
       this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
@@ -312,8 +330,7 @@ export class Editor {
       this.view.showGhost(null);
       return;
     }
-    const size = rotatedSize(ITEMS.get(this.item)!.size, this.rotation);
-    const pos = snapOnSurface(pick.point, pick.normal, size, STUD_STEP);
+    const pos = snapBlueprintOnSurface(pick.point, pick.normal, this.item, this.rotation);
     const elevation = snapMovement(
       Number($<HTMLInputElement>("elevation").value) || 0,
     );
@@ -329,6 +346,43 @@ export class Editor {
   }
   valid(p: Piece) {
     return this.world.canPlace(p, this.moving);
+  }
+  syncGizmo() {
+    this.view.gizmo.setPieces(this.orbit ? [] : this.placing
+      ? this.held ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : []
+      : this.selectedPieces);
+  }
+  holdPosition() {
+    if (!this.placing) return;
+    if (this.held) { this.held=false;this.lastPointer="";this.inspect();this.updateGhost();return; }
+    if (this.groupPlacement && !this.groupPreview.length) this.groupPreview=structuredClone(this.groupPlacement.source);
+    if (!this.groupPlacement && !this.ghost && this.selectedPieces[0]) this.ghost=structuredClone(this.selectedPieces[0]);
+    if (this.groupPlacement ? !this.groupPreview.length : !this.ghost) {
+      this.toast("Point at a starting position first, then hold it to build in the air.");return;
+    }
+    this.held=true;this.inspect();this.updateGhost();
+  }
+  nudge(direction: string) {
+    const view=this.view.camera.camera.getWorldDirection(new Vector3());
+    const forward:Vec3=Math.abs(view.x)>Math.abs(view.z) ? [Math.sign(view.x),0,0] : [0,0,Math.sign(view.z)||-1];
+    const right:Vec3=[-forward[2],0,forward[0]];
+    const steps:Record<string,Vec3>={up:[0,1,0],down:[0,-1,0],forward,back:forward.map(v=>-v) as Vec3,
+      right,left:right.map(v=>-v) as Vec3};
+    const delta=steps[direction];if (!delta) return;
+    if (this.placing) {
+      if (!this.held) this.holdPosition();
+      if (!this.held) return;
+      if (this.groupPlacement) this.groupPreview=translateSelection(this.groupPreview,delta);
+      else this.ghost=translateSelection([this.ghost!],delta)[0];
+      this.updateGhost();return;
+    }
+    const before=this.selectedPieces, after=translateSelection(before,delta), ignore=new Set(this.selection);
+    if (!before.length) return;
+    const issue=after.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
+    if (issue) {
+      this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot move here: the selection would overlap another blueprint.");return;
+    }
+    this.world.execute(after.map((p,i)=>({before:before[i],after:p})));
   }
   groupIssue() {
     for (const p of this.groupPreview) {
@@ -377,6 +431,7 @@ export class Editor {
     } else {
       this.world.execute([{ before: null, after: p }]);
       this.lastPointer = "";
+      if (this.held) this.updateGhost();
     }
   }
   rotate(axis: number) {
@@ -547,7 +602,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group</span><span><kbd>Ctrl</kbd> + left drag</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -649,12 +704,15 @@ export class Editor {
       "orbit-tool": () => {
         this.setMode(false);
         this.orbit = true;
+        this.syncGizmo();
         this.view.camera.orbitMode(true);
         $("orbit-tool").classList.add("active");
         $("select-tool").classList.remove("active");
         $("mode-label").innerHTML = icon("orbit") + "Orbit mode";
       },
       "move-tool": () => this.move(),
+      "hold-position": () => this.holdPosition(),
+      "commit-preview": () => this.place(),
       "walk-tool": () => this.toggleWalk(),
       "duplicate-tool": () => this.move(true),
       "delete-tool": () => this.remove(),
@@ -708,6 +766,10 @@ export class Editor {
         if (["land-tool", "walk-tool", "select-tool"].includes(id)) this.panel("build-panel", false);
         void action();
       };
+    $("nudge-buttons").onclick = e => {
+      const b=(e.target as HTMLElement).closest<HTMLElement>("[data-nudge]");
+      if (b) this.nudge(b.dataset.nudge!);
+    };
     $("elevation").oninput = () => this.updateGhost();
     $("elevation").onchange = () => {
       const input = $<HTMLInputElement>("elevation");
@@ -754,6 +816,31 @@ export class Editor {
     let down: [number, number] | null = null;
     let selectionClicks: string[] = [];
     let gesture: { pointerId: number; start: [number, number]; dragged: boolean } | null = null;
+    let moveDrag: { pointerId:number; math:AxisDrag; source:Piece[]; preview:Piece[]; placing:boolean } | null = null;
+    const endMove = (commit=false) => {
+      const drag=moveDrag;if (!drag) return;
+      moveDrag=null;down=null;selectionClicks=[];
+      this.pointer=null;this.lastPointer="";
+      if (drag.placing) {
+        if (!commit) {
+          if (this.groupPlacement) this.groupPreview=drag.source;
+          else this.ghost=drag.source[0];
+        }
+        this.updateGhost();
+      } else {
+        this.view.showGroupGhosts([]);
+        const ignore=new Set(drag.source.map(p=>p.id));
+        const issue=drag.preview.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
+        if (commit && issue) this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot move here: the selection would overlap another blueprint.");
+        else if (commit && drag.preview.some((p,i)=>p.position.some((v,j)=>v!==drag.source[i].position[j])))
+          this.world.execute(drag.preview.map((p,i)=>({before:drag.source[i],after:p})));
+      }
+      this.view.camera.selecting=false;
+      this.view.camera.controls.enabled=!this.view.camera.walking && !this.view.camera.flying;
+      this.view.camera.keys.clear();canvas.style.cursor="";
+      if (canvas.hasPointerCapture(drag.pointerId)) canvas.releasePointerCapture(drag.pointerId);
+      this.inspect();
+    };
     const endGesture = () => {
       const previous = gesture;
       gesture = null;
@@ -766,7 +853,25 @@ export class Editor {
       if (previous && canvas.hasPointerCapture(previous.pointerId)) canvas.releasePointerCapture(previous.pointerId);
     };
     canvas.addEventListener("pointermove", (e) => {
+      if (moveDrag) {
+        e.preventDefault();e.stopImmediatePropagation();
+        const delta=this.view.gizmo.delta(moveDrag.math,e.clientX,e.clientY,this.view.camera.camera,canvas.getBoundingClientRect());
+        if (!delta) return;
+        moveDrag.preview=translateSelection(moveDrag.source,delta);
+        if (moveDrag.placing) {
+          if (this.groupPlacement) this.groupPreview=moveDrag.preview;
+          else this.ghost=moveDrag.preview[0];
+          this.updateGhost();
+        } else {
+          const ignore=new Set(moveDrag.source.map(p=>p.id));
+          this.view.showGroupGhosts(moveDrag.preview,moveDrag.preview.every(p=>this.world.canPlace(p,ignore)));
+          this.view.gizmo.setPieces(moveDrag.preview);
+        }
+        return;
+      }
       this.pointer = [e.clientX, e.clientY];
+      if (!gesture && !this.orbit && !this.view.camera.flying)
+        canvas.style.cursor=this.view.gizmo.hit(e.clientX,e.clientY,this.view.camera.camera,canvas.getBoundingClientRect())!==null ? "grab" : "";
       if (!gesture || gesture.pointerId !== e.pointerId) return;
       gesture.dragged ||= Math.hypot(e.clientX - gesture.start[0], e.clientY - gesture.start[1]) > 5;
       if (!gesture.dragged) return;
@@ -778,15 +883,30 @@ export class Editor {
       marquee.style.top = `${Math.min(y, gesture.start[1]) - rect.top}px`;
       marquee.style.width = `${Math.abs(x - gesture.start[0])}px`;
       marquee.style.height = `${Math.abs(y - gesture.start[1])}px`;
-    });
+    }, true);
     canvas.addEventListener("pointerleave", () => {
-      if (gesture) return;
+      if (gesture || moveDrag) return;
       this.pointer = null;
-      this.view.showGhost(null);
-      this.view.showGroupGhosts([]);
+      // Keep the last preview available while the pointer operates its controls.
       this.lastPointer = "";
     });
     canvas.addEventListener("pointerdown", (e) => {
+      if (moveDrag) { e.preventDefault();e.stopImmediatePropagation();return; }
+      if (e.button===0 && !e.ctrlKey && !e.metaKey && !this.orbit && !this.view.camera.flying) {
+        const rect=canvas.getBoundingClientRect(),gizmo=this.view.gizmo;
+        const axis=gizmo.hit(e.clientX,e.clientY,this.view.camera.camera,rect);
+        const math=axis!==null ? gizmo.begin(axis,e.clientX,e.clientY,this.view.camera.camera,rect) : null;
+        if (math) {
+          const source=structuredClone(this.placing ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : this.selectedPieces);
+          if (source.length) {
+            e.preventDefault();e.stopImmediatePropagation();down=null;selectionClicks=[];
+            moveDrag={pointerId:e.pointerId,math,source,preview:source,placing:this.placing};
+            this.view.camera.selecting=true;this.view.camera.controls.enabled=false;this.view.camera.keys.clear();
+            canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing";
+            return;
+          }
+        }
+      }
       if (e.button === 0 && (e.ctrlKey || e.metaKey) && !this.view.camera.flying) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -806,12 +926,19 @@ export class Editor {
       if (e.button === 0) down = [e.clientX, e.clientY];
     }, true);
     canvas.addEventListener("pointercancel", () => {
+      endMove();
       endGesture();
     });
-    canvas.addEventListener("lostpointercapture", () => { if (gesture) endGesture(); });
-    window.addEventListener("blur", endGesture);
-    document.addEventListener("visibilitychange", () => { if (document.hidden) endGesture(); });
+    canvas.addEventListener("lostpointercapture", () => { if (moveDrag) endMove(); if (gesture) endGesture(); });
+    window.addEventListener("blur", () => { endMove();endGesture(); });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) {endMove();endGesture();} });
+    canvas.addEventListener("wheel", e => {if (moveDrag) {e.preventDefault();e.stopImmediatePropagation();}}, {capture:true,passive:false});
     canvas.addEventListener("pointerup", (e) => {
+      if (moveDrag) {
+        e.preventDefault();e.stopImmediatePropagation();
+        if (e.button===0 && e.pointerId===moveDrag.pointerId) endMove(true);
+        return;
+      }
       if (e.button !== 0 || !gesture || e.pointerId !== gesture.pointerId) return;
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -865,6 +992,11 @@ export class Editor {
       this.move();
     });
     window.addEventListener("keydown", (e) => {
+      if (moveDrag) {
+        e.preventDefault();
+        if (e.code==="Escape") endMove();
+        return;
+      }
       if (gesture) {
         if (e.code === "Escape") { e.preventDefault(); endGesture(); }
         return;
@@ -925,6 +1057,9 @@ export class Editor {
           break;
         case "KeyG":
           this.move();
+          break;
+        case "KeyL":
+          this.holdPosition();
           break;
         case "KeyF":
           this.focus();
