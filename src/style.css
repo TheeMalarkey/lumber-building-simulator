@@ -83,6 +83,19 @@ p {
 [hidden] {
   display: none !important;
 }
+
+#selection-marquee {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+  border: 1px solid #e9ac50;
+  background: #e9ac5022;
+}
+#selection-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--hud-muted, #b9c0b2);
+}
 #app {
   height: 100dvh;
   display: grid;

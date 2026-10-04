@@ -46,7 +46,8 @@ export function shell() {
 <main class="workspace game-hud">
 <section class="viewport" id="viewport" aria-label="Building world">
 <div class="view-controls">${button("home", "home", "Home view")}${button("top", "top", "Top view")}${button("focus", "focus", "Focus selection (F)")}${button("grid", "grid", "Toggle grid", "active")}${button("orbit-tool", "orbit", "Orbit camera (O)")}</div>
-<div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span>Click to place</span><span><kbd>R</kbd> Rotate</span><span><kbd>T</kbd> Tilt</span><span><kbd>Esc</kbd> Cancel</span></div>
+<div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span>Click to place</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span><kbd>Esc</kbd> Cancel</span></div>
+<div id="selection-marquee" hidden aria-hidden="true"></div>
 <div id="camera-hint" hidden></div><div id="toast" role="status"></div>
 </section>
 <div class="hud-corner"><button id="menu-tool" aria-label="Project menu" class="hud-tool" aria-expanded="false" aria-controls="project-menu">${icon("cube")}<strong>TIMBER</strong>${icon("chevron")}</button><span id="save-state" class="save-state">Local workspace</span></div>
@@ -64,14 +65,15 @@ export function shell() {
 </aside>
 <aside id="edit-panel" class="inspector hud-panel" aria-label="Blueprint controls" hidden>
 <div class="piece-summary"><img id="piece-preview" alt="Selected blueprint preview"><div><span id="piece-category"></span><h3 id="piece-name"></h3><span id="piece-size"></span></div>${button("close-edit","close","Cancel or deselect (Escape)")}</div>
-<div class="wood-picker"><button id="wood-toggle" aria-expanded="false" aria-controls="woods"><i id="wood-color"></i><span id="wood-name">Oak</span><span class="wood-caption">Wood</span>${icon("chevron")}</button><div id="woods" class="wood-swatches" aria-label="Wood finishes" hidden>${WOODS.map((w,i)=>`<button data-wood="${w.id}" class="wood-swatch ${i===0?"active":""}" style="--wood:${w.color}" title="${w.name}" aria-label="${w.name} wood finish">${icon("check")}</button>`).join("")}</div></div>
-<div class="rotate-buttons"><button id="rotate">${icon("rotate")} Rotate <kbd>R</kbd></button><button id="tilt">${icon("tilt")} Tilt <kbd>T</kbd></button></div>
+<p id="selection-hint" hidden>Ctrl-click toggles pieces · Ctrl-drag adds a group</p>
+<div class="wood-picker" id="wood-picker"><button id="wood-toggle" aria-expanded="false" aria-controls="woods"><i id="wood-color"></i><span id="wood-name">Oak</span><span class="wood-caption">Wood</span>${icon("chevron")}</button><div id="woods" class="wood-swatches" aria-label="Wood finishes" hidden>${WOODS.map((w,i)=>`<button data-wood="${w.id}" class="wood-swatch ${i===0?"active":""}" style="--wood:${w.color}" title="${w.name}" aria-label="${w.name} wood finish">${icon("check")}</button>`).join("")}</div></div>
+<div class="rotate-buttons" id="rotate-controls"><button id="rotate">${icon("rotate")} Rotate <kbd>R</kbd></button><button id="tilt">${icon("tilt")} Tilt <kbd>T</kbd></button></div>
 <label class="setting-row" id="elevation-row"><span>Elevation</span><input id="elevation" type="number" value="0" step="1" aria-label="Build elevation"><span id="snap">1 stud</span></label>
 <section id="transform-section" hidden><div class="coordinates">${["X","Y","Z"].map((a,i)=>`<label>${a}<input id="pos-${i}" type="number" step="1" aria-label="Position ${a}"></label>`).join("")}</div></section>
 <div id="selection-actions"><button id="place-selected" class="primary-btn">${icon("plus")} Place blueprint</button>${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div>
 </aside>
 <nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}<i></i>${tool("land-tool","grid","Land")}${tool("walk-tool","walk","Walk","C")}<i></i>${button("undo","undo","Undo (Ctrl+Z)")}${button("redo","redo","Redo (Ctrl+Shift+Z)")}</nav>
-<div class="hud-status"><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
+<div class="hud-status"><span id="selection-count" hidden aria-live="polite"></span><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
 <div id="welcome-note" hidden><button id="blank-start">Start a new build</button><button id="dismiss-welcome">Dismiss</button></div>
 </main>
 <input id="file-input" type="file" accept=".timber,.json" hidden>

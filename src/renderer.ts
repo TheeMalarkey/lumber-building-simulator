@@ -8,6 +8,7 @@ import { CameraController } from "./camera";
 import { Terrain } from "./terrain";
 import { PLOT_SIZE } from "./plots";
 import { GRID_FRAGMENT } from "./grid";
+import { pieceBounds } from "./world";
 export interface Pick {
   point: Vec3;
   normal: Vec3;
@@ -34,6 +35,9 @@ export class Viewport {
     }),
   );
   selection = new T.Box3Helper(new T.Box3(), 0xe9ac50);
+  selectionLines = new T.LineSegments(new T.BufferGeometry(), new T.LineBasicMaterial({color:0xe9ac50,depthTest:false,depthWrite:false}));
+  groupGhosts = new T.Group();
+  private highlighted: readonly Piece[] = [];
   grid: T.Mesh;
   terrain = new Terrain();
   sun = new T.DirectionalLight(0xffefdb, 3.0);
@@ -130,6 +134,9 @@ export class Viewport {
     (this.selection.material as T.Material).depthTest = false;
     this.selection.renderOrder = 10;
     this.worldRoot.add(this.selection);
+    this.selectionLines.visible = false;
+    this.selectionLines.renderOrder = 10;
+    this.worldRoot.add(this.selectionLines, this.groupGhosts);
     new ResizeObserver(() => this.resize()).observe(element);
     this.resize();
     this.renderer.setAnimationLoop(() => this.tick());
@@ -285,7 +292,7 @@ export class Viewport {
       if (!this.loaded.has(k)) this.buildChunk(k);
     }
   }
-  pick(clientX: number, clientY: number, exclude?: string | null): Pick | null {
+  pick(clientX: number, clientY: number, exclude?: string | ReadonlySet<string> | null): Pick | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new T.Vector2(
       ((clientX - rect.left) / rect.width) * 2 - 1,
@@ -304,7 +311,7 @@ export class Viewport {
     for (const candidate of candidates) {
       if (best && candidate.distance > best.distance) break;
       const p = candidate.piece;
-      if (p.id === exclude) continue;
+      if (typeof exclude === "string" ? p.id === exclude : exclude?.has(p.id)) continue;
       this.tmpMesh.geometry = geometryFor(p.item);
       this.tmpMesh.position.fromArray(p.position);
       this.tmpMesh.rotation.copy(quaternionRotation(p.rotation));
@@ -344,6 +351,45 @@ export class Viewport {
     (this.ghost.material as T.MeshStandardMaterial).color.set(
       valid ? 0xe7b465 : 0xe15d4f,
     );
+  }
+  showGroupGhosts(pieces: readonly Piece[], valid = true) {
+    this.ghost.visible = false;
+    const material = this.ghost.material;
+    material.color.set(valid ? 0xe7b465 : 0xe15d4f);
+    const batches = new Map<string, Piece[]>();
+    for (const p of pieces) { if (!batches.has(p.item)) batches.set(p.item,[]);batches.get(p.item)!.push(p); }
+    const old = new Map(this.groupGhosts.children.map(m=>[m.name,m as T.InstancedMesh]));
+    const matrix = new T.Matrix4(), q=new T.Quaternion(), position=new T.Vector3(), scale=new T.Vector3(1,1,1);
+    for (const [item, batch] of batches) {
+      let mesh=old.get(item);old.delete(item);
+      if (mesh && mesh.instanceMatrix.count<batch.length) {this.groupGhosts.remove(mesh);mesh.dispose();mesh=undefined;}
+      if (!mesh) {
+        mesh=new T.InstancedMesh(geometryFor(item),material,Math.max(8,2**Math.ceil(Math.log2(batch.length))));
+        mesh.name=item;mesh.frustumCulled=false;this.groupGhosts.add(mesh);
+      }
+      mesh.count=batch.length;
+      batch.forEach((p,i)=>{matrix.compose(position.fromArray(p.position),q.setFromEuler(quaternionRotation(p.rotation)),scale);mesh!.setMatrixAt(i,matrix);});
+      mesh.instanceMatrix.needsUpdate=true;
+    }
+    for (const mesh of old.values()) { this.groupGhosts.remove(mesh);mesh.dispose(); }
+  }
+  selectMany(pieces: readonly Piece[]) {
+    // World edits replace records. Reuse outlines while inspector-only state changes.
+    if (pieces.length === this.highlighted.length && pieces.every((p, i) => p === this.highlighted[i])) return;
+    this.highlighted = [...pieces];
+    this.select(pieces.length === 1 ? pieces[0] : null);
+    this.selectionLines.visible=pieces.length>1;
+    if (pieces.length<=1) {this.selectionLines.geometry.setDrawRange(0,0);return;}
+    const data=new Float32Array(pieces.length*24*3);
+    const edges=[[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
+    let index=0;
+    for (const p of pieces) {
+      const b=this.world.bounds.get(p.id) ?? pieceBounds(p);
+      for (const edge of edges) for (const corner of edge) for (let axis=0;axis<3;axis++)
+        data[index++]=(corner&(1<<axis))?b.max[axis]+.04:b.min[axis]-.04;
+    }
+    const geometry=new T.BufferGeometry();geometry.setAttribute("position",new T.BufferAttribute(data,3));geometry.computeBoundingSphere();
+    this.selectionLines.geometry.dispose();this.selectionLines.geometry=geometry;
   }
   select(p: Piece | null) {
     this.selection.visible = !!p;

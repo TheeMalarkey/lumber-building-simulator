@@ -8,6 +8,7 @@ export default defineConfig({
     "materials.spec.ts",
     "walk.spec.ts",
     "plots.spec.ts",
+    "selection.spec.ts",
   ],
   timeout: 40000,
   workers: 1,

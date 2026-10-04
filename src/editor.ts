@@ -16,6 +16,7 @@ import { loadProject, saveProject } from "./storage";
 import { parseProject, type Project } from "./project";
 import { ALL_PLOTS, inferPlots } from "./plots";
 import { pieceBounds } from "./world";
+import { placeSelectionOnSurface, selectionBounds, selectInRectangle } from "./selection";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
@@ -29,7 +30,14 @@ export class Editor {
   rotation: Vec3 = [0, 0, 0];
   category = "All pieces";
   search = "";
-  selected: string | null = null;
+  selection = new Set<string>();
+  get selected(): string | null { return this.selection.values().next().value ?? null; }
+  set selected(id: string | null) { this.selection.clear(); if (id) this.selection.add(id); }
+  get selectedPieces(): Piece[] {
+    return [...this.selection].map(id => this.world.pieces.get(id)).filter((p): p is Piece => !!p);
+  }
+  groupPlacement: { source: Piece[]; copy: boolean; ignore: Set<string> } | null = null;
+  groupPreview: Piece[] = [];
   placing = false;
   moving: string | null = null;
   ghost: Piece | null = null;
@@ -151,6 +159,8 @@ export class Editor {
       this.view.renderer.domElement.focus({ preventScroll: true });
   }
   inspect() {
+    const pieces = this.selectedPieces;
+    const multi = pieces.length > 1;
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
     if (p && !this.placing) {
       this.item = p.item;
@@ -166,16 +176,23 @@ export class Editor {
     ($("piece-preview") as HTMLImageElement).src = this.thumbnails.get(
       item.id,
     )!;
-    $("piece-name").textContent = item.name;
-    $("piece-size").textContent = item.size.join(" × ") + " studs";
-    $("piece-category").textContent = item.category.toUpperCase();
+    $("piece-name").textContent = multi ? `${pieces.length} blueprints selected` : item.name;
+    $("piece-size").textContent = multi ? "Move, copy or delete together" : item.size.join(" × ") + " studs";
+    $("piece-category").textContent = multi ? "GROUP SELECTION" : item.category.toUpperCase();
+    $("piece-preview").hidden = multi;
+    $("wood-picker").hidden = multi;
+    $("rotate-controls").hidden = multi;
+    $("place-selected").hidden = multi;
+    $("selection-hint").hidden = !multi;
+    $("selection-count").hidden = !pieces.length;
+    $("selection-count").textContent = `${pieces.length} selected`;
     $("wood-name").textContent = WOOD_MAP.get(this.wood)!.name;
     document
       .querySelectorAll<HTMLElement>("[data-wood]")
       .forEach((b) =>
         b.classList.toggle("active", b.dataset.wood === this.wood),
       );
-    $("transform-section").hidden = !p || this.placing;
+    $("transform-section").hidden = !p || multi || this.placing;
     if (p)
       for (let i = 0; i < 3; i++) {
         const input = $<HTMLInputElement>(`pos-${i}`);
@@ -183,14 +200,13 @@ export class Editor {
         input.defaultValue = String(p.position[i]);
         input.value = String(p.position[i]);
       }
-    this.view.select(p ?? null);
+    this.view.selectMany(pieces);
     $("place-selected").innerHTML = icon("plus") + " Place blueprint";
   }
   updateWorldUI() {
     this.view.setPlots(this.world.plots ?? [12]);
     $("plot-status").textContent = `${this.world.plots?.length ?? 1} / 25 plots`;
-    if (this.selected && !this.world.pieces.has(this.selected))
-      this.selected = null;
+    for (const id of this.selection) if (!this.world.pieces.has(id)) this.selection.delete(id);
     $("piece-count").textContent =
       `${this.world.pieces.size.toLocaleString()} pieces`;
     ($("undo") as HTMLButtonElement).disabled = !this.world.canUndo;
@@ -210,13 +226,20 @@ export class Editor {
       icon(placing ? "cube" : "arrow") +
       (placing ? "Place mode" : "Select mode");
     if (placing) {
-      $("placing-name").textContent = ITEMS.get(this.item)!.name;
+      $("placing-name").textContent = this.groupPlacement
+        ? `${this.groupPlacement.copy ? "Copy" : "Move"} ${this.groupPlacement.source.length} blueprints`
+        : ITEMS.get(this.item)!.name;
       $("welcome-note").hidden = true;
     } else {
       this.ghost = null;
       this.view.showGhost(null);
+      this.view.showGroupGhosts([]);
+      this.groupPlacement = null;
+      this.groupPreview = [];
       this.moving = null;
     }
+    $("placement-rotate").hidden = !!this.groupPlacement;
+    $("placement-tilt").hidden = !!this.groupPlacement;
     this.lastPointer = "";
     this.inspect();
   }
@@ -244,6 +267,7 @@ export class Editor {
     );
   }
   choose(id: string) {
+    this.setMode(false);
     this.panel("build-panel", false);
     this.item = id;
     this.selected = null;
@@ -256,8 +280,12 @@ export class Editor {
     this.updateWorldUI();
   }
   pickSelection(id: string | null) {
+    this.pickSelections(id ? [id] : []);
+  }
+  pickSelections(ids: Iterable<string>) {
     this.setMode(false);
-    this.selected = id;
+    this.selection = new Set([...ids].filter(id => this.world.pieces.has(id)));
+    const id = this.selected;
     const p = id ? this.world.pieces.get(id) : null;
     if (p) {
       this.item = p.item;
@@ -271,6 +299,13 @@ export class Editor {
   }
   updateGhost() {
     if (!this.placing || !this.pointer) return;
+    if (this.groupPlacement) {
+      const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
+      this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
+        snapMovement(Number($<HTMLInputElement>("elevation").value) || 0)) : [];
+      this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
+      return;
+    }
     const pick = this.view.pick(...this.pointer, this.moving);
     if (!pick) {
       this.ghost = null;
@@ -295,7 +330,31 @@ export class Editor {
   valid(p: Piece) {
     return this.world.canPlace(p, this.moving);
   }
+  groupIssue() {
+    for (const p of this.groupPreview) {
+      const issue = this.world.placementIssue(p, this.groupPlacement!.ignore);
+      if (issue) return issue;
+    }
+    return null;
+  }
   place() {
+    if (this.groupPlacement) {
+      if (!this.groupPreview.length) return;
+      const issue = this.groupIssue();
+      if (issue) {
+        this.toast(issue === "below-ground" ? BELOW_GROUND_MESSAGE : issue === "outside-plots"
+          ? OUTSIDE_PLOTS_MESSAGE : "This selection would overlap another blueprint.");
+        return;
+      }
+      const copy = this.groupPlacement.copy;
+      const changes = this.groupPreview.map(p => ({
+        before: copy ? null : this.world.pieces.get(p.id)!,
+        after: { ...structuredClone(p), id: copy ? crypto.randomUUID() : p.id },
+      }));
+      this.world.execute(changes);
+      this.pickSelections(changes.map(c => c.after.id));
+      return;
+    }
     if (!this.ghost) return;
     const issue = this.world.placementIssue(this.ghost, this.moving);
     if (issue) {
@@ -321,6 +380,10 @@ export class Editor {
     }
   }
   rotate(axis: number) {
+    if (this.selection.size > 1 || this.groupPlacement) {
+      this.toast("Select one blueprint to rotate or tilt it.");
+      return;
+    }
     if (this.placing) {
       this.rotation = turnRotation(this.rotation, axis);
       this.updateGhost();
@@ -347,6 +410,18 @@ export class Editor {
     }
   }
   move(copy = false) {
+    if (this.groupPlacement) return;
+    const pieces = this.selectedPieces;
+    if (pieces.length > 1) {
+      this.groupPlacement = { source: structuredClone(pieces), copy,
+        ignore: new Set(copy ? [] : pieces.map(p => p.id)) };
+      this.ghost = null;
+      this.moving = null;
+      this.setMode(true);
+      this.updateGhost();
+      this.toast(`Place to ${copy ? "copy" : "move"} ${pieces.length} blueprints. Escape cancels.`);
+      return;
+    }
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
     if (!p) {
       this.toast("Select a placed piece first.");
@@ -366,9 +441,10 @@ export class Editor {
     );
   }
   remove() {
-    const p = this.selected ? this.world.pieces.get(this.selected) : null;
-    if (!p) return;
-    this.world.execute([{ before: p, after: null }]);
+    const pieces = this.selectedPieces;
+    if (!pieces.length) return;
+    this.setMode(false);
+    this.world.execute(pieces.map(p => ({ before: p, after: null })));
     this.pickSelection(null);
   }
   async save() {
@@ -471,7 +547,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group</span><span><kbd>Ctrl</kbd> + left drag</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -557,6 +633,7 @@ export class Editor {
       this.catalog();
     };
     $("woods").onclick = (e) => {
+      if (this.selection.size > 1) return;
       const b = (e.target as HTMLElement).closest<HTMLElement>("[data-wood]");
       if (!b) return;
       this.wood = b.dataset.wood!;
@@ -599,6 +676,7 @@ export class Editor {
         $("grid").classList.toggle("active", this.view.grid.visible);
       },
       "place-selected": () => {
+        this.setMode(false);
         this.selected = null;
         this.moving = null;
         this.setMode(true);
@@ -647,6 +725,7 @@ export class Editor {
     };
     for (let i = 0; i < 3; i++)
       $(`pos-${i}`).onchange = () => {
+        if (this.selection.size > 1) return;
         const p = this.selected ? this.world.pieces.get(this.selected) : null;
         if (!p) return;
         const n = Number($<HTMLInputElement>(`pos-${i}`).value);
@@ -674,22 +753,80 @@ export class Editor {
     const canvas = this.view.renderer.domElement;
     let down: [number, number] | null = null;
     let selectionClicks: string[] = [];
+    let gesture: { pointerId: number; start: [number, number]; dragged: boolean } | null = null;
+    const endGesture = () => {
+      const previous = gesture;
+      gesture = null;
+      down = null;
+      selectionClicks = [];
+      $("selection-marquee").hidden = true;
+      this.view.camera.selecting = false;
+      this.view.camera.controls.enabled = !this.view.camera.walking && !this.view.camera.flying;
+      this.view.camera.keys.clear();
+      if (previous && canvas.hasPointerCapture(previous.pointerId)) canvas.releasePointerCapture(previous.pointerId);
+    };
     canvas.addEventListener("pointermove", (e) => {
       this.pointer = [e.clientX, e.clientY];
+      if (!gesture || gesture.pointerId !== e.pointerId) return;
+      gesture.dragged ||= Math.hypot(e.clientX - gesture.start[0], e.clientY - gesture.start[1]) > 5;
+      if (!gesture.dragged) return;
+      const rect = canvas.getBoundingClientRect(), marquee = $("selection-marquee");
+      const x = Math.max(rect.left, Math.min(rect.right, e.clientX));
+      const y = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
+      marquee.hidden = false;
+      marquee.style.left = `${Math.min(x, gesture.start[0]) - rect.left}px`;
+      marquee.style.top = `${Math.min(y, gesture.start[1]) - rect.top}px`;
+      marquee.style.width = `${Math.abs(x - gesture.start[0])}px`;
+      marquee.style.height = `${Math.abs(y - gesture.start[1])}px`;
     });
     canvas.addEventListener("pointerleave", () => {
+      if (gesture) return;
       this.pointer = null;
       this.view.showGhost(null);
+      this.view.showGroupGhosts([]);
+      this.lastPointer = "";
     });
     canvas.addEventListener("pointerdown", (e) => {
+      if (e.button === 0 && (e.ctrlKey || e.metaKey) && !this.view.camera.flying) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        this.setMode(false);
+        selectionClicks = [];
+        down = null;
+        gesture = { pointerId: e.pointerId, start: [e.clientX, e.clientY], dragged: false };
+        this.view.camera.selecting = true;
+        this.view.camera.controls.enabled = false;
+        this.view.camera.keys.clear();
+        canvas.focus({ preventScroll: true });
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
       if (this.placing || this.orbit || this.view.camera.flying)
         selectionClicks = [];
       if (e.button === 0) down = [e.clientX, e.clientY];
-    });
+    }, true);
     canvas.addEventListener("pointercancel", () => {
-      down = null;
-      selectionClicks = [];
+      endGesture();
     });
+    canvas.addEventListener("lostpointercapture", () => { if (gesture) endGesture(); });
+    window.addEventListener("blur", endGesture);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) endGesture(); });
+    canvas.addEventListener("pointerup", (e) => {
+      if (e.button !== 0 || !gesture || e.pointerId !== gesture.pointerId) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const { start, dragged } = gesture;
+      endGesture();
+      const ids = new Set(this.selection);
+      if (dragged) {
+        for (const id of selectInRectangle(this.world, this.view.camera.camera,
+          canvas.getBoundingClientRect(), start, [e.clientX, e.clientY], this.view.renderDistance)) ids.add(id);
+      } else {
+        const hit = this.view.pick(e.clientX, e.clientY);
+        if (hit?.id) { if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id); }
+      }
+      this.pickSelections(ids);
+    }, true);
     canvas.addEventListener("pointerup", (e) => {
       if (e.button !== 0 || !down) return;
       const delta = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
@@ -728,6 +865,10 @@ export class Editor {
       this.move();
     });
     window.addEventListener("keydown", (e) => {
+      if (gesture) {
+        if (e.code === "Escape") { e.preventDefault(); endGesture(); }
+        return;
+      }
       if (e.code === "Escape" && !document.querySelector("dialog[open]")) {
         for (const id of ["woods", "build-panel", "project-menu"] as const) {
           if (!$(id).hidden) { e.preventDefault(); this.panel(id, false); return; }
@@ -747,6 +888,7 @@ export class Editor {
           e.shiftKey ? this.world.redo() : this.world.undo();
         } else if (e.code === "KeyY") {
           e.preventDefault();
+          this.setMode(false);
           this.world.redo();
         } else if (e.code === "KeyD") {
           e.preventDefault();
@@ -817,6 +959,11 @@ export class Editor {
     );
   }
   focus() {
+    if (this.selection.size > 1) {
+      const b = selectionBounds(this.selectedPieces);
+      this.view.camera.focus(new Vector3(...b.center), Math.max(...b.size) * 2);
+      return;
+    }
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
     if (p)
       this.view.camera.focus(

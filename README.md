@@ -26,6 +26,8 @@ The portable ZIP contains the compiled site and a small Node server. Extract it,
 - Click **Walk** or press **C** to explore with a classic block character. **WASD** walks relative to the camera, **Space** jumps, **Shift** runs, **right mouse** looks around, and the **wheel** zooms between third and first person. Press **C** again for free camera. The character collides with ground, walls, ceilings, and stairs; Home, Top, Focus, and Orbit return to free camera.
 - **Middle mouse drag** or the Orbit tool orbits; the wheel zooms. **F** focuses selection.
 - **Double-click a placed piece** to start moving it, or select it and press **G**. Click to place; **Escape** cancels. **Ctrl+D** duplicates the selected piece, and **Delete** removes it.
+- Hold **Ctrl** (or **Command** on Mac) and click placed blueprints to add/remove individual pieces. **Ctrl + left drag** adds every blueprint whose bounds touch the rectangle, including pieces behind others within view distance. Plain click selects one piece; click empty ground or press **Escape** to clear.
+- With a group selected, **G / Move**, **Ctrl+D / Duplicate**, and **Delete** act on the whole group. Moving/copying keeps relative spacing, rotations, and finishes. Any collision, below-ground piece, or out-of-plot piece blocks the whole placement; **Escape** cancels. Each completed group action undoes in one step. Rotate, tilt, and wood editing are available for individual pieces.
 - **Ctrl+Z / Ctrl+Shift+Z** undo/redo. The toolbar also has these actions.
 - Choose a wood finish for the selected piece and subsequent placements.
 - Placement, position edits, and elevation use fixed one-stud increments. New placement aligns footprint edges with the floor grid, including rotated blueprints. Position controls preserve a piece’s fractional surface offset so thin pieces remain flush. Collision checks are always on: intersecting placements turn red and cannot be committed. Moves, duplicates, rotations, and numeric position edits use the same check; touching faces and stacking remain allowed. The full rotated blueprint must stay at or above ground level; placement, movement, numeric edits, and rotation reject any below-ground portion.
@@ -64,7 +66,7 @@ The first release covers blueprint construction and blueprint furniture. Machine
 
 ## Performance
 
-Geometry and wood materials are shared. Static pieces are instanced by item/material and spatial chunk. Distant GPU chunks unload; the camera uses a floating render origin. Static pieces have no physics or individual frame callbacks. Quality settings control shadows, resolution, and view distance.
+Geometry and wood materials are shared. Static pieces are instanced by item/material and spatial chunk. Distant GPU chunks unload; the camera uses a floating render origin. Static pieces have no physics or individual frame callbacks. Rectangle selection queries the spatial index once on release. Group outlines use one line draw call, and placement previews instance matching blueprint types. Quality settings control shadows, resolution, and view distance.
 
 There is no artificial piece-count or height cap. Land is limited to 25 connected 40×40-stud plots. All editable records and the spatial index currently remain in RAM; IndexedDB saves are atomic full-project snapshots. Browser memory, storage quota, long synchronous imports, and the 256 MB import safety budget remain practical limits. This is **not** a literal unlimited-memory engine. The renderer currently uses WebGL 2; WebGPU is not implemented.
 
@@ -84,7 +86,7 @@ Browser tests use installed Google Chrome and start the dev server if needed. Be
 ## Source layout
 
 - `src/catalog.ts`, `geometry.ts`, `materials.ts`: reference catalog and reusable assets.
-- `src/world.ts`, `placement.ts`: authoritative data, history, bounds and placement.
+- `src/world.ts`, `placement.ts`, `selection.ts`: authoritative data, history, bounds and placement.
 - `src/renderer.ts`, `camera.ts`: instancing, streaming, picking and navigation.
 - `src/editor.ts`, `ui.ts`, `style.css`, `hud.css`: interaction and interface.
 - `src/project.ts`, `storage.ts`: file validation and atomic local saves.

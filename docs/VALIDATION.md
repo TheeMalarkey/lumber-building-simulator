@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 66 passing core tests and 25 passing browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 71 passing core tests and 31 passing browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -96,3 +96,11 @@ Only `dist/` is deployed as the site. Builds remain in browser storage; the publ
 ## Blueprint detail follow-up
 
 Six additional regressions cover continuous corner joins, fence-corner opening, door knob proportions/placement, ladder rung thickness/gaps, smooth cylinder normals, and upright wall/door grain. All 69 items now have direct thumbnail references, with exact measurements still explicitly distinguished from visual estimates. Comparison: `artifacts/blueprint-detail-comparison.png`.
+
+## Multiple blueprint selection
+
+Ctrl-click toggles individual pieces, and Ctrl-left-drag adds intersecting blueprint bounds within view distance, including occluded pieces. The camera pauses during the gesture; Escape, focus loss, and pointer cancellation abandon the rectangle. Plain clicks and existing double-click pickup retain their single-piece behavior.
+
+Six browser scenarios and five core cases cover additive/reversed rectangles, toggle selection without accidental pickup, orbit isolation, group move/copy/delete, retained offsets/rotations/finishes, collision rejection, full-group ground and plot validation, cancellation, one-step history, and saved group copies. A 200-piece rendering check verifies one combined outline buffer and two preview instance batches for two blueprint types. This checks batching, not a new large-scene FPS benchmark. Rectangle queries run only on release, and unchanged outline geometry is reused.
+
+Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Rotation, tilt, finish, and numeric coordinate editing remain single-piece actions. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.

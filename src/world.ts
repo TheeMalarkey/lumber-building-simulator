@@ -191,12 +191,12 @@ export class World {
   duplicateAt(p: Piece, position: Vec3) {
     return { ...structuredClone(p), id: crypto.randomUUID(), position };
   }
-  canPlace(piece: Piece, ignoreId?: string | null) {
+  canPlace(piece: Piece, ignoreId?: string | ReadonlySet<string> | null) {
     return this.placementIssue(piece, ignoreId) === null;
   }
   placementIssue(
     piece: Piece,
-    ignoreId?: string | null,
+    ignoreId?: string | ReadonlySet<string> | null,
   ): "below-ground" | "outside-plots" | "overlap" | null {
     const candidate = pieceBounds(piece);
     // Check the rotated footprint, not just the center. Allow only roundoff.
@@ -206,7 +206,7 @@ export class World {
     // Use cells touched by the proposed bounds, independent of item size.
     for (const key of keys(piece)) {
       for (const id of this.spatial.get(key) ?? []) {
-        if (id === ignoreId || visited.has(id)) continue;
+        if ((typeof ignoreId === "string" ? id === ignoreId : ignoreId?.has(id)) || visited.has(id)) continue;
         visited.add(id);
         const other = this.bounds.get(id)!;
         if (

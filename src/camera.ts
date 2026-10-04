@@ -9,6 +9,7 @@ export class CameraController {
   flying = false;
   speed = 24;
   walking = false;
+  selecting = false;
   walker: WalkController;
   walkDistance = 12;
   onModeChange = (_walking: boolean) => {};
@@ -37,6 +38,7 @@ export class CameraController {
     element.addEventListener("contextmenu", (e) => e.preventDefault());
     element.addEventListener("pointerdown", (e) => {
       element.focus({ preventScroll: true });
+      if (this.selecting) return;
       if (e.button !== 2) return;
       this.flying = true;
       this.controls.enabled = false;
@@ -123,6 +125,7 @@ export class CameraController {
     );
   }
   update(dt: number) {
+    if (this.selecting) return;
     if ((this.keys.size || this.jumpPending) && this.keyboardBlocked()) { this.keys.clear(); this.jumpPending = false; }
     if (this.walking) {
       this.updateWalk(dt);
