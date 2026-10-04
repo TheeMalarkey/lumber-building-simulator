@@ -116,3 +116,12 @@
 
 .game-hud #elevation { color: var(--hud-text); background: #1119108c; border-color: var(--hud-border); }
 .game-hud .placement-bar > span { display: flex; }
+.game-hud #path-controls { display: grid; gap: 8px; }
+.game-hud select { color: var(--hud-text); background: #171f17; border: 1px solid var(--hud-border); border-radius: 3px; padding: 6px; min-width: 0; font-size: 11px; }
+#path-controls select { margin-left: auto; width: 150px; max-width: 157px; }
+.game-hud #path-fill { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
+#path-controls .nudge-hint { margin: 0; line-height: 1.5; }
+#path-status { font-size: 10px; line-height: 1.5; margin: 0; color: #d3eca4; }
+#path-status.invalid { color: #ffc0a3; }
+#path-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+#path-actions button { padding: 7px 6px; border: 1px solid var(--hud-border); font-size: 10px; }

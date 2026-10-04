@@ -1,7 +1,7 @@
 import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize } from "./placement";
 import { connectedPlots, coveredByPlots, touchesPlot, validatePlots } from "./plots";
-import { solidOverlap } from "./collision";
+import { placementSolids, solidOverlap } from "./collision";
 export interface Piece {
   id: string;
   item: string;
@@ -18,6 +18,14 @@ export const CHUNK = 64;
 export const chunkKey = (p: Vec3) =>
   p.map((n) => Math.floor(n / CHUNK)).join(",");
 export function pieceBounds(p: Piece) {
+  // A turned triangle does not occupy every corner of its original box.
+  if (!p.rotation.every(Number.isInteger)) {
+    const solids=placementSolids(p);
+    return {
+      min:[0,1,2].map(i=>Math.min(...solids.map(s=>s.bounds.min.getComponent(i)))) as Vec3,
+      max:[0,1,2].map(i=>Math.max(...solids.map(s=>s.bounds.max.getComponent(i)))) as Vec3,
+    };
+  }
   const s = rotatedSize(ITEMS.get(p.item)!.size, p.rotation);
   return {
     min: p.position.map((v, i) => v - s[i] / 2) as Vec3,
@@ -195,6 +203,21 @@ export class World {
   }
   canPlace(piece: Piece, ignoreId?: string | ReadonlySet<string> | null) {
     return this.placementIssue(piece, ignoreId) === null;
+  }
+  /** Validate a new run against existing pieces and itself without touching world/history. */
+  placementBatchIssue(pieces: readonly Piece[], ignoreIds?: ReadonlySet<string>) {
+    const batch = new World();
+    batch.plots = this.plots;
+    for (const piece of pieces) {
+      const issue = this.placementIssue(piece,ignoreIds);
+      if (issue) return issue;
+      if (!this.allowOverlaps) {
+        const internal = batch.placementIssue(piece);
+        if (internal) return internal;
+        batch.put(piece,piece.id);
+      }
+    }
+    return null;
   }
   placementIssue(
     piece: Piece,

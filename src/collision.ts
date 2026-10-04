@@ -45,7 +45,8 @@ function solidsOverlap(a: Solid, b: Solid) {
 }
 /** Called only after spatial-index and outer-bounds rejection. */
 export function solidOverlap(a: Piece, b: Piece) {
-  if (ITEMS.get(a.item)!.shape === "box" && ITEMS.get(b.item)!.shape === "box") return true;
+  if (ITEMS.get(a.item)!.shape === "box" && ITEMS.get(b.item)!.shape === "box" &&
+      a.rotation.every(Number.isInteger) && b.rotation.every(Number.isInteger)) return true;
   const first=placementSolids(a), second=placementSolids(b);
   return first.some(s=>second.some(t=>solidsOverlap(s,t)));
 }

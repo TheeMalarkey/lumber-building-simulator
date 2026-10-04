@@ -51,7 +51,7 @@ export function parseProject(text: string): Project {
     if (
       !Array.isArray(p.rotation) ||
       p.rotation.length !== 3 ||
-      !p.rotation.every((n) => Number.isInteger(n) && n >= 0 && n <= 3)
+      !p.rotation.every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0 && n < 4)
     )
       throw new Error("Invalid piece rotation.");
   }

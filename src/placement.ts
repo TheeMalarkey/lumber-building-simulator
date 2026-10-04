@@ -39,7 +39,12 @@ export function snapOnSurface(
     0,
   );
   result[axis] = (plane + support - tangent) / normal[axis];
-  return result.map(round) as Vec3;
+  const snapped = result.map(round) as Vec3;
+  const roundedTangent = snapped.reduce((sum,n,i)=>sum+(i===axis ? 0 : n*normal[i]),0);
+  const contact = (plane + support - roundedTangent) / normal[axis];
+  // Round contact outward so a fractional pose never sinks into its support plane.
+  snapped[axis] = normal[axis]>0 ? Math.ceil(contact*10000-1e-4)/10000 : Math.floor(contact*10000+1e-4)/10000;
+  return snapped;
 }
 export function quaternionRotation(rotation: Vec3) {
   return new Euler(
@@ -55,15 +60,22 @@ export function quaternionRotation(rotation: Vec3) {
 export function turnRotation(rotation: Vec3, axis: number): Vec3 {
   const turn = new Quaternion().setFromAxisAngle(new Vector3().setComponent(axis, 1), Math.PI / 2);
   const target = new Quaternion().setFromEuler(quaternionRotation(rotation)).premultiply(turn);
+  return encodeRotation(target);
+}
+/** Fractional quarter turns keep curved placements compatible with version-one files. */
+export function encodeRotation(target: Quaternion): Vec3 {
   const candidate = new Quaternion();
   // Enumerating integer quarter turns avoids Euler gimbal-lock rounding and
   // gives every equivalent pose one deterministic, file-compatible encoding.
   for (let x = 0; x < 4; x++) for (let y = 0; y < 4; y++) for (let z = 0; z < 4; z++) {
     const encoded: Vec3 = [x, y, z];
     candidate.setFromEuler(quaternionRotation(encoded));
-    if (Math.abs(candidate.dot(target)) > 1 - 1e-8) return encoded;
+    if (Math.abs(candidate.dot(target)) > 1 - 1e-12) return encoded;
   }
-  throw new Error("Cannot encode blueprint orientation.");
+  const euler = new Euler().setFromQuaternion(target, "YXZ");
+  return [euler.x, euler.y, euler.z].map(angle =>
+    Math.round(((angle / (Math.PI / 2) % 4 + 4) % 4) * 1e8) / 1e8 % 4,
+  ) as Vec3;
 }
 export function worldNormal(normal: Vector3, matrix: Matrix4): Vec3 {
   return normal.clone().transformDirection(matrix).toArray() as Vec3;

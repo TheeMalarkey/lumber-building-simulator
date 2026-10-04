@@ -12,6 +12,7 @@ export default defineConfig({
     "precision.spec.ts",
     "gizmo.spec.ts",
     "overlap.spec.ts",
+    "paths.spec.ts",
   ],
   timeout: 40000,
   workers: 1,

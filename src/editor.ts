@@ -16,6 +16,7 @@ import { pieceBounds } from "./world";
 import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateSelection, rotateSelection } from "./selection";
 import { snapBlueprintOnSurface } from "./collision";
 import type { AxisDrag } from "./move-gizmo";
+import { PathBuilder } from "./path-builder";
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
@@ -23,6 +24,7 @@ const OUTSIDE_PLOTS_MESSAGE = "The entire blueprint must stay inside active plot
 export class Editor {
   world = new World();
   view: Viewport;
+  paths: PathBuilder;
   thumbnails: Map<string, string>;
   item = "smooth-wall";
   wood = "oak";
@@ -55,6 +57,7 @@ export class Editor {
   constructor() {
     $("app").innerHTML = shell();
     this.view = new Viewport($("viewport"), this.world);
+    this.paths = new PathBuilder(this);
     this.thumbnails = this.view.thumbnails();
     this.catalog();
     this.inspect();
@@ -75,6 +78,7 @@ export class Editor {
       $("draw-calls").textContent = `${this.view.stats.drawCalls} draw calls`;
     };
     this.view.onFrame = () => {
+      this.paths.tick();
       if (this.placing && this.pointer && !this.view.camera.flying) {
         const key =
           this.pointer.join(",") +
@@ -214,6 +218,7 @@ export class Editor {
       }
     this.view.selectMany(pieces);
     this.syncGizmo();
+    this.paths.syncUI();
     $("place-selected").innerHTML = icon("plus") + " Place blueprint";
   }
   updateWorldUI() {
@@ -229,6 +234,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
+    this.paths.cancel();
     this.held = false;
     this.placing = placing;
     this.orbit = false;
@@ -311,6 +317,7 @@ export class Editor {
   }
   updateGhost() {
     if (!this.placing) return;
+    if (this.paths.hasDraft) {this.paths.refresh();return;}
     if (this.held) {
       if (this.groupPlacement) this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
       else if (this.ghost) {
@@ -354,6 +361,7 @@ export class Editor {
     return this.world.canPlace(p, this.moving);
   }
   syncGizmo() {
+    if (this.paths.syncGizmo()) return;
     this.view.gizmo.setPieces(this.orbit ? [] : this.placing
       ? this.held ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : []
       : this.selectedPieces);
@@ -633,7 +641,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Curves / smart wedge paths</span><span>Build mode selector</span><span>Edit / finish curve</span><span>Point arrows / <kbd>Enter</kbd></span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -798,7 +806,7 @@ export class Editor {
       this.world.allowOverlaps=(e.target as HTMLInputElement).checked;
       this.lastPointer="";this.updateGhost();
       // A retained preview must also refresh while the pointer is over the panel.
-      if (this.placing && !this.pointer) {
+      if (this.placing && !this.pointer && !this.paths.hasDraft) {
         if (this.groupPlacement) this.view.showGroupGhosts(this.groupPreview,!this.groupIssue());
         else if (this.ghost) this.view.showGhost(this.ghost,this.valid(this.ghost));
       }
