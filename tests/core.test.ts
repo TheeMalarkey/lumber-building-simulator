@@ -6,6 +6,7 @@ import { parseProject } from "../src/project";
 import type { Piece } from "../src/world";
 import { geometryFor } from "../src/geometry";
 import { Vector3 } from "three";
+import {snapBlueprintOnSurface} from '../src/collision';
 const piece = (id = "a"): Piece => ({
   id,
   item: "smooth-wall",
@@ -226,6 +227,7 @@ describe("collision checks", () => {
           rotation,
           position: [-64, height / 2, -64],
         };
+        if(item.id==='lever')p.position=snapBlueprintOnSurface([-64,0,-64],[0,1,0],item.id,rotation);
         expect(w.canPlace(p), item.id).toBe(true);
         p.position[1] -= 0.0001;
         expect(w.canPlace(p), item.id).toBe(false);

@@ -14,6 +14,8 @@ export interface Piece {
   lightOn?: boolean;
   logicOn?: boolean;
   timing?: number;
+  /** Import-only exception for an unchanged, valid first-version plot edge. */
+  legacyLeverBounds?: true;
 }
 export interface Change {
   before: Piece | null;
@@ -25,8 +27,10 @@ export const chunkKey = (p: Vec3) =>
   p.map((n) => Math.floor(n / CHUNK)).join(",");
 export function pieceBounds(p: Piece) {
   // A turned triangle does not occupy every corner of its original box.
-  if (!p.rotation.every(Number.isInteger)) {
-    const solids=placementSolids(p);
+  // Reserve the actual two lever poses for placement/land bounds. Snapping
+  // uses this same envelope; walking collisions keep the current pose only.
+  if (!p.rotation.every(Number.isInteger) || p.item==='lever') {
+    const solids=placementSolids(p,p.item==='lever');
     return {
       min:[0,1,2].map(i=>Math.min(...solids.map(s=>s.bounds.min.getComponent(i)))) as Vec3,
       max:[0,1,2].map(i=>Math.max(...solids.map(s=>s.bounds.max.getComponent(i)))) as Vec3,

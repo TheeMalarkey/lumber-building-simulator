@@ -130,12 +130,14 @@ export class Editor {
     this.updateWorldUI();
   }
   get project(): Project {
+    const pieces=[...this.world.pieces.values()];
     return {
       version: 1,
       name:
         ($("project-name") as HTMLInputElement).value.trim() ||
         "Untitled build",
-      pieces: [...this.world.pieces.values()],
+      pieces,
+      ...(pieces.some(p=>p.item==='lever')?{logicModelVersion:2 as const}:{}),
       plots: [...(this.world.plots ?? [12])],
       ...(this.world.wires.length?{wires:this.world.wires}:{}),
     };

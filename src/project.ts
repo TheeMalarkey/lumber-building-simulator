@@ -2,12 +2,16 @@ import {validateWires,type Wire} from "./logic-ports";
 import { ITEMS, WOOD_MAP } from "./catalog";
 import { pieceBounds, type Piece } from "./world";
 import { coveredByPlots, inferPlots, validatePlots } from "./plots";
+import {Vector3} from 'three';
+import {quaternionRotation} from './placement';
+import {originalLeverBounds} from './logic-model-compat';
 export interface Project {
   version: 1;
   name: string;
   pieces: Piece[];
   plots?: number[];
   wires?: Wire[];
+  logicModelVersion?: 2;
 }
 export function parseProject(text: string): Project {
   let value: unknown;
@@ -20,6 +24,7 @@ export function parseProject(text: string): Project {
     throw new Error("Missing project data.");
   const v = value as Project;
   if (v.version !== 1) throw new Error("Unsupported project version.");
+  if(v.logicModelVersion!==undefined&&v.logicModelVersion!==2)throw new Error('Unsupported logic model version.');
   if (
     typeof v.name !== "string" ||
     v.name.length > 120 ||
@@ -41,6 +46,7 @@ export function parseProject(text: string): Project {
     if(p.lightOn !== undefined && typeof p.lightOn !== 'boolean') throw new Error('Invalid light state.');
     if(p.logicOn!==undefined && typeof p.logicOn!=='boolean')throw new Error('Invalid switch state.');
     if(p.timing!==undefined && (!Number.isInteger(p.timing)||p.timing<1||p.timing>12))throw new Error('Invalid timer setting.');
+    if(p.legacyLeverBounds!==undefined&&(p.item!=='lever'||p.legacyLeverBounds!==true))throw new Error('Invalid legacy lever placement.');
     ids.add(p.id);
     if (
       !Array.isArray(p.position) ||
@@ -60,15 +66,26 @@ export function parseProject(text: string): Project {
     )
       throw new Error("Invalid piece rotation.");
   }
-  const plots = v.plots === undefined ? inferPlots(v.pieces.map(pieceBounds)) : validatePlots(v.plots);
-  if (v.pieces.some(p => !coveredByPlots(pieceBounds(p), plots)))
-    throw new Error("Blueprints must stay inside the project's active plots.");
+  // The first lever was two studs tall. Keep its mounting plane (and socket)
+  // fixed when replacing it with the shorter model, including wall mounts.
+  const pieces=v.pieces.map(p=>{
+    if(v.logicModelVersion!==undefined||p.item!=='lever')return p;
+    const offset=new Vector3(0,(ITEMS.get('lever')!.size[1]-2)/2,0).applyEuler(quaternionRotation(p.rotation));
+    return {...p,position:new Vector3(...p.position).add(offset).toArray() as Piece['position']};
+  });
+  const plots = v.plots === undefined ? inferPlots(pieces.map(pieceBounds)) : validatePlots(v.plots);
+  const retainedLegacy=new Set<string>();
+  for(const p of pieces)if(!coveredByPlots(pieceBounds(p),plots)){
+    if(p.item==='lever'&&(v.logicModelVersion===undefined||p.legacyLeverBounds===true)&&coveredByPlots(originalLeverBounds(p),plots))retainedLegacy.add(p.id);
+    else throw new Error("Blueprints must stay inside the project's active plots.");
+  }
   return {
     version: 1,
     name: v.name,
     plots,
+    ...(pieces.some(p=>p.item==='lever')?{logicModelVersion:2 as const}:{}),
     ...(v.wires===undefined?{}:{wires:validateWires(v.wires,v.pieces)}),
-    pieces: v.pieces.map((p) => ({
+    pieces: pieces.map((p) => ({
       id: p.id,
       item: p.item,
       wood: p.wood,
@@ -76,6 +93,7 @@ export function parseProject(text: string): Project {
       rotation: [...p.rotation],
       ...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),
       ...(p.timing===undefined?{}:{timing:p.timing}),
+      ...(retainedLegacy.has(p.id)?{legacyLeverBounds:true as const}:{}),
       ...(p.lightOn === undefined ? {} : {lightOn:p.lightOn}),
     })),
   };

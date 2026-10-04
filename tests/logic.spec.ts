@@ -6,7 +6,7 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('.catalog-card')).toHaveCount(12);
  await page.locator('[data-item="lever"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
-  {id:'lever',item:'lever',position:[-6,1,0],rotation:[0,0,0],wood:'oak'},
+  {id:'lever',item:'lever',position:[-6,.75,0],rotation:[0,0,0],wood:'oak'},
   {id:'gate',item:'signal-inverter',position:[0,.5,0],rotation:[0,0,0],wood:'oak'},
   {id:'light',item:'worklight',position:[6,1.5,0],rotation:[0,0,0],wood:'oak',lightOn:false}
  ],[12]);e.view.sync(true);e.pickSelection('lever');e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
@@ -47,4 +47,40 @@ test('renders all twelve logic models and the distinct timer faces',async({page}
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-gallery.png'});
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load(['signal-delay','signal-sustain'].map((item,i)=>({id:item,item,wood:'oak',position:[i*3-1.5,1.25,0],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.view.camera.camera.position.set(4.2,3.8,7.6);e.view.camera.controls.target.set(0,1,0);e.view.camera.controls.update();e.view.grid.visible=false;});
  await page.waitForTimeout(600);await page.screenshot({path:'artifacts/logic-timers.png'});expect(errors).toEqual([]);
+});
+
+test('legacy levers keep their mounts and wiring across import, save and repeated reloads',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+ const legacy={version:1,name:'Lever poses',plots:[12],pieces:[
+  {id:'off',item:'lever',position:[-2,1,0],rotation:[0,0,0],wood:'oak'},
+  {id:'on',item:'lever',position:[2,1,0],rotation:[0,0,0],wood:'oak',logicOn:true},
+  {id:'wall',item:'lever',position:[8,3,0],rotation:[0,0,1],wood:'oak'}
+ ],wires:[{id:'tail',from:{piece:'off',port:'out'},to:{point:[0,.18,0]},points:[]}]};
+ await page.locator('#file-input').setInputFiles({name:'legacy.timber',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(legacy))});
+ await page.locator('#confirm-action').click();
+ for(let i=0;i<2;i++){
+  const saved=await page.evaluate(()=>(window as any).timber.editor.project);
+  expect(saved.logicModelVersion).toBe(2);expect(saved.pieces.find((p:any)=>p.id==='off').position).toEqual([-2,.75,0]);
+  expect(saved.pieces.find((p:any)=>p.id==='wall').position[0]).toBeCloseTo(8.25);
+  expect(saved.wires).toEqual(legacy.wires);
+  await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+  await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
+ }
+ const picked=await page.evaluate(async()=>{
+  const {Vector3}=await import('/node_modules/three/build/three.module.js');
+  const e=(window as any).timber.editor,v=e.view;
+  v.camera.camera.position.set(2,12,.001);v.camera.controls.target.set(2,0,0);v.camera.controls.update();
+  v.camera.camera.updateMatrixWorld();
+  const rect=v.renderer.domElement.getBoundingClientRect(),point=new Vector3(2-.69,1.1,0).project(v.camera.camera);
+  return v.pick(rect.x+(point.x+1)*rect.width/2,rect.y+(1-point.y)*rect.height/2);
+ });
+ expect(picked.id).toBe('on');expect(picked.point[1]).toBeGreaterThan(1);
+ await page.evaluate(()=>{
+  const e=(window as any).timber.editor;
+  e.world.load([...e.world.pieces.values()].filter(p=>p.id!=='wall'),[12]);e.pickSelection(null);e.view.sync(true);
+  e.view.camera.camera.position.set(4.5,5.2,7.8);e.view.camera.controls.target.set(0,.6,0);e.view.camera.controls.update();e.view.grid.visible=false;
+ });
+ await page.waitForTimeout(300);await page.screenshot({path:'artifacts/logic-lever-world.png'});
+ expect(errors).toEqual([]);
 });

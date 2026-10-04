@@ -162,7 +162,7 @@ for (const [name,size] of [
   category:"Lighting",shape:"light-fixture",woodCost:0,fixedMaterial:"lighting",dimensionsEstimated:true});
 // Footprints reconstructed from unboxed references; exact game dimensions pending.
 for(const [id,name,size] of [
- ['lever','Lever',[2,2,1.5]],['button','Button',[2,.5,1.5]],['pressure-plate','Pressure Plate',[4,.3,4]],
+ ['lever','Lever',[2,1.5,1]],['button','Button',[2,.5,1]],['pressure-plate','Pressure Plate',[4,.3,4]],
  ['and-gate','AND Gate',[2,1,2]],['or-gate','OR Gate',[2,1,2]],['xor-gate','XOR Gate',[2,1,2]],
  ['nand-gate','NAND Gate',[2,1,2]],['nor-gate','NOR Gate',[2,1,2]],['xnor-gate','XNOR Gate',[2,1,2]],
  ['signal-inverter','Signal Inverter',[2,1,2]],['signal-delay','Signal Delay',[2,2.5,2]],['signal-sustain','Signal Sustain',[2,2.5,2]],

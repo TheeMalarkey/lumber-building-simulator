@@ -4,15 +4,27 @@ This milestone adds 12 logic components, bringing the catalog to 100 placeable i
 
 | Component and visual reference | Estimated bounds, X / Y / Z studs | Reconstructed details |
 | --- | --- | --- |
-| [Lever](https://lumber-tycoon-2.fandom.com/wiki/Lever) | 2 / 2 / 1.5 | Gray base, pale pivot and stem, orange cylindrical grip; handle turns with its saved switch state |
-| [Button](https://lumber-tycoon-2.fandom.com/wiki/Button) | 2 / 0.5 / 1.5 | Low gray base, orange circular button that depresses during its pulse |
-| [Pressure Plate](https://lumber-tycoon-2.fandom.com/wiki/Pressure_Plate) | 4 / 0.3 / 4 | Thin gray frame, five wooden planks, nail heads and side socket |
+| [Lever](https://lumber-tycoon-2.fandom.com/wiki/Lever) | 2 / 1.5 / 1 | Narrow, thick rectangular base; pale half-round pivot cover, dark hinge and flat stem; crosswise orange grip leans toward the output when off and away when on |
+| [Button](https://lumber-tycoon-2.fandom.com/wiki/Button) | 2 / 0.5 / 1 | Matching narrow base and thin orange circular cap that depresses during its pulse |
+| [Pressure Plate](https://lumber-tycoon-2.fandom.com/wiki/Pressure_Plate) | 4 / 0.3 / 4 | Thin gray frame, five weathered board rows, staggered end joints, nail heads and side socket |
 | [AND](https://lumber-tycoon-2.fandom.com/wiki/AND_Gate), [OR](https://lumber-tycoon-2.fandom.com/wiki/OR_Gate), [XOR](https://lumber-tycoon-2.fandom.com/wiki/XOR_Gate), [NAND](https://lumber-tycoon-2.fandom.com/wiki/NAND_Gate), [NOR](https://lumber-tycoon-2.fandom.com/wiki/NOR_Gate), [XNOR](https://lumber-tycoon-2.fandom.com/wiki/XNOR_Gate) | 2 / 1 / 2 each | Chamfered gray housings, base lip, distinct logic symbols, output arrows and round side sockets |
 | [Signal Inverter](https://lumber-tycoon-2.fandom.com/wiki/Signal_Inverter) | 2 / 1 / 2 | Matching gate housing, NOT symbol, one input and one output |
 | [Signal Delay](https://lumber-tycoon-2.fandom.com/wiki/Signal_Delay) | 2 / 2.5 / 2 | Tall chamfered housing, orange stopwatch face, 12 rounded blue meter sections, black slider and white setting marker |
 | [Signal Sustain](https://lumber-tycoon-2.fandom.com/wiki/Signal_Sustain) | 2 / 2.5 / 2 | Hourglass face and continuous rounded blue meter distinguish it from Delay |
 
-The timers' setting markers follow their selected setting. Their blue meter geometry is static, not a verified reproduction of the game's timing animation. Basic logic glyphs and timer faces are original canvas drawings shared by instances. No reference thumbnails are redistributed as model textures. See `artifacts/logic-gallery.png` and `artifacts/logic-timers.png` for the rendered reconstruction.
+The timers' setting markers follow their selected setting. Their blue meter geometry is static, not a verified reproduction of the game's timing animation. Basic logic glyphs and timer faces are original canvas drawings shared by instances. No reference thumbnails are redistributed as model textures.
+
+## Model correction pass
+
+The lever's top-down poses follow the user's [Circuit Workbench control](https://github.com/TheeMalarkey/circuit-workbench/blob/main/dist/styles.css): the orange grip spans the narrow side of the plate and travels along its long axis. OFF is toward the output, ON away. The 3D handle now uses opposing 45-degree poses around a crosswise hinge. That angle and the revised bounds are reconstruction estimates, not measured Roblox part values.
+
+The unboxed game images were compared against neutral orthographic renders. The timer roof chamfer now occupies the upper half-stud rather than nearly a full stud; its face has a wider rounded blue meter, narrower orange rim, stopwatch control details, and sand inside the Sustain hourglass. Gate roofs carry solid triangle arrows instead of notched chevrons. Both side symbols point toward the same physical output. Housings share a low-contrast treatment of the bundled classic concrete map; no texture is allocated per placed item. Pressure-plate rows have separate end joints and darker nail heads.
+
+`scripts/logic-model-preview.html` provides matching top and three-quarter views during local development. `node scripts/capture-logic-models.mjs` captures the full catalog and both lever states. Inspect `artifacts/logic-models-all-before.png`, `artifacts/logic-models-all-after.png`, `artifacts/logic-models-lever-before.png`, `artifacts/logic-models-lever-after.png`, and the actual scene in `artifacts/logic-lever-world.png`. These are visual inspection artifacts, not evidence of exact in-game measurements.
+
+Powered logic sockets use flat circular faces; the larger round markers remain an editing aid in Wire mode. Lighting fixtures retain their original round indicators. Picking, move/copy previews, and physical lever collisions follow the visible state. Placement and plot bounds reserve both lever poses, so operating it cannot push the handle through the floor or expand its land footprint.
+
+Saved projects carry `logicModelVersion: 2` when they contain levers. Loading the original model shifts its center in local Y to preserve the mounting plane and wire socket, including rotated mounts. A valid legacy plot-edge placement that the larger swing envelope would reject carries an import-only `legacyLeverBounds` marker; its original footprint is revalidated on subsequent loads. New placements and moves use the current envelope. Projects without levers retain their prior format.
 
 ## Electrical behavior
 

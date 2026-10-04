@@ -6,24 +6,26 @@ import type { Piece } from "./world";
 import { collisionPartsFor } from "./geometry";
 import type { Solid } from "./solid";
 // Bound transformed collision data independently of the number of stored blueprints.
-const worldCache = new Map<Piece, { item: string; position: Vec3; rotation: Vec3; solids: Solid[] }>();
+const worldCache = new Map<Piece, { item: string; active: boolean|'travel'; position: Vec3; rotation: Vec3; solids: Solid[] }>();
 const MAX_CACHED_PIECES = 1024;
 const EPS = .0001;
-export function placementSolids(piece: Piece): Solid[] {
+export function placementSolids(piece: Piece,reserveTravel=false): Solid[] {
   const cached = worldCache.get(piece);
-  if (cached?.item === piece.item && cached.position.every((v,i)=>v===piece.position[i]) &&
+  const active=piece.item==='lever'&&reserveTravel?'travel':piece.item==='lever'&&piece.logicOn===true;
+  if (cached?.item === piece.item && cached.active===active && cached.position.every((v,i)=>v===piece.position[i]) &&
       cached.rotation.every((v,i)=>v===piece.rotation[i])) {
     worldCache.delete(piece);worldCache.set(piece,cached);return cached.solids;
   }
   const rotation = quaternionRotation(piece.rotation), position = new Vector3(...piece.position);
-  const solids = collisionPartsFor(piece.item).map(s => ({
+  const local=active==='travel'?[...collisionPartsFor(piece.item),...collisionPartsFor(piece.item,true)]:collisionPartsFor(piece.item,active);
+  const solids = local.map(s => ({
     vertices: s.vertices.map(v=>v.clone().applyEuler(rotation).add(position)),
     normals: s.normals.map(v=>v.clone().applyEuler(rotation)),
     edges: s.edges.map(v=>v.clone().applyEuler(rotation)),
     bounds: new Box3(),
   }));
   for (const s of solids) s.bounds.setFromPoints(s.vertices);
-  worldCache.set(piece,{item:piece.item,position:[...piece.position],rotation:[...piece.rotation],solids});
+  worldCache.set(piece,{item:piece.item,active,position:[...piece.position],rotation:[...piece.rotation],solids});
   if (worldCache.size>MAX_CACHED_PIECES) worldCache.delete(worldCache.keys().next().value!);
   return solids;
 }
@@ -53,7 +55,9 @@ export function solidOverlap(a: Piece, b: Piece) {
 export function surfaceSupport(pieces: readonly Piece[], center: Vec3, normal: Vec3) {
   const n=new Vector3(...normal), origin=new Vector3(...center).dot(n);
   let minimum=Infinity;
-  for (const p of pieces) for (const solid of placementSolids(p)) for (const v of solid.vertices)
+  // Reserve both lever poses when snapping, so switching never drives its
+  // handle through the supporting face. Walking/picking use only its live pose.
+  for (const p of pieces) for (const solid of placementSolids(p,p.item==='lever')) for (const v of solid.vertices)
     minimum=Math.min(minimum,v.dot(n)-origin);
   return -minimum;
 }

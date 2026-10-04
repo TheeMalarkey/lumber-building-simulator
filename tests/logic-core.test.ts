@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {Circuit} from '../src/logic';
-import {type Wire} from '../src/logic-ports';
+import {type Wire,portPosition} from '../src/logic-ports';
 import {type Piece,World} from '../src/world';
 import {parseProject} from '../src/project';
 import {LogicView} from '../src/logic-view';
@@ -67,7 +67,8 @@ it('keeps selected internal links when their net also feeds an unselected compon
 it('moves and turns internal wire bends with a rigid group, undoing routes with pieces',()=>{
  const w=new World(),pieces=[node('a','lever'),node('g','and-gate')],wires=[{...wire('1','a','out','g','a'),points:[[0,2,5] as [number,number,number]]}];w.load(pieces,null,wires);
  const turned=rotateSelection(pieces,1);const after=turned.map(p=>({...p,position:[p.position[0],p.position[1],p.position[2]+20] as [number,number,number]}));
- const copied=w.copyWires(pieces,after.map(p=>({...p,id:p.id+'copy'})));expect(new Vector3(...copied[0].points[0]).distanceTo(new Vector3(5,2,20))).toBeLessThan(1e-6);
+ const expected=new Vector3(0,2,5).sub(new Vector3(...pieces[0].position)).applyAxisAngle(new Vector3(0,1,0),Math.PI/2).add(new Vector3(...after[0].position));
+ const copied=w.copyWires(pieces,after.map(p=>({...p,id:p.id+'copy'})));expect(new Vector3(...copied[0].points[0]).distanceTo(expected)).toBeLessThan(1e-6);
  w.execute(pieces.map((p,i)=>({before:p,after:after[i]})));expect(w.wires[0].points).toEqual(copied[0].points);w.undo();expect(w.wires).toEqual(wires);w.redo();expect(w.wires[0].points).toEqual(copied[0].points);
 });
 it('walk contact powers a plate and releases it after leaving',()=>{
@@ -107,13 +108,15 @@ it('does not suppress a constant-high gate inside an oscillating feedback compon
 it('preserves an interior branch junction when just one connected socket moves',()=>{
  const w=new World(),pieces=[{...node('a','lever',true),position:[-8,2,0] as [number,number,number]},{...node('b','lamp'),position:[8,2,0] as [number,number,number]},{...node('c','lamp'),position:[0,2,8] as [number,number,number]}];
  // Bend-free main line joins the two socket locations; branch at its midpoint.
- const wires:Wire[]=[wire('main','a','out','b','in'),{id:'branch',from:{point:[.5,1.39,.11]},to:{piece:'c',port:'in'},points:[]}];
+ const joint=new Vector3(...portPosition(pieces[0],'out')).lerp(new Vector3(...portPosition(pieces[1],'in')),.5).toArray() as [number,number,number];
+ const wires:Wire[]=[wire('main','a','out','b','in'),{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}];
  w.load(pieces,null,wires);const c=new Circuit();c.configure(pieces,w.wires);expect(c.input('c')).toBe(true);
  w.execute([{before:pieces[0],after:{...pieces[0],position:[-8,6,0]}}]);c.configure([...w.pieces.values()],w.wires);expect(c.input('b')).toBe(true);expect(c.input('c')).toBe(true);w.undo();expect(w.wires).toEqual(wires);
 });
 it('copies the selected side of a trunk whose far socket is outside the selection',()=>{
  const w=new World(),pieces=[{...node('a','lever',true),position:[-8,2,0] as [number,number,number]},{...node('b','lamp'),position:[8,2,0] as [number,number,number]},{...node('c','lamp'),position:[0,2,8] as [number,number,number]}];
- w.load(pieces,null,[wire('main','a','out','b','in'),{id:'branch',from:{point:[.5,1.39,.11]},to:{piece:'c',port:'in'},points:[]}]);
+ const joint=new Vector3(...portPosition(pieces[0],'out')).lerp(new Vector3(...portPosition(pieces[1],'in')),.5).toArray() as [number,number,number];
+ w.load(pieces,null,[wire('main','a','out','b','in'),{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}]);
  const source=[pieces[0],pieces[2]],copies=source.map(p=>({...p,id:p.id+'copy',position:[p.position[0],p.position[1]+5,p.position[2]] as [number,number,number]}));
  const wires=w.copyWires(source,copies),c=new Circuit();c.configure(copies,wires);expect(c.input('ccopy')).toBe(true);
  expect(wires.flatMap(w=>[w.from,w.to]).filter(e=>'piece' in e).map(e=>'piece' in e?e.piece:'')).not.toContain('b');

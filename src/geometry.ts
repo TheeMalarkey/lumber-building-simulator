@@ -16,9 +16,12 @@ import { lightFixtureParts } from "./light-fixtures";
 import { furnitureParts } from "./furniture-geometry";
 const cache = new Map<string, BufferGeometry>();
 const collisionCache = new Map<string, Solid[]>();
-export function collisionPartsFor(id: string) {
-  if (!collisionCache.has(id)) geometryFor(id);
-  return collisionCache.get(id)!;
+export function collisionPartsFor(id: string,active=false) {
+  const key=id+(id==='lever'&&active?'|on':'');
+  if (!collisionCache.has(key)) {
+    if(key!==id)logicGeometryFor(id,true,1);else geometryFor(id);
+  }
+  return collisionCache.get(key)!;
 }
 export function geometryFor(id: string): BufferGeometry {
   if (cache.has(id)) return cache.get(id)!;
@@ -265,7 +268,7 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
 
   // Consolidate components by surface: one instanced draw per surface per
   // item/wood/chunk, never a separate mesh or material per placed component.
-  if(!logicState)collisionCache.set(item.id, parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
+  if(!logicState||item.id==='lever')collisionCache.set(item.id+(logicState?.active?'|on':''), parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
   const surfaces = [...new Set(parts.map(g => g.userData.surface ?? 0))].sort();
   const ordered = surfaces.flatMap(surface => parts.filter(g => (g.userData.surface ?? 0) === surface));
   const flat = ordered.map(g => g.index ? g.toNonIndexed() : g);

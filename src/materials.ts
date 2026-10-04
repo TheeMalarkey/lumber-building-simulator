@@ -74,6 +74,20 @@ export function makeTerrainMaterials() {
   };
 }
 
+/** One subtle classic texture treatment shared by every logic housing. */
+export function makeLogicHousingMaterial() {
+  if (!pool) throw new Error("Material textures must finish loading first.");
+  const material=new MeshStandardMaterial({name:"Logic / classic concrete",color:0x58594f,
+    map:pool.groundColor,roughness:.95});
+  // The terrain map's full contrast looks like gravel on small enclosures.
+  // Blend its albedo once in the shared shader; no generated texture per item.
+  material.onBeforeCompile=shader=>{
+    shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
+      'vec4 caseColor = diffuseColor;\n#include <map_fragment>\ndiffuseColor.rgb = mix(caseColor.rgb, diffuseColor.rgb, 0.16);');
+  };
+  return material;
+}
+
 /** Shared fixed glass; no scene capture or refraction pass per pane. */
 export function makeGlassMaterial() {
   return new MeshStandardMaterial({name:"Fixed translucent glass",color:0xc4d2d6,

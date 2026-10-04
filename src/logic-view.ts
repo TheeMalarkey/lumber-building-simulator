@@ -10,9 +10,10 @@ export class LogicView {
  root=new T.Group();circuit=new Circuit();showSockets=false;lightChanged=false;
  private displays=new Map<string,string>();
  private revision=-1;private version=-1;private generation=-1;private previous=0;
- private wireMesh?:T.InstancedMesh;private sockets?:T.InstancedMesh;
+ private wireMesh?:T.InstancedMesh;private sockets?:T.InstancedMesh;private lightingSockets?:T.InstancedMesh;
  private wireGeometry=new T.CylinderGeometry(.045,.045,1,6);
- private socketGeometry=new T.SphereGeometry(.14,10,6);
+ private socketGeometry=new T.CircleGeometry(.149,24);
+ private socketMarkerGeometry=new T.SphereGeometry(.16,10,6);
  private material=new T.MeshBasicMaterial({color:0xffffff});
  private socketMaterial=new T.MeshBasicMaterial({color:0xffffff,depthWrite:false});
  private topology='';
@@ -48,7 +49,7 @@ export class LogicView {
  }
  refresh(){this.version=-1;this.paint();}
  private mesh(old:T.InstancedMesh|undefined,g:T.BufferGeometry,count:number){
-  if(old&&old.instanceMatrix.count>=count){old.count=count;return old;}
+  if(old&&old.instanceMatrix.count>=count){old.count=count;old.geometry=g;return old;}
   if(old){this.root.remove(old);old.dispose();}
   const mesh=new T.InstancedMesh(g,this.material,Math.max(8,2**Math.ceil(Math.log2(count||1)))) ;mesh.count=count;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.root.add(mesh);return mesh;
  }
@@ -64,19 +65,31 @@ export class LogicView {
    this.wireMesh.instanceMatrix.needsUpdate=true;this.wireMesh.computeBoundingSphere();
   }
   this.wireIds.forEach((id,i)=>this.wireMesh!.setColorAt(i,color.setHex(this.circuit.wireOn(id)?0x46bef4:0x252c30)));
-  const ports:{p:Vec3;color:number}[]=[];
+  const ports:{p:Vec3;normal:T.Vector3;color:number;lighting:boolean;radius:number}[]=[];
   for(const id of this.world.logicIds){const piece=this.world.pieces.get(id)!;
    for(const port of portsFor(piece.item)){
     const on=port.output?this.circuit.output(id):this.circuit.input(id,port.id);
     if(!on&&!this.showSockets&&!this.circuit.unstable.has(id))continue;
-    ports.push({p:portPosition(piece,port.id),color:this.circuit.unstable.has(id)?0xe8a342:on?0x46bef4:port.output?0xf0aa55:0xbdc8cc});
+    ports.push({p:portPosition(piece,port.id),normal:new T.Vector3(...port.normal).applyEuler(quaternionRotation(piece.rotation)),color:this.circuit.unstable.has(id)?0xe8a342:on?0x46bef4:port.output?0xf0aa55:0xbdc8cc,
+      lighting:ITEMS.get(piece.item)!.fixedMaterial==='lighting',radius:piece.item==='pressure-plate'?.119:.149});
    }
   }
-  this.sockets=this.mesh(this.sockets,this.socketGeometry,ports.length);
-  this.socketMaterial.depthTest=!this.showSockets;this.sockets.material=this.socketMaterial;
-  ports.forEach((p,i)=>{m.makeTranslation(...p.p);this.sockets!.setMatrixAt(i,m);this.sockets!.setColorAt(i,color.setHex(p.color));});
-  this.sockets.instanceMatrix.needsUpdate=true;this.sockets.computeBoundingSphere();
-  for(const mesh of [this.wireMesh!,this.sockets])if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  this.socketMaterial.depthTest=!this.showSockets;
+  const paintPorts=(old:T.InstancedMesh|undefined,list:typeof ports,flat:boolean)=>{
+   const mesh=this.mesh(old,flat?this.socketGeometry:this.socketMarkerGeometry,list.length);mesh.material=this.socketMaterial;
+   list.forEach((p,i)=>{
+    q.setFromUnitVectors(new T.Vector3(0,0,1),p.normal);
+    const scale=flat?p.radius/.149:p.lighting&&!this.showSockets?.875:1;
+    m.compose(new T.Vector3(...p.p).addScaledVector(p.normal,flat?.0015:0),q,new T.Vector3(scale,scale,scale));
+    mesh.setMatrixAt(i,m);mesh.setColorAt(i,color.setHex(p.color));
+   });
+   mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();return mesh;
+  };
+  this.sockets=paintPorts(this.sockets,ports.filter(p=>this.showSockets||!p.lighting),!this.showSockets);
+  // Fixture sockets have different face orientations. Preserve their existing
+  // round indicators; only the reconstructed logic enclosures use flat faces.
+  this.lightingSockets=paintPorts(this.lightingSockets,ports.filter(p=>!this.showSockets&&p.lighting),false);
+  for(const mesh of [this.wireMesh!,this.sockets,this.lightingSockets])if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- dispose(){this.wireMesh?.dispose();this.sockets?.dispose();this.wireGeometry.dispose();this.socketGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
+ dispose(){this.wireMesh?.dispose();this.sockets?.dispose();this.lightingSockets?.dispose();this.wireGeometry.dispose();this.socketGeometry.dispose();this.socketMarkerGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
 }

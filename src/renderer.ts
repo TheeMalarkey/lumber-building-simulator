@@ -343,7 +343,7 @@ export class Viewport {
       if (best && candidate.distance > best.distance) break;
       const p = candidate.piece;
       if (typeof exclude === "string" ? p.id === exclude : exclude?.has(p.id)) continue;
-      this.tmpMesh.geometry = geometryFor(p.item);
+      this.tmpMesh.geometry = this.pieceGeometry(p,this.logic.circuit.output(p.id));
       this.tmpMesh.position.fromArray(p.position);
       this.tmpMesh.rotation.copy(quaternionRotation(p.rotation));
       this.tmpMesh.updateMatrixWorld(true);
@@ -373,10 +373,13 @@ export class Viewport {
       return { point: ground.toArray() as Vec3, normal: [0, 1, 0] };
     return null;
   }
+  private pieceGeometry(p:Piece,active=!!p.logicOn) {
+    return ITEMS.get(p.item)!.fixedMaterial==='logic'?logicGeometryFor(p.item,active,p.timing??1):geometryFor(p.item);
+  }
   showGhost(p: Piece | null, valid = true) {
     this.ghost.visible = !!p;
     if (!p) return;
-    this.ghost.geometry = geometryFor(p.item);
+    this.ghost.geometry = this.pieceGeometry(p);
     this.ghost.position.fromArray(p.position);
     this.ghost.rotation.copy(quaternionRotation(p.rotation));
     (this.ghost.material as T.MeshStandardMaterial).color.set(
@@ -388,14 +391,18 @@ export class Viewport {
     const material = this.ghost.material;
     material.color.set(valid ? 0xe7b465 : 0xe15d4f);
     const batches = new Map<string, Piece[]>();
-    for (const p of pieces) { if (!batches.has(p.item)) batches.set(p.item,[]);batches.get(p.item)!.push(p); }
+    for (const p of pieces) {
+      const state=logicAppearance(p.item,!!p.logicOn,p.timing??1);
+      const key=ITEMS.get(p.item)!.fixedMaterial==='logic'?`${p.item}|${state.active}|${state.timing}`:p.item;
+      if (!batches.has(key)) batches.set(key,[]);batches.get(key)!.push(p);
+    }
     const old = new Map(this.groupGhosts.children.map(m=>[m.name,m as T.InstancedMesh]));
     const matrix = new T.Matrix4(), q=new T.Quaternion(), position=new T.Vector3(), scale=new T.Vector3(1,1,1);
     for (const [item, batch] of batches) {
       let mesh=old.get(item);old.delete(item);
       if (mesh && mesh.instanceMatrix.count<batch.length) {this.groupGhosts.remove(mesh);mesh.dispose();mesh=undefined;}
       if (!mesh) {
-        mesh=new T.InstancedMesh(geometryFor(item),material,Math.max(8,2**Math.ceil(Math.log2(batch.length))));
+        mesh=new T.InstancedMesh(this.pieceGeometry(batch[0]),material,Math.max(8,2**Math.ceil(Math.log2(batch.length))));
         mesh.name=item;mesh.frustumCulled=false;this.groupGhosts.add(mesh);
       }
       mesh.count=batch.length;
