@@ -87,12 +87,12 @@ it('reuses compiled wire topology when only switch state changes',()=>{
  const c=new Circuit(),pieces=[node('a','lever'),node('g','signal-inverter')],wires=[wire('1','a','out','g','in')];c.configure(pieces,wires);expect(c.output('g')).toBe(true);
  c.configure(pieces.map(p=>({...p,logicOn:true})),wires);expect(c.output('g')).toBe(false);expect(c.topologyBuilds).toBe(1);
 });
-it('leaves crossing wire interiors separate but joins deliberately touching endpoints',()=>{
+it('leaves both body crossings and end-to-body contact electrically separate',()=>{
  const c=new Circuit(),pieces=[node('a','lever',true),node('g','signal-inverter')];
  const horizontal={...wire('1','a','out','g','in'),points:[[-7,2,0],[7,2,0]] as [number,number,number][]};
  const crossing:Wire={id:'cross',from:{point:[0,2,-8]},to:{point:[0,2,8]},points:[]};
  c.configure(pieces,[horizontal,crossing]);expect(c.wireOn('1')).toBe(true);expect(c.wireOn('cross')).toBe(false);
- c.configure(pieces,[horizontal,{...crossing,to:{point:[0,2,0]}}]);expect(c.wireOn('cross')).toBe(true);
+ c.configure(pieces,[horizontal,{...crossing,to:{point:[0,2,0]}}]);expect(c.wireOn('cross')).toBe(false);
 });
 it('allows stable forced feedback and a timed inverter oscillator',()=>{
  const c=new Circuit(),pieces=[node('a','lever',true),node('g','or-gate')];c.configure(pieces,[wire('1','a','out','g','a'),wire('2','g','out','g','b')]);expect(c.output('g')).toBe(true);expect(c.unstable.size).toBe(0);
@@ -105,18 +105,18 @@ it('does not suppress a constant-high gate inside an oscillating feedback compon
  const wires=[{...wire('aa','a','out','a','a'),points:[[-5,2,-3],[-11,2,-3]]},{...wire('ab','a','out','b','a'),points:[[-4,2,-5],[5,2,-5]]},{...wire('ba','b','out','a','b'),points:[[11,2,4],[-11,2,4]]},wire('hb','high','out','b','b')];
  c.configure(pieces,wires);expect(c.output('b')).toBe(true);expect(c.unstable.has('a')).toBe(true);expect(c.unstable.has('b')).toBe(false);
 });
-it('preserves an interior branch junction when just one connected socket moves',()=>{
+it('preserves a free end-cap junction when just one connected socket moves',()=>{
  const w=new World(),pieces=[{...node('a','lever',true),position:[-8,2,0] as [number,number,number]},{...node('b','lamp'),position:[8,2,0] as [number,number,number]},{...node('c','lamp'),position:[0,2,8] as [number,number,number]}];
- // Bend-free main line joins the two socket locations; branch at its midpoint.
+ // Separate wire ends meet at the free junction; no interior tube conducts.
  const joint=new Vector3(...portPosition(pieces[0],'out')).lerp(new Vector3(...portPosition(pieces[1],'in')),.5).toArray() as [number,number,number];
- const wires:Wire[]=[wire('main','a','out','b','in'),{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}];
+ const wires:Wire[]=[{id:'main',from:{piece:'a',port:'out'},to:{point:joint},points:[]},{id:'other',from:{point:joint},to:{piece:'b',port:'in'},points:[]},{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}];
  w.load(pieces,null,wires);const c=new Circuit();c.configure(pieces,w.wires);expect(c.input('c')).toBe(true);
  w.execute([{before:pieces[0],after:{...pieces[0],position:[-8,6,0]}}]);c.configure([...w.pieces.values()],w.wires);expect(c.input('b')).toBe(true);expect(c.input('c')).toBe(true);w.undo();expect(w.wires).toEqual(wires);
 });
-it('copies the selected side of a trunk whose far socket is outside the selection',()=>{
+it('copies end-connected branches without including an unselected component lead',()=>{
  const w=new World(),pieces=[{...node('a','lever',true),position:[-8,2,0] as [number,number,number]},{...node('b','lamp'),position:[8,2,0] as [number,number,number]},{...node('c','lamp'),position:[0,2,8] as [number,number,number]}];
  const joint=new Vector3(...portPosition(pieces[0],'out')).lerp(new Vector3(...portPosition(pieces[1],'in')),.5).toArray() as [number,number,number];
- w.load(pieces,null,[wire('main','a','out','b','in'),{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}]);
+ w.load(pieces,null,[{id:'main',from:{piece:'a',port:'out'},to:{point:joint},points:[]},{id:'other',from:{point:joint},to:{piece:'b',port:'in'},points:[]},{id:'branch',from:{point:joint},to:{piece:'c',port:'in'},points:[]}]);
  const source=[pieces[0],pieces[2]],copies=source.map(p=>({...p,id:p.id+'copy',position:[p.position[0],p.position[1]+5,p.position[2]] as [number,number,number]}));
  const wires=w.copyWires(source,copies),c=new Circuit();c.configure(copies,wires);expect(c.input('ccopy')).toBe(true);
  expect(wires.flatMap(w=>[w.from,w.to]).filter(e=>'piece' in e).map(e=>'piece' in e?e.piece:'')).not.toContain('b');

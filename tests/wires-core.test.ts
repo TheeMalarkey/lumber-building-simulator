@@ -56,7 +56,7 @@ it('renders larger neon tubes and real end collars using fixed batches',()=>{
  const view=new WireView(),map=new Map([[lever.id,lever]]),wires=[route(),{...route('neon'),id:'n'}];
  view.rebuild(wires,map);view.paint(()=>false);const mesh=view.root.getObjectByName('Wire tubes and ends') as InstancedMesh;
  expect(mesh.count).toBe(6);const m=mesh.instanceMatrix.array;
- expect(Math.hypot(m[0],m[1],m[2])).toBeCloseTo(.06);expect(Math.hypot(m[48],m[49],m[50])).toBeCloseTo(.12);
+ expect(Math.hypot(m[0],m[1],m[2])).toBeCloseTo(.10);expect(Math.hypot(m[48],m[49],m[50])).toBeCloseTo(.12);
  const neon=view.root.getObjectByName('Neon glow') as InstancedMesh;expect(neon.count).toBe(0);
  view.paint(()=>true);expect(neon.count).toBe(1);
  const identity=mesh;view.paint(()=>false);expect(view.root.getObjectByName('Wire tubes and ends')).toBe(identity);view.dispose();
@@ -73,9 +73,9 @@ it('initializes a stable color attribute even when no wires are present',()=>{
  const view=new WireView();view.rebuild([],new Map());view.paint(()=>false);
  expect((view.root.getObjectByName('Neon glow') as InstancedMesh).instanceColor).not.toBeNull();view.dispose();
 });
-it('connects a ground-mounted neon endpoint touching a thinner regular wire',()=>{
- const c=new Circuit(),basic:Wire={...route(),from:{piece:'l',port:'out'},to:{point:[10,.1,0]},points:[[3,.1,0]]};
- const neon:Wire={...route('neon'),id:'n',from:{point:[5,.155,0]},to:{point:[5,.155,4]}};
+it('connects a neon end cap placed onto a ground-mounted regular end cap',()=>{
+ const c=new Circuit(),basic:Wire={...route(),from:{piece:'l',port:'out'},to:{point:[10,.145,0]},points:[[3,.145,0]]};
+ const neon:Wire={...route('neon'),id:'n',from:{point:[9.93,.44,0]},to:{point:[9.93,.44,4]}};
  c.configure([lever],[basic,neon]);expect(c.wireOn('n')).toBe(true);
 });
 it('prevents removing a plot occupied only by a new wire',()=>{

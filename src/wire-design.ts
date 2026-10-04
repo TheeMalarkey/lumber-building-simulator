@@ -12,8 +12,8 @@ export const NEON_COLORS={
 export type NeonColor=keyof typeof NEON_COLORS;
 export interface WireStyle {kind?:'wire'|'neon';color?:NeonColor}
 export const wireLimit=(w:WireStyle)=>w.kind==='neon'?16:20;
-export const wireRadius=(w:WireStyle)=>w.kind==='neon'?.12:.06;
-export const wireCollarRadius=(w:WireStyle)=>w.kind==='neon'?.15:.095;
+export const wireRadius=(w:WireStyle)=>w.kind==='neon'?.12:.10;
+export const wireCollarRadius=(w:WireStyle)=>w.kind==='neon'?.15:.14;
 export const wireColor=(w:WireStyle,on:boolean)=>w.kind==='neon'?(on?NEON_COLORS[w.color??'white'].hex:0x111111):(on?0x46bef4:0x293b44);
 export const wireGlows=(w:WireStyle)=>w.kind==='neon'&&w.color!=='violet';
 export const wireLength=(path:readonly Vec3[])=>path.slice(1).reduce((n,p,i)=>n+Math.hypot(...p.map((v,k)=>v-path[i][k])),0);

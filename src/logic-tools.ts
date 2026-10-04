@@ -4,13 +4,17 @@ import {portsFor,portPosition,wirePath,endpointPosition,type Endpoint,type Wire}
 import {NEON_COLORS,wireCollarRadius,wireColor,wireLength,wireLimit,wireRouteIssue,type NeonColor,type WireStyle} from './wire-design';
 import type {Editor} from './editor';
 import {LogicInteraction} from './logic-interaction';
+import type {WireSurface} from './wire-shape';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
  wiring=false;private start:Endpoint|null=null;private bends:Vec3[]=[];private selectedWire:string|null=null;
  private down:number[]|null=null;private previousStatus='';private generation=-1;private revision=-1;
  private guide=new Line(new BufferGeometry(),new LineBasicMaterial({color:0xf2bc72,depthTest:true}));
- private style:WireStyle={kind:'wire'};private pointer:[number,number]|null=null;private previewKey='';private previewPoint:Vec3|null=null;
+ private style:WireStyle={kind:'wire'};private pointer:[number,number]|null=null;private previewKey='';private previewEnd:Endpoint|null=null;
+ private previewId=crypto.randomUUID();private previewIssue:string|null=null;
+ private startSurface?:WireSurface;
+ private previewPath:Vec3[]=[];
  private interaction:LogicInteraction;
  constructor(private e:Editor){
   this.interaction=new LogicInteraction(e,()=>!this.wiring,id=>this.activate(id));
@@ -28,7 +32,7 @@ export class LogicTools {
   canvas.addEventListener('pointerup',event=>{
    if(!this.wiring||event.button!==0)return;event.stopImmediatePropagation();event.preventDefault();
    if(!this.down||Math.hypot(event.clientX-this.down[0],event.clientY-this.down[1])>5){this.down=null;return;}this.down=null;
-   this.click(event.clientX,event.clientY);
+   this.click(event.clientX,event.clientY,event.shiftKey);
   },true);
   canvas.addEventListener('dblclick',event=>{if(this.wiring){event.stopImmediatePropagation();event.preventDefault();}},true);
   canvas.addEventListener('pointermove',event=>{
@@ -46,14 +50,14 @@ export class LogicTools {
   },true);
  }
  private surfacePoint(point:Vec3,normal:Vec3):Vec3{return point.map((v,i)=>v+normal[i]*(wireCollarRadius(this.style)+.005)) as Vec3;}
- private cancel(){this.start=null;this.bends=[];this.previewPoint=null;this.previewKey='';this.guide.visible=false;this.status();}
+ private cancel(){this.start=null;this.bends=[];this.startSurface=undefined;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.guide.visible=false;this.status();}
  toggle(value=!this.wiring){
   if(value){this.e.pickSelection(null);this.e.panel('build-panel',false);this.e.panel('project-menu',false);}
   this.wiring=value;this.selectedWire=null;this.cancel();
   $('select-tool').classList.toggle('active',!value);
   this.e.view.logic.showSockets=value;this.e.view.logic.refresh();$('wire-tool').classList.toggle('active',value);$('wire-tool').setAttribute('aria-pressed',String(value));$('wiring-panel').hidden=!value;this.status();
  }
- begin(endpoint:Endpoint){if(!this.wiring)this.toggle(true);this.start=endpoint;this.bends=[];this.selectedWire=null;this.previewPoint=null;this.previewKey='';this.status();}
+ begin(endpoint:Endpoint,surface?:WireSurface){if(!this.wiring)this.toggle(true);this.start=endpoint;this.startSurface=surface;this.bends=[];this.selectedWire=null;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.status();}
  private visible(point:Vec3,owner?:string){
   const c=this.e.view.camera.camera,rect=this.e.view.renderer.domElement.getBoundingClientRect(),p=new Vector3(...point),v=p.clone().project(c);
   const hit=this.e.view.pick(rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2);
@@ -77,38 +81,53 @@ export class LogicTools {
     const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1))),dist=(ax+t*dx-x)**2+(ay+t*dy-y)**2;
     if(dist<best){const da=-a.clone().applyMatrix4(camera.matrixWorldInverse).z,db=-b.clone().applyMatrix4(camera.matrixWorldInverse).z,worldT=t*da/(db*(1-t)+t*da),point=a.lerp(b,worldT).toArray() as Vec3;if(this.visible(point)){best=dist;result={id:wire.id,point};}}
    }
-  }return result;
- }
- private junction(point:Vec3):Vec3{return [point[0],Math.max(point[1],wireCollarRadius(this.style)+.005),point[2]];}
- private click(x:number,y:number){
-  const port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y);
-  if(!this.start){if(port)this.begin(port);else if(wire){this.begin({point:this.junction(wire.point)});this.selectedWire=wire.id;this.status();}else{const hit=this.e.view.pick(x,y);if(hit){const point=this.surfacePoint(hit.point,hit.normal),issue=wireRouteIssue([point],this.style,this.e.world.plots);if(issue)this.e.toast(issue);else this.begin({point});}}return;}
-  const end=port??(wire?{point:this.junction(wire.point)}:null);
-  if(end){this.commit(end,this.bends);return;}
-  const hit=this.e.view.pick(x,y);if(hit){const point=this.surfacePoint(hit.point,hit.normal),path=[endpointPosition(this.start,this.e.world.pieces),...this.bends,point],issue=wireRouteIssue(path,this.style,this.e.world.plots);
-   if(issue){this.e.toast(issue);return;}
-   if(new Vector3(...point).distanceTo(new Vector3(...path[path.length-2]))<.03){if(this.bends.length)this.finishSurface();return;}
-   this.bends.push(point);this.preview(point);this.previewKey='';
   }
+  if(!result)return null;
+  const surface=this.e.world.wireCollisions.surface(result.id,camera.position,result.point);
+  return surface?{id:result.id,...surface}:null;
+ }
+ private junction(hit:{point:Vec3;normal:Vec3}):Vec3{
+  const point=this.surfacePoint(hit.point,hit.normal);point[1]=Math.max(point[1],wireCollarRadius(this.style)+.005);return point;
+ }
+ private candidate(to:Endpoint,points=this.bends,surface?:WireSurface):Wire{
+  const path=this.e.world.wireCollisions.snapEnds(this.style,[endpointPosition(this.start!,this.e.world.pieces),...points,endpointPosition(to,this.e.world.pieces)],this.startSurface,surface);
+  return {id:this.previewId,...this.style,from:this.startSurface?{point:path[0]}:this.start!,to:surface?{point:path.at(-1)!}:to,points};
+ }
+ private click(x:number,y:number,shift=false){
+  const port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y);
+  if(!this.start){if(port)this.begin(port);else if(wire){this.begin({point:this.junction(wire)},wire);this.selectedWire=wire.id;this.status();}else{const hit=this.e.view.pick(x,y);if(hit){const point=this.surfacePoint(hit.point,hit.normal),issue=wireRouteIssue([point],this.style,this.e.world.plots);if(issue)this.e.toast(issue);else this.begin({point});}}return;}
+  if(wire&&shift){this.addBend(this.junction(wire),wire);return;}
+  const end=port??(wire?{point:this.junction(wire)}:null);
+  if(end){this.commit(end,this.bends,wire??undefined);return;}
+  const hit=this.e.view.pick(x,y);if(hit)this.addBend(this.surfacePoint(hit.point,hit.normal));
+ }
+ private addBend(point:Vec3,surface?:WireSurface){
+  if(!this.start)return;
+  const candidate=this.candidate({point},this.bends,surface),path=wirePath(candidate,this.e.world.pieces),issue=this.e.world.wirePlacementIssue(candidate);
+  if(issue){this.preview({point},surface);this.e.toast(issue);return;}
+  if(new Vector3(...point).distanceTo(new Vector3(...path[path.length-2]))<.03){if(this.bends.length)this.finishSurface();return;}
+  point=path.at(-1)!;this.bends.push(point);this.preview({point});this.previewKey='';
  }
  private finishSurface(){if(this.start&&this.bends.length)this.commit({point:this.bends.at(-1)!},this.bends.slice(0,-1));}
- private commit(to:Endpoint,points:Vec3[]){
+ private commit(to:Endpoint,points:Vec3[],surface?:WireSurface){
   if(!this.start)return;
-  const wire:Wire={id:crypto.randomUUID(),...this.style,from:structuredClone(this.start),to:structuredClone(to),points:structuredClone(points)},path=wirePath(wire,this.e.world.pieces),issue=wireRouteIssue(path,wire,this.e.world.plots);
-  if(issue){this.e.toast(issue);return;}if(wireLength(path)<.03){this.e.toast('Choose a different end point.');return;}
-  this.e.world.execute([],[...this.e.world.wires,wire]);this.selectedWire=null;this.cancel();
+  const wire={...structuredClone(this.candidate(to,points,surface)),id:crypto.randomUUID()},path=wirePath(wire,this.e.world.pieces),issue=this.e.world.wirePlacementIssue(wire);
+  if(issue){this.preview(to,surface);this.e.toast(issue);return;}if(wireLength(path)<.03){this.e.toast('Choose a different end point.');return;}
+  if(this.e.world.execute([],[...this.e.world.wires,wire])){this.selectedWire=null;this.cancel();}
  }
- private preview(point:Vec3){
-  if(!this.start)return;this.previewPoint=point;
-  const path=[endpointPosition(this.start,this.e.world.pieces),...this.bends,point],count=path.length;
+ private preview(to:Endpoint,surface?:WireSurface){
+  if(!this.start)return;this.previewEnd=to;
+  const wire=this.candidate(to,this.bends,surface),path=wirePath(wire,this.e.world.pieces),count=path.length;
+  this.previewPath=path;
   let positions=this.guide.geometry.getAttribute('position');
   if(!positions||positions.count<count){this.guide.geometry.dispose();this.guide.geometry=new BufferGeometry();positions=new Float32BufferAttribute(new Float32Array(Math.max(16,count*2)*3),3);this.guide.geometry.setAttribute('position',positions);}
   path.forEach((p,i)=>positions.setXYZ(i,...p));positions.needsUpdate=true;this.guide.geometry.setDrawRange(0,count);this.guide.frustumCulled=false;this.guide.visible=true;
-  this.guide.material.color.setHex(wireRouteIssue(path,this.style,this.e.world.plots)?0xff705b:this.style.kind==='neon'?wireColor(this.style,true):0x99dcff);this.status();
+  this.previewIssue=this.e.world.wirePlacementIssue(wire);
+  this.guide.material.color.setHex(this.previewIssue?0xff705b:this.style.kind==='neon'?wireColor(this.style,true):0x99dcff);this.status();
  }
  private status(){
   $('wire-status').textContent=this.start?`${this.style.kind==='neon'?NEON_COLORS[this.style.color??'white'].label+' neon':'Wire'} · ${this.bends.length} surface points`:'Click a surface, socket or wire';
-  const path=this.start?[endpointPosition(this.start,this.e.world.pieces),...this.bends,...(this.previewPoint?[this.previewPoint]:[])]:[],length=wireLength(path),limit=wireLimit(this.style),issue=path.length?wireRouteIssue(path,this.style,this.e.world.plots):null;
+  const path=this.start?(this.previewEnd?this.previewPath:[endpointPosition(this.start,this.e.world.pieces),...this.bends]):[],length=wireLength(path),limit=wireLimit(this.style),issue=this.previewIssue??(path.length?wireRouteIssue(path,this.style,this.e.world.plots):null);
   $('wire-length').textContent=`${length.toFixed(2)} / ${limit} studs`;$('wire-length').classList.toggle('wire-invalid',!!issue);
   const meter=$('wire-budget') as HTMLProgressElement;meter.max=limit;meter.value=Math.min(length,limit);
   $('wire-feedback').textContent=issue??'';$('wire-feedback').classList.toggle('wire-invalid',!!issue);
@@ -116,7 +135,7 @@ export class LogicTools {
   $('wire-colors').hidden=this.style.kind!=='neon';
   document.querySelectorAll<HTMLButtonElement>('[data-wire-kind]').forEach(b=>{b.disabled=!!this.start;b.setAttribute('aria-pressed',String(b.dataset.wireKind===this.style.kind));});
   document.querySelectorAll<HTMLButtonElement>('[data-wire-color]').forEach(b=>{b.disabled=!!this.start;b.setAttribute('aria-pressed',String(b.dataset.wireColor===this.style.color));});
-  $('wire-remove').hidden=!this.selectedWire;$('wire-count').textContent=`${this.e.world.wires.length} wires · crossing lines stay separate`;
+  $('wire-remove').hidden=!this.selectedWire;$('wire-count').textContent=`${this.e.world.wires.length} wires · route on or over other wires`;
  }
  activate(id=this.e.selected){
   const p=id?this.e.world.pieces.get(id):undefined;if(!p)return;
@@ -141,7 +160,7 @@ export class LogicTools {
   if(this.wiring&&this.start&&this.pointer){
    const camera=this.e.view.camera.camera,key=this.pointer.join(',')+camera.position.toArray().join(',')+camera.quaternion.toArray().join(',')+this.e.world.revision;
    if(key!==this.previewKey){this.previewKey=key;const [x,y]=this.pointer,port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y),hit=port||wire?null:this.e.view.pick(x,y);
-    if(port)this.preview(endpointPosition(port,this.e.world.pieces));else if(wire)this.preview(this.junction(wire.point));else if(hit)this.preview(this.surfacePoint(hit.point,hit.normal));else{this.previewPoint=null;this.guide.visible=false;this.status();}
+    if(port)this.preview(port);else if(wire)this.preview({point:this.junction(wire)},wire);else if(hit)this.preview({point:this.surfacePoint(hit.point,hit.normal)});else{this.previewEnd=null;this.previewIssue=null;this.guide.visible=false;this.status();}
    }
   }
   const circuit=this.e.view.logic.circuit;

@@ -5,6 +5,24 @@ export interface Solid {
   edges: Vector3[];
   bounds: Box3;
 }
+function separated(a:Solid,b:Solid,axis:Vector3,margin:number){
+ let minA=Infinity,maxA=-Infinity,minB=Infinity,maxB=-Infinity;
+ for(const v of a.vertices){const d=v.dot(axis);minA=Math.min(minA,d);maxA=Math.max(maxA,d);}
+ for(const v of b.vertices){const d=v.dot(axis);minB=Math.min(minB,d);maxB=Math.max(maxB,d);}
+ return maxA<=minB+margin||maxB<=minA+margin;
+}
+/** Positive margin allows touching faces for placement; a negative margin
+ * tests contact within that small distance, including flat caps and edges. */
+export function solidsOverlap(a:Solid,b:Solid,margin=.0001){
+ const bounds=margin<0?a.bounds.clone().expandByScalar(-margin):a.bounds;
+ if(!bounds.intersectsBox(b.bounds))return false;
+ for(const axis of [...a.normals,...b.normals])if(separated(a,b,axis,margin))return false;
+ const cross=new Vector3();
+ for(const edgeA of a.edges)for(const edgeB of b.edges){
+  cross.crossVectors(edgeA,edgeB);
+  if(cross.lengthSq()>1e-12&&separated(a,b,cross.normalize(),margin))return false;
+ }return true;
+}
 const uniqueDirection = (list: Vector3[], v: Vector3, signed = false) => {
   if (v.lengthSq()<1e-12) return;
   v.normalize();

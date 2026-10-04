@@ -21,11 +21,25 @@ try{
  const exported=async()=>{await page.locator('#menu-tool').click();const pending=page.waitForEvent('download');await page.locator('#export').click();const stream=await(await pending).createReadStream(),chunks=[];for await(const c of stream)chunks.push(c);const result=JSON.parse(Buffer.concat(chunks).toString());if(await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();return result;};
  const saved=await exported();expect(saved.wires).toHaveLength(2);expect(saved.wires[0].kind).toBe('neon');expect(saved.wires[0].color).toBe('cyan');expect(saved.wires[1].kind).toBe('wire');
  await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');expect((await exported()).wires).toEqual(saved.wires);
+ await load({version:1,name:'Wire overpass check',plots:[12],pieces:[],wires:[{id:'host',kind:'neon',color:'cyan',from:{point:[-5,.155,0]},to:{point:[5,.155,0]},points:[]}]});
+ await page.locator('#wire-tool').click();await page.locator('[data-wire-kind="wire"]').click();await page.mouse.click(...xy([0,0,-4]));await page.mouse.click(...xy([0,0,4]));
+ await expect(page.locator('#wire-feedback')).toContainText('cannot pass through');await expect(page.locator('#wire-count')).toContainText('1 wires');
+ await page.keyboard.down('Shift');await page.mouse.click(...xy([0,.155,0]));await page.keyboard.up('Shift');await page.mouse.click(...xy([0,0,4]));await page.keyboard.press('Enter');
+ await expect(page.locator('#wire-count')).toContainText('2 wires');await page.locator('#wire-done').click();expect((await exported()).wires[1].points[0][1]).toBeGreaterThan(.4);
+ await load({version:1,logicModelVersion:3,name:'Wire end contact check',plots:[12],pieces:[
+  {id:'lever',item:'lever',wood:'oak',position:[-6,.75,0],rotation:[0,0,0],logicOn:true},
+  {id:'body-light',item:'lamp',wood:'oak',position:[0,1,6],rotation:[0,0,0]},
+  {id:'end-light',item:'lamp',wood:'oak',position:[7,1,6],rotation:[0,0,0]},
+ ],wires:[{id:'host',kind:'wire',from:{piece:'lever',port:'out'},to:{point:[4,.18,0]},points:[]}]});
+ await page.locator('#wire-tool').click();await page.mouse.click(...xy([0,.18,0]));await page.mouse.click(...xy([0,.6,6.22]));await expect(page.locator('#wire-count')).toContainText('2 wires');await page.locator('#wire-done').click();
+ await page.mouse.click(...xy([0,.5,6]));await expect(page.locator('#piece-name')).toHaveText('Lamp');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · Off');
+ await page.locator('#wire-tool').click();await page.mouse.click(...xy([3.95,.18,0]));await page.mouse.click(...xy([7,.6,6.22]));await expect(page.locator('#wire-count')).toContainText('3 wires');await page.locator('#wire-done').click();
+ await page.mouse.click(...xy([7,.5,6]));await expect(page.locator('#piece-name')).toHaveText('Lamp');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · On');
  const fixture={version:1,logicModelVersion:3,name:'Neon signal check',plots:[12],pieces:[{id:'l',item:'lever',wood:'oak',position:[-5,.75,0],rotation:[0,0,0],logicOn:false}],wires:[{id:'n',kind:'neon',color:'pink',from:{piece:'l',port:'out'},to:{point:[5,.18,0]},points:[]}]};
  await load(fixture);await page.mouse.click(...xy([-5,.25,0]));await expect(page.locator('#piece-name')).toHaveText('Lever');await page.locator('#logic-action').click();await expect(page.locator('#logic-status')).toHaveText('Output · On');expect((await exported()).pieces[0].logicOn).toBe(true);
  await page.locator('#wire-tool').click();await page.locator('[data-wire-kind="neon"]').click();await page.locator('[data-wire-color="pink"]').click();
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/wires-live.png'});
  await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-done')).toBeInViewport();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- expect(errors).toEqual([]);writeFileSync('release/pages-verification/wires-live.json',JSON.stringify({target,errors,debugAPI:false,regularLimit:20,neonLimit:16,neonColors:9,surfaceRouting:true,saveReload:true,leverSignal:true,compactFits:true},null,2));
- console.log('Production wires: both budgets, nine colors, surface routes, export/reload, switch state, compact layout and WebGL checks passed.');
+ expect(errors).toEqual([]);writeFileSync('release/pages-verification/wires-live.json',JSON.stringify({target,errors,debugAPI:false,regularLimit:20,neonLimit:16,neonColors:9,surfaceRouting:true,wireCollision:true,overpass:true,bodyContactIsolated:true,endCapsCarryPower:true,saveReload:true,leverSignal:true,compactFits:true},null,2));
+ console.log('Production wires: budgets, colors, collision, overpass, body isolation, end-cap power, save/reload, switching, compact layout and WebGL checks passed.');
 }finally{await browser.close();}

@@ -90,7 +90,7 @@ export function shell() {
 <div class="wire-types" role="group" aria-label="Wire type"><button data-wire-kind="wire" aria-pressed="true">Wire <small>20 studs</small></button><button data-wire-kind="neon" aria-pressed="false">Neon <small>16 studs</small></button></div>
 <div id="wire-colors" role="group" aria-label="Neon color" hidden></div>
 <strong id="wire-status"></strong><div class="wire-meter"><span id="wire-length">0 / 20 studs</span><progress id="wire-budget" max="20" value="0" aria-label="Wire length used"></progress></div>
-<p id="wire-feedback" aria-live="polite"></p><p>Click a surface to start or add a bend. Click a socket or wire to connect. <b>Enter</b> finishes at the last point. <b>Backspace</b> undoes a point · <b>Esc</b> cancels.</p>
+<p id="wire-feedback" aria-live="polite"></p><p>Click a surface to start or add a bend. Click a socket or wire to finish. <b>Only touching end caps share power.</b> <b>Shift-click a wire</b> to bend over it and keep building. <b>Enter</b> finishes at the last point. <b>Backspace</b> undoes a point · <b>Esc</b> cancels.</p>
 <div class="wire-actions"><button id="wire-finish" disabled>Finish wire</button><button id="wire-done">Done</button><button id="wire-remove" hidden>Delete selected wire</button></div><p id="wire-count"></p></aside>
 <div class="hud-status"><span id="selection-count" hidden aria-live="polite"></span><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
 <div id="welcome-note" hidden><button id="blank-start">Start a new build</button><button id="dismiss-welcome">Dismiss</button></div>

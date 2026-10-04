@@ -2,10 +2,12 @@ import {Vector3} from 'three';
 import {ITEMS,type Vec3} from './catalog';
 import {quaternionRotation} from './placement';
 import type {Piece} from './world';
-import {NEON_COLORS,wireRadius,wireCollarRadius,type WireStyle} from './wire-design';
+import {NEON_COLORS,type WireStyle} from './wire-design';
+import {wireEndParts,wirePartBounds,wirePartSolid,type WirePart,type WireFrame} from './wire-shape';
+import {solidsOverlap} from './solid';
 
 export type Endpoint={piece:string;port:string}|{point:Vec3};
-export interface Wire extends WireStyle {id:string;from:Endpoint;to:Endpoint;points:Vec3[]}
+export interface Wire extends WireStyle {id:string;from:Endpoint;to:Endpoint;points:Vec3[];frame?:WireFrame}
 export interface Port {id:string;label:string;output:boolean;position:Vec3;normal:Vec3}
 export const isLogic=(p:Piece)=>ITEMS.get(p.item)?.fixedMaterial==='logic';
 export const portKey=(id:string,port:string)=>id+':'+port;
@@ -52,55 +54,39 @@ export function validateWires(raw:unknown,pieces:Piece[]):Wire[]{
   if(!w||typeof w.id!=='string'||!w.id||w.id.length>100||ids.has(w.id)||!Array.isArray(w.points)||w.points.length>1024||!w.points.every(vec))throw new Error('Invalid or duplicate wire.');
   if(w.kind!==undefined&&w.kind!=='wire'&&w.kind!=='neon')throw new Error('Unknown wire type.');
   if(w.kind==='neon'?(typeof w.color!=='string'||!Object.hasOwn(NEON_COLORS,w.color)):w.color!==undefined)throw new Error('Invalid neon wire color.');
+  if(w.frame!==undefined&&(!Array.isArray(w.frame)||w.frame.length!==4||!w.frame.every((v:unknown)=>typeof v==='number'&&Number.isFinite(v))||Math.abs(Math.hypot(...w.frame)-1)>1e-6))throw new Error('Invalid wire orientation.');
   ids.add(w.id);return {id:w.id,from:endpoint(w.from),to:endpoint(w.to),points:w.points.map((p:Vec3)=>[...p] as Vec3),
-   ...(w.kind?{kind:w.kind}:{}),...(w.kind==='neon'?{color:w.color}:{})};
+   ...(w.kind?{kind:w.kind}:{}),...(w.kind==='neon'?{color:w.color}:{}),...(w.frame?{frame:[...w.frame] as WireFrame}:{})};
  });
 }
 
-export interface WireContact {from:number;endpoint:'from'|'to';to:number;segment:number;point:Vec3}
-export function wireGroups(wires:Wire[],pieces:Map<string,Piece>,onContact?:(contact:WireContact)=>void):number[][]{
-  // New wires make contact with the visible tube, even when different radii
-  // require slightly different mounting heights. Keep legacy contact behavior.
-  const tolerance=(from:number,to:number)=>wires[from].kind||wires[to].kind?wireCollarRadius(wires[from])+wireRadius(wires[to])+.005:.025;
+export function wireGroups(wires:Wire[],pieces:Map<string,Piece>):number[][]{
   const parent=wires.map((_,i)=>i),root=(i:number):number=>{let r=i;while(parent[r]!==r)r=parent[r];while(parent[i]!==i){const next=parent[i];parent[i]=r;i=next;}return r;};
   const join=(a:number,b:number)=>{parent[root(a)]=root(b);};
   const socket=new Map<string,number>();
   wires.forEach((w,i)=>{for(const e of [w.from,w.to])if('piece' in e){const k=portKey(e.piece,e.port);if(socket.has(k))join(i,socket.get(k)!);else socket.set(k,i);}});
-  // Spatial buckets find deliberate endpoint-to-segment junctions. Crossings
-  // between two segment interiors never implicitly create an electrical join.
-  const paths=wires.map(w=>wirePath(w,pieces)),buckets=new Map<string,{i:number;j:number;a:[number,number,number];b:[number,number,number]}[]>();
-  paths.forEach((path,i)=>path.slice(1).forEach((b,j)=>{
-   const a=path[j];
-   const cells=a.reduce((n,v,k)=>n*(Math.ceil(Math.abs(v-b[k])/8)+2),1);
-   if(cells>4096){paths.forEach((other,k)=>{if(k===i)return;[other[0],other.at(-1)!].forEach((p,e)=>{if(pointOnSegment(p,a,b,tolerance(k,i))){join(i,k);onContact?.({from:k,endpoint:e?'to':'from',to:i,segment:j,point:p});}});});return;}
-   for(let x=Math.floor((Math.min(a[0],b[0])-.28)/8);x<=Math.floor((Math.max(a[0],b[0])+.28)/8);x++)
-    for(let y=Math.floor((Math.min(a[1],b[1])-.28)/8);y<=Math.floor((Math.max(a[1],b[1])+.28)/8);y++)
-     for(let z=Math.floor((Math.min(a[2],b[2])-.28)/8);z<=Math.floor((Math.max(a[2],b[2])+.28)/8);z++){
-      const k=`${x},${y},${z}`;if(!buckets.has(k))buckets.set(k,[]);buckets.get(k)!.push({i,j,a,b});
-     }
-  }));
-  paths.forEach((path,i)=>{[path[0],path.at(-1)!].forEach((p,e)=>{for(const s of buckets.get(p.map(v=>Math.floor(v/8)).join(','))??[])if(i!==s.i&&pointOnSegment(p,s.a,s.b,tolerance(i,s.i))){join(i,s.i);onContact?.({from:i,endpoint:e?'to':'from',to:s.i,segment:s.j,point:p});}});});
+  // Only the two visible end collars conduct between wires. Test their actual
+  // convex shapes, not a radius around the whole route or endpoint center.
+  // The 0.006 clearance includes the placement surface's 0.005 offset.
+  const buckets=new Map<string,{i:number;part:WirePart}[]>();
+  wires.forEach((wire,i)=>{for(const part of wireEndParts(wire,wirePath(wire,pieces))){
+   const bounds=wirePartBounds(part).expandByScalar(.006),lo=bounds.min.clone().divideScalar(2).floor(),hi=bounds.max.clone().divideScalar(2).floor(),visited=new Set<WirePart>();
+   const keys:string[]=[];
+   for(let x=lo.x;x<=hi.x;x++)for(let y=lo.y;y<=hi.y;y++)for(let z=lo.z;z<=hi.z;z++){
+    const key=`${x},${y},${z}`;keys.push(key);
+    for(const other of buckets.get(key)??[]){if(root(other.i)===root(i)||visited.has(other.part))continue;visited.add(other.part);
+     if(solidsOverlap(wirePartSolid(part),wirePartSolid(other.part),-.006))join(i,other.i);
+    }
+   }
+   for(const key of keys){if(!buckets.has(key))buckets.set(key,[]);buckets.get(key)!.push({i,part});}
+  }});
   const groups=new Map<number,number[]>();wires.forEach((_,i)=>{const k=root(i);if(!groups.has(k))groups.set(k,[]);groups.get(k)!.push(i);});return [...groups.values()];
 }
 
-/** Keep selected socket links, trimming an external trunk only as far as its
- * nearest retained junction. Dropping the whole trunk would lose branches. */
+/** Retain routes attached to selected sockets, including end-connected free
+ * wires. A lead into an unselected device is not part of the copied assembly. */
 export function wiresWithinSelection(wires:Wire[],pieces:Map<string,Piece>,selected:ReadonlySet<string>):Wire[]{
- const contacts=new Map<number,{at:number;point:Vec3}[]>(),paths=wires.map(w=>wirePath(w,pieces));
- wireGroups(wires,pieces,c=>{
-  const a=new Vector3(...paths[c.to][c.segment]),delta=new Vector3(...paths[c.to][c.segment+1]).sub(a);
-  const t=delta.lengthSq()?Math.max(0,Math.min(1,new Vector3(...c.point).sub(a).dot(delta)/delta.lengthSq())):0;
-  if(!contacts.has(c.to))contacts.set(c.to,[]);contacts.get(c.to)!.push({at:c.segment+t,point:c.point});
- });
- const candidates=wires.flatMap((w,i)=>{
-  const outside=(e:Endpoint)=>'piece' in e&&!selected.has(e.piece),from=outside(w.from),to=outside(w.to);
-  if(!from&&!to)return [w];
-  const joins=contacts.get(i)?.sort((a,b)=>a.at-b.at);if(!joins?.length)return [];
-  const lo=from?joins[0].at:0,hi=to?joins.at(-1)!.at:paths[i].length-1;
-  if(lo>hi||from&&to&&Math.abs(lo-hi)<1e-8)return [];
-  return [{...w,from:from?{point:joins[0].point}:w.from,to:to?{point:joins.at(-1)!.point}:w.to,
-   points:w.points.filter((_,j)=>j+1>lo+1e-8&&j+1<hi-1e-8)}];
- });
+ const candidates=wires.filter(w=>[w.from,w.to].every(e=>!('piece' in e)||selected.has(e.piece)));
  const portCounts=new Map<string,number>();
  for(const w of candidates)for(const e of [w.from,w.to])if('piece' in e){const key=portKey(e.piece,e.port);portCounts.set(key,(portCounts.get(key)??0)+1);}
  const retained=candidates.filter(w=>{

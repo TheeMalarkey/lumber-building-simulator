@@ -4,7 +4,7 @@ import { quaternionRotation, rotatedSize, snapOnSurface, STUD_STEP } from "./pla
 import type { Piece } from "./world";
 
 import { collisionPartsFor } from "./geometry";
-import type { Solid } from "./solid";
+import {solidsOverlap,type Solid} from "./solid";
 // Bound transformed collision data independently of the number of stored blueprints.
 const worldCache = new Map<Piece, { item: string; active: boolean|'travel'; position: Vec3; rotation: Vec3; solids: Solid[] }>();
 const MAX_CACHED_PIECES = 1024;
@@ -28,22 +28,6 @@ export function placementSolids(piece: Piece,reserveTravel=false): Solid[] {
   worldCache.set(piece,{item:piece.item,active,position:[...piece.position],rotation:[...piece.rotation],solids});
   if (worldCache.size>MAX_CACHED_PIECES) worldCache.delete(worldCache.keys().next().value!);
   return solids;
-}
-function separated(a: Solid, b: Solid, axis: Vector3) {
-  let minA=Infinity, maxA=-Infinity, minB=Infinity, maxB=-Infinity;
-  for (const v of a.vertices) { const d=v.dot(axis); minA=Math.min(minA,d);maxA=Math.max(maxA,d); }
-  for (const v of b.vertices) { const d=v.dot(axis); minB=Math.min(minB,d);maxB=Math.max(maxB,d); }
-  return maxA<=minB+EPS || maxB<=minA+EPS;
-}
-function solidsOverlap(a: Solid, b: Solid) {
-  if (!a.bounds.intersectsBox(b.bounds)) return false;
-  for (const axis of [...a.normals,...b.normals]) if (separated(a,b,axis)) return false;
-  const cross = new Vector3();
-  for (const edgeA of a.edges) for (const edgeB of b.edges) {
-    cross.crossVectors(edgeA,edgeB);
-    if (cross.lengthSq()>1e-12 && separated(a,b,cross.normalize())) return false;
-  }
-  return true;
 }
 /** Called only after spatial-index and outer-bounds rejection. */
 export function solidOverlap(a: Piece, b: Piece) {

@@ -1,11 +1,13 @@
 import {Quaternion,Vector3} from "three";
 import {quaternionRotation} from "./placement";
-import {type Wire,type WireContact,validateWires,wireGroups,wirePath,wiresWithinSelection} from "./logic-ports";
+import {type Wire,validateWires,wireGroups,wirePath,wiresWithinSelection} from "./logic-ports";
 import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize } from "./placement";
 import { connectedPlots, coveredByPlots, touchesPlot, validatePlots } from "./plots";
 import { placementSolids, solidOverlap } from "./collision";
-import {wireLength,wireLimit,wireSpaceIssue,wireTouchesPlot} from './wire-design';
+import {wireLength,wireLimit,wireSpaceIssue,wireTouchesPlot,wireRouteIssue} from './wire-design';
+import {WireCollisionIndex} from './wire-collision';
+import type {WireFrame} from './wire-shape';
 export interface Piece {
   id: string;
   item: string;
@@ -78,6 +80,15 @@ export class World {
   // Null is used by standalone spatial/benchmark fixtures; the editor always loads land.
   plots: number[] | null = null;
   allowOverlaps = false;
+  private wireIndex?:WireCollisionIndex;
+  private indexedWires?:Wire[];
+  get wireCollisions(){
+    if(!this.wireIndex||this.indexedWires!==this.wires){this.wireIndex=new WireCollisionIndex(this.wires,this.pieces);this.indexedWires=this.wires;}
+    return this.wireIndex;
+  }
+  wirePlacementIssue(wire:Wire){
+    return wireRouteIssue(wirePath(wire,this.pieces),wire,this.plots)??this.wireCollisions.issue(wire,this.pieces);
+  }
   private past: HistoryEntry[] = [];
   private future: HistoryEntry[] = [];
   revision = 0;
@@ -92,6 +103,8 @@ export class World {
   }
   private put(p: Piece | null, id: string) {
     const old = this.pieces.get(id);
+    if((old&&this.logicIds.has(id)||p&&["logic","lighting"].includes(ITEMS.get(p.item)!.fixedMaterial??""))&&
+       (!p||!old||p.item!==old.item||p.position.some((v,i)=>v!==old.position[i])||p.rotation.some((v,i)=>v!==old.rotation[i])))this.wireIndex=undefined;
     if (old) {
       const k = chunkKey(old.position);
       this.chunks.get(k)?.delete(id);
@@ -150,15 +163,24 @@ export class World {
     // New typed wires cannot be stretched by moving a single connected device.
     // Legacy routes remain editable; an imported oversized typed route may be
     // shortened or moved rigidly, but cannot be stretched farther.
-    const existingIds=new Set(this.wires.map(w=>w.id));
-    if(nextWires.some(w=>w.kind&&!existingIds.has(w.id))||changes.some(c=>c.before&&c.after&&(c.before.position.some((v,i)=>v!==c.after!.position[i])||c.before.rotation.some((v,i)=>v!==c.after!.rotation[i])))){
+    if(nextWires!==this.wires||changes.some(c=>c.before&&c.after&&(c.before.position.some((v,i)=>v!==c.after!.position[i])||c.before.rotation.some((v,i)=>v!==c.after!.rotation[i])))){
       const next=new Map(this.pieces),old=new Map(this.wires.map(w=>[w.id,w]));
       for(const c of changes)if(c.after)next.set(c.after.id,c.after);else if(c.before)next.delete(c.before.id);
-      for(const w of nextWires)if(w.kind){
+      const changed=nextWires.filter(w=>{
+        const before=old.get(w.id);if(!before||before.kind!==w.kind||JSON.stringify(before.frame)!==JSON.stringify(w.frame))return true;
+        const a=wirePath(before,this.pieces),b=wirePath(w,next);
+        return a.length!==b.length||a.some((p,i)=>p.some((v,k)=>Math.abs(v-b[i][k])>1e-9));
+      });
+      const nextIds=new Set(nextWires.map(w=>w.id));
+      const ignored=new Set([...this.wires.filter(w=>!nextIds.has(w.id)).map(w=>w.id),...changed.map(w=>w.id)]);
+      const batch=new WireCollisionIndex(changed,next);
+      for(const w of changed)if(w.kind){
         const previous=old.get(w.id),limit=Math.max(wireLimit(w),previous?wireLength(wirePath(previous,this.pieces)):0);
         if(wireLength(wirePath(w,next))>limit+1e-6){this.onReject(`Cannot move: ${w.kind==='neon'?'neon wire':'wire'} exceeds its ${wireLimit(w)}-stud limit. Reroute or disconnect it first.`);return false;}
         const issue=wireSpaceIssue(wirePath(w,next),w,this.plots);
         if(issue&&(!previous||!wireSpaceIssue(wirePath(previous,this.pieces),previous,this.plots))){this.onReject(issue);return false;}
+        const collision=this.wireCollisions.issue(w,next,ignored)??batch.issue(w,next,undefined,false);
+        if(collision){this.onReject(collision);return false;}
       }
     }
     const entry:HistoryEntry=nextWires!==this.wires ? {changes,beforeWires:this.wires,afterWires:nextWires} : changes;
@@ -238,8 +260,9 @@ export class World {
     // Copy the routing in the assembly's rigid frame, including group turns.
     const q0=new Quaternion().setFromEuler(quaternionRotation(a.rotation)).invert();
     const q1=new Quaternion().setFromEuler(quaternionRotation(b.rotation));
+    const turn=q1.clone().multiply(q0);
     const move=(p:Vec3)=>new Vector3(...p).sub(new Vector3(...a.position)).applyQuaternion(q0).applyQuaternion(q1).add(new Vector3(...b.position)).toArray() as Vec3;
-    return wiresWithinSelection(this.wires,this.pieces,new Set(ids.keys())).map(w=>({...w,id:crypto.randomUUID(),
+    return wiresWithinSelection(this.wires,this.pieces,new Set(ids.keys())).map(w=>({...w,id:crypto.randomUUID(),frame:turn.clone().multiply(new Quaternion(...(w.frame??[0,0,0,1]))).normalize().toArray() as WireFrame,
       from:'piece' in w.from?{piece:ids.get(w.from.piece)!,port:w.from.port}:{point:move(w.from.point)},
       to:'piece' in w.to?{piece:ids.get(w.to.piece)!,port:w.to.port}:{point:move(w.to.point)},points:w.points.map(move)}));
   }
@@ -248,8 +271,8 @@ export class World {
     if(!this.wires.length)return this.wires;
     const moved=new Map(changes.filter(c=>c.before&&c.after&&[...c.before.position,...c.before.rotation].some((v,i)=>v!==[...c.after!.position,...c.after!.rotation][i])).map(c=>[c.before!.id,c]));
     if(!moved.size)return this.wires;
-    const replacements=new Map<number,Wire>(),contacts:WireContact[]=[];
-    const groups=wireGroups(this.wires,this.pieces,c=>contacts.push(c));
+    const replacements=new Map<number,Wire>();
+    const groups=wireGroups(this.wires,this.pieces);
     for(const group of groups){
       const ids=new Set(group.flatMap(i=>[this.wires[i].from,this.wires[i].to]).flatMap(e=>'piece' in e?[e.piece]:[]));
       if(!ids.size||[...ids].some(id=>!moved.has(id)))continue;
@@ -258,25 +281,7 @@ export class World {
       const move=(point:Vec3)=>new Vector3(...point).sub(new Vector3(...a.position)).applyQuaternion(q).add(new Vector3(...b.position));
       if([...ids].some(id=>{const c=moved.get(id)!;return move(c.before!.position).distanceToSquared(new Vector3(...c.after!.position))>1e-8||q.clone().multiply(new Quaternion().setFromEuler(quaternionRotation(c.before!.rotation))).angleTo(new Quaternion().setFromEuler(quaternionRotation(c.after!.rotation)))>1e-6;}))continue;
       const point=(p:Vec3)=>move(p).toArray() as Vec3;
-      for(const i of group){const w=this.wires[i];replacements.set(i,{...w,from:'point' in w.from?{point:point(w.from.point)}:w.from,to:'point' in w.to?{point:point(w.to.point)}:w.to,points:w.points.map(point)});}
-    }
-    // A free junction remains fixed when only part of its assembly moves.
-    // Pin it into the host route before its attached socket deforms that route.
-    const anchors=new Map<number,Map<number,Vec3[]>>();
-    for(const c of contacts){
-      if(replacements.has(c.to))continue;
-      const endpoint=this.wires[c.from][c.endpoint],host=this.wires[c.to];
-      if('piece' in endpoint&&moved.has(endpoint.piece))continue;
-      if(![host.from,host.to].some(e=>'piece' in e&&moved.has(e.piece)))continue;
-      if(!anchors.has(c.to))anchors.set(c.to,new Map());const segments=anchors.get(c.to)!;
-      if(!segments.has(c.segment))segments.set(c.segment,[]);segments.get(c.segment)!.push(c.point);
-    }
-    for(const [i,segments] of anchors){const w=this.wires[i],path=wirePath(w,this.pieces),points:Vec3[]=[];
-      for(let j=0;j<path.length-1;j++){
-        const start=new Vector3(...path[j]);const sorted=(segments.get(j)??[]).sort((a,b)=>start.distanceToSquared(new Vector3(...a))-start.distanceToSquared(new Vector3(...b)));
-        for(const p of sorted)if(!points.length||new Vector3(...points.at(-1)!).distanceToSquared(new Vector3(...p))>1e-10)points.push([...p] as Vec3);
-        if(j<path.length-2)points.push(path[j+1]);
-      }replacements.set(i,{...w,points});
+      for(const i of group){const w=this.wires[i];replacements.set(i,{...w,frame:q.clone().multiply(new Quaternion(...(w.frame??[0,0,0,1]))).normalize().toArray() as WireFrame,from:'point' in w.from?{point:point(w.from.point)}:w.from,to:'point' in w.to?{point:point(w.to.point)}:w.to,points:w.points.map(point)});}
     }
     return replacements.size?this.wires.map((w,i)=>replacements.get(i)??w):this.wires;
   }

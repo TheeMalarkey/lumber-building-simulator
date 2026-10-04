@@ -1,7 +1,8 @@
 import * as T from 'three';
 import {wirePath,type Wire} from './logic-ports';
 import type {Piece} from './world';
-import {wireRadius,wireCollarRadius,wireColor,wireGlows} from './wire-design';
+import {wireColor,wireGlows} from './wire-design';
+import {wireParts,wirePartMatrix,wireTubeGeometry,wireBendGeometry} from './wire-shape';
 
 type Part={wire:Wire;matrix:T.Matrix4};
 type Segment={wire:Wire;a:T.Vector3;b:T.Vector3};
@@ -14,8 +15,8 @@ export class WireView {
  root=new T.Group();
  lights=[new T.PointLight(0xffffff,0,8,2),new T.PointLight(0xffffff,0,8,2)];
  private tubes?:T.InstancedMesh;private joints?:T.InstancedMesh;private glow?:T.InstancedMesh;
- private tubeGeometry=new T.CylinderGeometry(1,1,1,12);
- private jointGeometry=new T.SphereGeometry(1,10,6);
+ private tubeGeometry=wireTubeGeometry();
+ private jointGeometry=wireBendGeometry();
  private glowGeometry=new T.PlaneGeometry(1,1);
  private material=new T.MeshStandardMaterial({roughness:.65,metalness:0,toneMapped:false});
  private glowMaterial=new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide,toneMapped:false,fog:true,
@@ -77,9 +78,10 @@ export class WireView {
   for(const wire of wires){
    const path=wirePath(wire,pieces).map(p=>new T.Vector3(...p)).filter((p,i,all)=>!i||p.distanceToSquared(all[i-1])>1e-10);
    if(path.length<2)continue;
-   const r=wireRadius(wire),collar=wireCollarRadius(wire);
+   for(const part of wireParts(wire,path.map(p=>p.toArray())))
+    (part.kind==='bend'?this.jointParts:this.tubeParts).push({wire,matrix:wirePartMatrix(part)});
    for(let i=1;i<path.length;i++){
-    const a=path[i-1],b=path[i];cylinder(wire,a,b,r);
+    const a=path[i-1],b=path[i];
     if(wireGlows(wire)){
      cylinder(wire,a,b,.95,this.glowParts);
      const segment={wire,a,b};
@@ -88,12 +90,7 @@ export class WireView {
       const key=`${x},${y},${z}`;if(!this.buckets.has(key))this.buckets.set(key,[]);this.buckets.get(key)!.push(segment);
      }
     }
-    if(i<path.length-1)this.jointParts.push({wire,matrix:new T.Matrix4().compose(b,new T.Quaternion(),new T.Vector3(r,r,r))});
    }
-   // Collars grow inward from the two endpoints, preserving exact anchors.
-   const first=path[0],last=path.at(-1)!,a=path[1].clone().sub(first),b=path.at(-2)!.clone().sub(last);
-   cylinder(wire,first,first.clone().add(a.normalize().multiplyScalar(Math.min(.14,first.distanceTo(path[1])*.35))),collar);
-   cylinder(wire,last,last.clone().add(b.normalize().multiplyScalar(Math.min(.14,last.distanceTo(path.at(-2)!)*.35))),collar);
   }
   this.tubes=this.batch(this.tubes,this.tubeGeometry,this.tubeParts.length,'Wire tubes and ends');
   this.joints=this.batch(this.joints,this.jointGeometry,this.jointParts.length,'Wire bends');
