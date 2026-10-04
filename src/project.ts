@@ -11,7 +11,7 @@ export interface Project {
   pieces: Piece[];
   plots?: number[];
   wires?: Wire[];
-  logicModelVersion?: 2;
+  logicModelVersion?: 2 | 3;
 }
 export function parseProject(text: string): Project {
   let value: unknown;
@@ -24,7 +24,7 @@ export function parseProject(text: string): Project {
     throw new Error("Missing project data.");
   const v = value as Project;
   if (v.version !== 1) throw new Error("Unsupported project version.");
-  if(v.logicModelVersion!==undefined&&v.logicModelVersion!==2)throw new Error('Unsupported logic model version.');
+  if(v.logicModelVersion!==undefined&&v.logicModelVersion!==2&&v.logicModelVersion!==3)throw new Error('Unsupported logic model version.');
   if (
     typeof v.name !== "string" ||
     v.name.length > 120 ||
@@ -66,11 +66,13 @@ export function parseProject(text: string): Project {
     )
       throw new Error("Invalid piece rotation.");
   }
-  // The first lever was two studs tall. Keep its mounting plane (and socket)
-  // fixed when replacing it with the shorter model, including wall mounts.
+  // Preserve mounting planes and sockets when older lever/timer heights shrink,
+  // including rotated mounts. Version 2 already has the corrected lever.
   const pieces=v.pieces.map(p=>{
-    if(v.logicModelVersion!==undefined||p.item!=='lever')return p;
-    const offset=new Vector3(0,(ITEMS.get('lever')!.size[1]-2)/2,0).applyEuler(quaternionRotation(p.rotation));
+    const oldHeight=p.item==='lever'&&v.logicModelVersion===undefined?2:
+      (p.item==='signal-delay'||p.item==='signal-sustain')&&v.logicModelVersion!==3?2.5:null;
+    if(oldHeight===null)return p;
+    const offset=new Vector3(0,(ITEMS.get(p.item)!.size[1]-oldHeight)/2,0).applyEuler(quaternionRotation(p.rotation));
     return {...p,position:new Vector3(...p.position).add(offset).toArray() as Piece['position']};
   });
   const plots = v.plots === undefined ? inferPlots(pieces.map(pieceBounds)) : validatePlots(v.plots);
@@ -83,7 +85,7 @@ export function parseProject(text: string): Project {
     version: 1,
     name: v.name,
     plots,
-    ...(pieces.some(p=>p.item==='lever')?{logicModelVersion:2 as const}:{}),
+    ...(pieces.some(p=>['lever','signal-delay','signal-sustain'].includes(p.item))?{logicModelVersion:3 as const}:{}),
     ...(v.wires===undefined?{}:{wires:validateWires(v.wires,v.pieces)}),
     pieces: pieces.map((p) => ({
       id: p.id,

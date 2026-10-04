@@ -45,8 +45,36 @@ test('renders all twelve logic models and the distinct timer faces',async({page}
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  await page.evaluate(items=>{const e=(window as any).timber.editor;e.world.load(items.map((p,i)=>({id:p.id,item:p.id,wood:'oak',position:[(i%4-1.5)*6,p.size[1]/2,(Math.floor(i/4)-1)*6],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.pickSelection(null);e.view.camera.camera.position.set(16,19,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();},CATALOG.filter(p=>p.category==='Logic'));
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-gallery.png'});
- await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load(['signal-delay','signal-sustain'].map((item,i)=>({id:item,item,wood:'oak',position:[i*3-1.5,1.25,0],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.view.camera.camera.position.set(4.2,3.8,7.6);e.view.camera.controls.target.set(0,1,0);e.view.camera.controls.update();e.view.grid.visible=false;});
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load(['signal-delay','signal-sustain'].map((item,i)=>({id:item,item,wood:'oak',position:[i*3-1.5,1,0],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.view.camera.camera.position.set(4.2,3.8,7.6);e.view.camera.controls.target.set(0,1,0);e.view.camera.controls.update();e.view.grid.visible=false;});
  await page.waitForTimeout(600);await page.screenshot({path:'artifacts/logic-timers.png'});expect(errors).toEqual([]);
+});
+
+test('shows confirmed circuit dimensions and upgrades old timers without floating or moving sockets',async({page})=>{
+ await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+ await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();
+ for(const [id,size] of [['signal-delay','2 × 2 × 2'],['signal-sustain','2 × 2 × 2'],['signal-inverter','2 × 1 × 1']])
+  await expect(page.locator(`[data-item="${id}"] .card-size`)).toHaveText(size);
+ const old={version:1,logicModelVersion:2,name:'Timer scale',plots:[12],pieces:[
+  {id:'delay',item:'signal-delay',position:[-3,1.25,0],rotation:[0,0,0],wood:'oak',timing:12},
+  {id:'sustain',item:'signal-sustain',position:[0,1.25,0],rotation:[0,0,0],wood:'oak',timing:7},
+  {id:'inverter',item:'signal-inverter',position:[3,.5,0],rotation:[0,0,0],wood:'oak'},
+ ],wires:[{id:'w',from:{piece:'delay',port:'out'},to:{piece:'sustain',port:'in'},points:[]}]};
+ await page.locator('#file-input').setInputFiles({name:'timers.timber',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(old))});
+ await page.locator('#confirm-action').click();
+ const sockets=await page.evaluate(async()=>{
+  const {portPosition}=await import('/src/logic-ports.ts');const e=(window as any).timber.editor;
+  return [portPosition(e.world.pieces.get('delay'),'out'),portPosition(e.world.pieces.get('sustain'),'in')];
+ });
+ expect(sockets).toEqual([[-2,.25,0],[-1,.25,0]]);
+ await page.locator('#select-tool').click();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(5,5,9);e.view.camera.controls.target.set(0,.7,0);e.view.camera.controls.update();});
+ await page.waitForTimeout(200);await page.screenshot({path:'artifacts/logic-circuit-scale.png'});
+ await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
+ const project=await page.evaluate(()=>(window as any).timber.editor.project);
+ expect(project.logicModelVersion).toBe(3);expect(project.wires).toEqual(old.wires);
+ expect(project.pieces.find((p:any)=>p.id==='delay').position).toEqual([-3,1,0]);
+ expect(project.pieces.find((p:any)=>p.id==='sustain').position).toEqual([0,1,0]);
+ expect(project.pieces.find((p:any)=>p.id==='delay').timing).toBe(12);
 });
 
 test('legacy levers keep their mounts and wiring across import, save and repeated reloads',async({page})=>{
@@ -61,7 +89,7 @@ test('legacy levers keep their mounts and wiring across import, save and repeate
  await page.locator('#confirm-action').click();
  for(let i=0;i<2;i++){
   const saved=await page.evaluate(()=>(window as any).timber.editor.project);
-  expect(saved.logicModelVersion).toBe(2);expect(saved.pieces.find((p:any)=>p.id==='off').position).toEqual([-2,.75,0]);
+  expect(saved.logicModelVersion).toBe(3);expect(saved.pieces.find((p:any)=>p.id==='off').position).toEqual([-2,.75,0]);
   expect(saved.pieces.find((p:any)=>p.id==='wall').position[0]).toBeCloseTo(8.25);
   expect(saved.wires).toEqual(legacy.wires);
   await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');

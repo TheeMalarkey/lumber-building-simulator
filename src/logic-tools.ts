@@ -2,13 +2,16 @@ import {Vector3,Line,BufferGeometry,LineBasicMaterial} from 'three';
 import {ITEMS,type Vec3} from './catalog';
 import {portsFor,portPosition,wirePath,endpointPosition,type Endpoint} from './logic-ports';
 import type {Editor} from './editor';
+import {LogicInteraction} from './logic-interaction';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
  wiring=false;private start:Endpoint|null=null;private bends:Vec3[]=[];private selectedWire:string|null=null;
  private down:number[]|null=null;private previousStatus='';private generation=-1;private revision=-1;
  private guide=new Line(new BufferGeometry(),new LineBasicMaterial({color:0xf2bc72,depthTest:false}));
+ private interaction:LogicInteraction;
  constructor(private e:Editor){
+  this.interaction=new LogicInteraction(e,()=>!this.wiring,id=>this.activate(id));
   e.view.worldRoot.add(this.guide);this.guide.visible=false;
   $('wire-tool').onclick=()=>this.toggle();$('wire-done').onclick=()=>this.toggle(false);
   $('wire-remove').onclick=()=>{if(this.selectedWire)e.world.execute([],e.world.wires.filter(w=>w.id!==this.selectedWire));this.selectedWire=null;this.status();};
@@ -36,7 +39,6 @@ export class LogicTools {
     else if(event.code==='Backspace'&&this.bends.length){this.bends.pop();this.status();}
     else if(event.code==='Delete')$('wire-remove').click();return;
    }
-   if(event.code==='KeyE'&&e.view.camera.walking&&!event.repeat&&e.selectedPieces.length===1){event.preventDefault();this.activate();}
   },true);
  }
  private surfacePoint(point:Vec3,normal:Vec3):Vec3{return point.map((v,i)=>v+normal[i]*.06) as Vec3;}
@@ -84,8 +86,8 @@ export class LogicTools {
   $('wire-status').textContent=this.start?`Choose a socket to finish · ${this.bends.length} bends`:'Click a socket or wire to start';
   $('wire-remove').hidden=!this.selectedWire;$('wire-count').textContent=`${this.e.world.wires.length} wires · crossing lines stay separate`;
  }
- activate(){
-  const p=this.e.selectedPieces[0];if(!p)return;
+ activate(id=this.e.selected){
+  const p=id?this.e.world.pieces.get(id):undefined;if(!p)return;
   if(p.item==='lever')this.e.world.execute([{before:p,after:{...p,logicOn:!p.logicOn}}]);
   else if(p.item==='button')this.e.view.logic.circuit.press(p.id);
   this.inspect();
@@ -100,6 +102,7 @@ export class LogicTools {
   this.previousStatus='';this.tick();
  }
  tick(){
+  this.interaction.tick();
   if(this.generation!==this.e.world.generation){this.generation=this.e.world.generation;if(this.wiring)this.toggle(false);}
   if(this.revision!==this.e.world.revision){this.revision=this.e.world.revision;this.status();}
   if(this.start&&'piece' in this.start&&!this.e.world.pieces.has(this.start.piece)){this.start=null;this.bends=[];this.guide.visible=false;this.status();}

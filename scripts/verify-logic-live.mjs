@@ -14,6 +14,7 @@ try{
  await page.locator('#menu-tool').click();await page.locator('#file-input').setInputFiles({name:'logic-check.timber',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,name:'Logic check',plots:[12],pieces:fixture}))});await page.locator('#confirm-action').click();
  if(await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();
  await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#catalog-total')).toHaveText('100');await expect(page.locator('.catalog-card')).toHaveCount(12);
+ for(const [id,size] of [['signal-delay','2 × 2 × 2'],['signal-sustain','2 × 2 × 2'],['signal-inverter','2 × 1 × 1']])await expect(page.locator(`[data-item="${id}"] .card-size`)).toHaveText(size);
  await page.locator('#select-tool').click();
  const rect=await page.locator('#viewport>canvas').boundingBox(),camera=new PerspectiveCamera(45,rect.width/rect.height,.1,4000);camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
  const xy=p=>{const v=new Vector3(...p).project(camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];};
@@ -25,7 +26,7 @@ try{
  await select([6,2,0],'Worklight');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · Off');await expect(page.locator('#light-toggle')).not.toBeChecked();
  const exported=async()=>{await page.locator('#menu-tool').click();const pending=page.waitForEvent('download');await page.locator('#export').click();const stream=await(await pending).createReadStream(),chunks=[];for await(const chunk of stream)chunks.push(chunk);return JSON.parse(Buffer.concat(chunks).toString());};
  const saved=await exported();expect(saved.wires).toHaveLength(2);expect(saved.pieces.find(p=>p.id==='lever').logicOn).toBe(true);
- expect(saved.logicModelVersion).toBe(2);expect(saved.pieces.find(p=>p.id==='lever').position).toEqual([-6,.75,0]);
+ expect(saved.logicModelVersion).toBe(3);expect(saved.pieces.find(p=>p.id==='lever').position).toEqual([-6,.75,0]);
  await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
  expect((await exported()).wires).toEqual(saved.wires);await page.locator('#select-tool').click();await select([6,2,0],'Worklight');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · Off');
  await select([-6,.3,0],'Lever');await page.locator('#delete-tool').click();const afterDelete=await exported();expect(afterDelete.wires).toHaveLength(1);await page.locator('#undo').click();expect((await exported()).wires).toHaveLength(2);

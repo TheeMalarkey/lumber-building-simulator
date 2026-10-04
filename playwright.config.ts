@@ -6,7 +6,7 @@ export default defineConfig({
     "hud.spec.ts",
     "persistence.spec.ts",
     "materials.spec.ts",
-    "logic.spec.ts", "lighting.spec.ts", "lighting-walk.spec.ts",
+    "logic.spec.ts", "logic-interaction.spec.ts", "lighting.spec.ts", "lighting-walk.spec.ts",
     "walk.spec.ts",
     "plots.spec.ts",
     "selection.spec.ts",

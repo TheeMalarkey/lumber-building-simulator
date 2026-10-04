@@ -49,6 +49,7 @@ export function shell() {
 <div class="view-controls">${button("home", "home", "Home view")}${button("top", "top", "Top view")}${button("focus", "focus", "Focus selection (F)")}${button("grid", "grid", "Toggle grid", "active")}${button("orbit-tool", "orbit", "Orbit camera (O)")}</div>
 <div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span id="placing-instruction">Click to place</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span id="placing-hold"><kbd>L</kbd> Hold</span><span><kbd>Esc</kbd> Cancel</span></div>
 <div id="selection-marquee" hidden aria-hidden="true"></div>
+<div id="logic-hover" role="status" hidden><kbd>E</kbd><span id="logic-hover-click" hidden>or click</span><span id="logic-hover-label"></span></div>
 <div id="camera-hint" hidden></div><div id="toast" role="status"></div>
 </section>
 <div class="hud-corner"><button id="menu-tool" aria-label="Project menu" class="hud-tool" aria-expanded="false" aria-controls="project-menu">${icon("cube")}<strong>TIMBER</strong>${icon("chevron")}</button><span id="save-state" class="save-state">Local workspace</span></div>

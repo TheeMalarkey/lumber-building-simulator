@@ -68,21 +68,23 @@ export function logicParts(item:CatalogItem,state={active:false,timing:1}):Buffe
  }else{
   const timer=item.id==='signal-delay'||item.id==='signal-sustain';
   box(w-.12,.18,d,0,.09,0);
-  const shape=new Shape(),half=(w-.2)/2,shoulder=timer?h-.5:h*.62;
+  const shape=new Shape(),half=(w-.2)/2,shoulder=timer?h*.8:h*.62;
   shape.moveTo(-half,.18);shape.lineTo(half,.18);shape.lineTo(half,shoulder);
   shape.lineTo(half*.62,h);shape.lineTo(-half*.62,h);shape.lineTo(-half,shoulder);shape.closePath();
   const depth=d-.16;profile(shape,depth,0,0,0);
   decal(.58,.48,0,h+.0004,0,7,-Math.PI/2);
   if(timer){
-   const z=depth/2;
-   cyl(.45,.035,-.4,1.3,z+.019,2,'z');
-   decal(.8,.8,-.4,1.3,z+.037,9);
-   box(.026,1.61,.018,.13,1.125,z+.01,4);
-   box(.15,.17,.033,.13,.35+(state.timing-1)*.132,z+.022,5);
-   box(.4,.105,.032,-.4,.35,z+.02,1);
+   // Keep meters and the slider below the roof shoulder while preserving the
+   // circular dial's proportions at the corrected two-stud case height.
+   const z=depth/2,fy=(y:number)=>y*shoulder/2;
+   cyl(.45,.035,-.4,fy(1.3),z+.019,2,'z');
+   decal(.8,.8,-.4,fy(1.3),z+.037,9);
+   box(.026,fy(1.61),.018,.13,fy(1.125),z+.01,4);
+   box(.15,fy(.17),.033,.13,fy(.35+(state.timing-1)*.132),z+.022,5);
+   box(.4,fy(.105),.032,-.4,fy(.35),z+.02,1);
    const meter=(length:number,y:number)=>{
-    const g=new CylinderGeometry(.23,.23,length,20);g.scale(1,1,.34);
-    add(g,.55,y,z,1);
+    const g=new CylinderGeometry(.23,.23,fy(length),20);g.scale(1,1,.34);
+    add(g,.55,fy(y),z,1);
    };
    if(item.id==='signal-delay')for(let i=0;i<12;i++)meter(.133,.337+i*.14);
    else meter(1.675,1.108);

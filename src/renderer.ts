@@ -19,6 +19,7 @@ export interface Pick {
   point: Vec3;
   normal: Vec3;
   id?: string;
+  surface?: number;
 }
 export class Viewport {
   renderer: T.WebGLRenderer;
@@ -339,6 +340,7 @@ export class Viewport {
     );
     let best: T.Intersection | null = null;
     let id: string | undefined;
+    let surface: number | undefined;
     for (const candidate of candidates) {
       if (best && candidate.distance > best.distance) break;
       const p = candidate.piece;
@@ -351,6 +353,10 @@ export class Viewport {
       if (hits[0] && (!best || hits[0].distance < best.distance)) {
         best = hits[0];
         id = p.id;
+        // The picking mesh has one material, so raycast's materialIndex does
+        // not identify the rendered surface. Read the merged geometry group.
+        const offset = best.faceIndex! * 3;
+        surface = this.tmpMesh.geometry.groups.find(g => offset >= g.start && offset < g.start + g.count)?.materialIndex;
         best.normal = hits[0]
           .face!.normal.clone()
           .transformDirection(this.tmpMesh.matrixWorld);
@@ -359,6 +365,7 @@ export class Viewport {
     if (best)
       return {
         id,
+        surface,
         point: best.point.toArray() as Vec3,
         normal: best.normal!.toArray() as Vec3,
       };

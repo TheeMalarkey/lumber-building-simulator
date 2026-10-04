@@ -1461,3 +1461,7 @@ dialog .stats-grid strong {
 }
 
 .logic-ports{display:flex;gap:6px;margin:6px 0 12px}.logic-ports button{flex:1;padding:7px;border:1px solid var(--line,#d4d7c8);border-radius:4px}#logic-action{width:100%;margin-bottom:8px}#wiring-panel{position:absolute;left:16px;bottom:94px;width:min(340px,calc(100vw - 32px));padding:16px;z-index:12}#wiring-panel p{font-size:12px;line-height:1.5;margin:8px 0;color:#c2c8b8}#wiring-panel button{padding:8px;margin:4px 5px 0 0}#wire-status{font-size:13px}#logic-status{margin-bottom:8px}
+#logic-hover{position:fixed;z-index:15;display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid #ffffff25;border-radius:5px;background:#293027ed;color:#f0f1e8;font-size:12px;box-shadow:0 3px 12px #0003;pointer-events:none;white-space:nowrap}
+#logic-hover kbd{padding:1px 5px;color:#f2bc72;border:1px solid #ffffff35;border-radius:3px;font:inherit}
+#logic-hover-click{color:#bfc5b7}
+.viewport>canvas.logic-hovering{cursor:pointer}
