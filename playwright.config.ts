@@ -6,7 +6,7 @@ export default defineConfig({
     "hud.spec.ts",
     "persistence.spec.ts",
     "materials.spec.ts",
-    "lighting.spec.ts",
+    "lighting.spec.ts", "lighting-walk.spec.ts",
     "walk.spec.ts",
     "plots.spec.ts",
     "selection.spec.ts",
@@ -32,3 +32,4 @@ export default defineConfig({
   },
   reporter: "list",
 });
+

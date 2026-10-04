@@ -187,3 +187,10 @@ Added five fixed-finish working fixtures, bringing the catalog to 88. Reference 
 114 core tests, the full 73-scenario browser suite and production build passed. After Worklight refinement, the focused lighting browser scenario passed again. Coverage includes saved boolean state, undo/redo, indexed bounded light allocation, rotations and floating origin, mixed toggles, copied disabled lights, reload, night preview and compact layout. Review identified the Worklight housing obscuring its reflector; the housing was recessed and a raycast regression now verifies reflector visibility. Rounded stand elbows use convex collision proxies.
 
 The isolated production UI check passed without the development API: catalog/count, import, fixed finish, toggle, axis copying, rotate/tilt, undo/redo, persistence and compact controls. Reproduce with node scripts/verify-lighting-live.mjs; set TIMBER_URL to test another deployment. Visual evidence: [Worklight detail](../artifacts/worklight-detail.png) and [night scene](../artifacts/lighting-night.png). Rendering uses a fixed pool of two point and four spot emitters with cached shadows; these checks establish behavior, not a large-scene FPS result or exact live-game fidelity.
+
+
+## Walking near lights: disappearing surfaces — 2026-10-04
+
+Reproduced the reported grid-only scene with a single Worklight. Unassigned, zero-intensity light-pool slots still participated in the shadow shader but had no depth texture. WebGL rejected shaded draw calls with a texture-format/shadow-sampler mismatch. Initialize missing shadow maps for every pool slot before rendering; already initialized maps remain cached.
+
+The new browser regression failed before the fix with GPU errors and passed afterward. All five fixtures now pass walking, quality-switch and leave/return range checks with GPU and JavaScript error capture. All 114 core tests, eight focused lighting/walking browser scenarios and the production build passed. The isolated production UI check also passed with a single Worklight, walk mode and no GPU errors: scripts/verify-lighting-walk-live.mjs. This is a rendering correction; builds and light state are unchanged.

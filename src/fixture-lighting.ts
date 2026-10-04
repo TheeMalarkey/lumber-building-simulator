@@ -57,6 +57,12 @@ export class FixtureLighting {
     for(const light of [...this.points.slice(point),...this.spots.slice(spot)]){
       light.intensity=0;light.userData.key=undefined;
     }
+    // Even zero-intensity pool slots participate in the shadow shader. Every
+    // slot needs a real depth texture; null fallback textures are incompatible
+    // with shadow samplers and can reject all shaded draw calls.
+    for(const light of [...this.points,...this.spots]){
+      if(light.shadow.map===null)light.shadow.needsUpdate=true;
+    }
     this.root.visible=this.activeIds.length>0;
   }
 }
