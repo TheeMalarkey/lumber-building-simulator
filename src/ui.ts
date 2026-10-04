@@ -70,11 +70,10 @@ export function shell() {
 <div class="rotate-buttons" id="rotate-controls"><button id="rotate">${icon("rotate")} Rotate <kbd>R</kbd></button><button id="tilt">${icon("tilt")} Tilt <kbd>T</kbd></button></div>
 <label class="setting-row overlap-option" title="Allow blueprints to intersect while keeping ground and active-land boundaries"><span>Allow overlaps</span><input id="overlap-toggle" type="checkbox" aria-label="Allow blueprint overlaps"></label>
 <section id="path-controls" hidden>
-<label class="setting-row"><span>Build mode</span><select id="build-mode" aria-label="Build mode"><option value="single">Single piece</option><option value="line">Straight drag</option><option value="curve">Curve</option><option id="wedge-build-option" value="wedge">Smart wedge curve</option></select></label>
-<label class="setting-row" id="wedge-mode-row" hidden><span>Wedge path</span><select id="wedge-mode" aria-label="Wedge path mode"><option value="ramp">Ramp</option><option value="wall-arch">Wall / arch</option></select></label>
-<label class="setting-row" id="path-fill-row" hidden title="Place every stud, including the end point. Dense joins may need Allow overlaps."><span>Fill span · every stud</span><input id="path-fill" type="checkbox" aria-label="Fill path at one-stud spacing"></label>
+<label class="setting-row"><span>Build mode</span><select id="build-mode" aria-label="Build mode"><option value="single">Single piece</option><option value="line">Straight drag</option></select></label>
+<label class="setting-row" id="path-fill-row" title="Place every stud along a drag, including the end point. Dense joins may need Allow overlaps."><span>Fill span · every stud</span><input id="path-fill" type="checkbox" aria-label="Fill path at one-stud spacing"></label>
 <p id="path-hint" class="nudge-hint">Ctrl + drag builds a straight run.</p><p id="path-status" role="status" hidden></p>
-<div id="path-actions" hidden><button id="path-remove" title="Remove selected curve point">Remove point</button><button id="path-build" class="primary-btn">Build path</button><button id="path-cancel" title="Cancel path (Escape)">Cancel</button></div>
+<div id="path-actions" hidden><button id="path-build" class="primary-btn">Build run</button><button id="path-cancel" title="Cancel run (Escape)">Cancel</button></div>
 </section>
 <label class="setting-row" id="elevation-row"><span>Elevation</span><input id="elevation" type="number" value="0" step="1" aria-label="Build elevation"><span id="snap">1 stud</span></label>
 <div id="preview-controls"><button id="hold-position" aria-pressed="false">Hold position (L)</button><button id="commit-preview" class="primary-btn" hidden>Place here</button></div>

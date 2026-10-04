@@ -62,7 +62,7 @@ export function turnRotation(rotation: Vec3, axis: number): Vec3 {
   const target = new Quaternion().setFromEuler(quaternionRotation(rotation)).premultiply(turn);
   return encodeRotation(target);
 }
-/** Fractional quarter turns keep curved placements compatible with version-one files. */
+/** Keep existing saved orientations readable while new placement uses quarter turns. */
 export function encodeRotation(target: Quaternion): Vec3 {
   const candidate = new Quaternion();
   // Enumerating integer quarter turns avoids Euler gimbal-lock rounding and
