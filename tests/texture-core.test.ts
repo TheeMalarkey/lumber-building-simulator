@@ -53,4 +53,15 @@ describe("physical material coordinates", () => {
     expect(again).toBe(first);
     expect(again.getAttribute("uv")).toBe(first.getAttribute("uv"));
   });
+
+  it("keeps grain upright on short smooth walls and square doors", () => {
+    for (const id of ["smooth-wall-stub", "short-smooth-wall", "half-door", "fat-door"]) {
+      const g = geometryFor(id), p = g.getAttribute("position"), n = g.getAttribute("normal"), uv = g.getAttribute("uv");
+      const wood = g.groups.find(group => group.materialIndex === 0)!;
+      for (let i = wood.start; i < wood.start + wood.count; i++) {
+        if (Math.abs(n.getZ(i)) > .99)
+          expect(uv.getX(i), id).toBeCloseTo(p.getY(i) / TEXTURE_TILE_STUDS, 6);
+      }
+    }
+  });
 });

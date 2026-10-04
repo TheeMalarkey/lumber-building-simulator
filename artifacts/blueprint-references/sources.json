@@ -152,6 +152,314 @@
       "file": "artifacts/blueprint-references/countersink.png",
       "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/34/THUMBcountersink.png/revision/latest",
       "sha256": "7a3e8f4ecf4255e0c0754b56575d7f2a32db2679443971c62b03d3b71b0f7201"
+    },
+    {
+      "imageName": "14wedge",
+      "file": "artifacts/blueprint-references/14wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/97/THUMB14wedge.png/revision/latest",
+      "sha256": "b42d3f65d794213ebff52c214ac7efd9810c4b03b1012050ea85e5dbe0e172b4",
+      "item": "1-4-wedge"
+    },
+    {
+      "imageName": "141wedge",
+      "file": "artifacts/blueprint-references/141wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/f8/THUMB141wedge.png/revision/latest",
+      "sha256": "d1bce7885af7858a8f1ff8e320d979dd18a92b5aba240f5b1579e5aae6e08a47",
+      "item": "1-4-x-1-wedge"
+    },
+    {
+      "imageName": "24wedge",
+      "file": "artifacts/blueprint-references/24wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/c/cc/THUMB24wedge.png/revision/latest",
+      "sha256": "f5f5245083a440d8bc2f431cf33f7545332d5a96177c870bbfc758fd035f7bbb",
+      "item": "2-4-wedge"
+    },
+    {
+      "imageName": "241wedge",
+      "file": "artifacts/blueprint-references/241wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/89/THUMB241wedge.png/revision/latest",
+      "sha256": "de019e2f0050b88df74039e505d9e60ce3536dbc4a986e5be41c7ccfb34dcc67",
+      "item": "2-4-x-1-wedge"
+    },
+    {
+      "imageName": "34wedge",
+      "file": "artifacts/blueprint-references/34wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e1/THUMB34wedge.png/revision/latest",
+      "sha256": "d8af8c34851b95874c65fa4ff43db64ba01f0f153fa395b88cddc1e4120975df",
+      "item": "3-4-wedge"
+    },
+    {
+      "imageName": "341wedge",
+      "file": "artifacts/blueprint-references/341wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/d/d3/THUMB341wedge.png/revision/latest",
+      "sha256": "5bebfce6408ebe8f44cd45032ee7cd2becf7cfb9d2f44bfb4c6fa51d2bc52617",
+      "item": "3-4-x-1-wedge"
+    },
+    {
+      "imageName": "44wedge",
+      "file": "artifacts/blueprint-references/44wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/16/THUMB44wedge.png/revision/latest",
+      "sha256": "7e47946a0eefb0bb063554bc8865268c9053c3a70bafbef59c8b8431f02ac9f1",
+      "item": "4-4-wedge"
+    },
+    {
+      "imageName": "441wedge",
+      "file": "artifacts/blueprint-references/441wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/87/THUMB441wedge.png/revision/latest",
+      "sha256": "a2492f044101098bb0e96d7789b173c21d8023d5de3e68876163080c4208d635",
+      "item": "4-4-x-1-wedge"
+    },
+    {
+      "imageName": "13wedge",
+      "file": "artifacts/blueprint-references/13wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/b8/THUMB13wedge.png/revision/latest",
+      "sha256": "d31c646d4f7cf419deec79e59f8bf21b5af52d2e68604a5271288fdde253600c",
+      "item": "1-3-wedge"
+    },
+    {
+      "imageName": "131wedge",
+      "file": "artifacts/blueprint-references/131wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/79/THUMB131wedge.png/revision/latest",
+      "sha256": "1b7af61d77d24e16c378029d507fc5dbd61be8bd2fe2615d16bed44435db9723",
+      "item": "1-3-x-1-wedge"
+    },
+    {
+      "imageName": "23wedge",
+      "file": "artifacts/blueprint-references/23wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/c/cb/THUMB23wedge.png/revision/latest",
+      "sha256": "bc4e0a8a81b0172c5606d08d3530f69b78f7198f075e9a9261a1d2ecd37cfbc1",
+      "item": "2-3-wedge"
+    },
+    {
+      "imageName": "231wedge",
+      "file": "artifacts/blueprint-references/231wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/b9/THUMB231wedge.png/revision/latest",
+      "sha256": "3a7bfb8ea6de80c1fe8e7b922b0780bb5923532679ba7b49b4c357d6aa6f9e6b",
+      "item": "2-3-x-1-wedge"
+    },
+    {
+      "imageName": "33wedge",
+      "file": "artifacts/blueprint-references/33wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e8/THUMB33wedge.png/revision/latest",
+      "sha256": "154fbb191f33285da769ae496a5fb7f52a3d990adba9ea0cec42311a19ed4e7f",
+      "item": "3-3-wedge"
+    },
+    {
+      "imageName": "331wedge",
+      "file": "artifacts/blueprint-references/331wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7e/THUMB331wedge.png/revision/latest",
+      "sha256": "09e3ecfb282fb7393e33af23dbfef8197ecce1c9e7624badd42a5e997f9b35d0",
+      "item": "3-3-x-1-wedge"
+    },
+    {
+      "imageName": "12wedge",
+      "file": "artifacts/blueprint-references/12wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a3/THUMB12wedge.png/revision/latest",
+      "sha256": "eea765501642816ad987ecd95fc63fb202fc0eb7bc0a4e1cceb75ada4e0dd8de",
+      "item": "1-2-wedge"
+    },
+    {
+      "imageName": "121wedge",
+      "file": "artifacts/blueprint-references/121wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/b7/THUMB121wedge.png/revision/latest",
+      "sha256": "9c2af1c0cb25e5c656ebdebcf53c42e35bbfab7d35324ff205eb256365f6b8ee",
+      "item": "1-2-x-1-wedge"
+    },
+    {
+      "imageName": "22wedge",
+      "file": "artifacts/blueprint-references/22wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMB22wedge.png/revision/latest",
+      "sha256": "7fdfc30478eb5fd196f43271eb926ca9ee9616065ebf16fba4bd5b999b92a4d2",
+      "item": "2-2-wedge"
+    },
+    {
+      "imageName": "221wedge",
+      "file": "artifacts/blueprint-references/221wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/1a/THUMB221wedge.png/revision/latest",
+      "sha256": "72b783c03c8ff9b1bc937d6cbe13e6a9d8285e244664846eaee35124d12ff01e",
+      "item": "2-2-x-1-wedge"
+    },
+    {
+      "imageName": "11wedge",
+      "file": "artifacts/blueprint-references/11wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/1b/THUMB11wedge.png/revision/latest",
+      "sha256": "6fdea0a42e129f2946acb53f787843948fe6e872f764d4d950830f1171ad48ee",
+      "item": "1-1-wedge"
+    },
+    {
+      "imageName": "111wedge",
+      "file": "artifacts/blueprint-references/111wedge.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/ff/THUMB111wedge.png/revision/latest",
+      "sha256": "3afbd9e549d10ea4ebdd20d6822904da26c9743e853d3ee86df042c7059771c8",
+      "item": "1-1-x-1-wedge"
+    },
+    {
+      "imageName": "smoothwall",
+      "file": "artifacts/blueprint-references/smoothwall.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/80/THUMBsmoothwall.png/revision/latest",
+      "sha256": "8cde2f8d11212e5c7ea303f853e6e5adc417e057a7a6b84ab9c66968b45415f4",
+      "item": "smooth-wall"
+    },
+    {
+      "imageName": "smoothwall2",
+      "file": "artifacts/blueprint-references/smoothwall2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/fe/THUMBsmoothwall2.png/revision/latest",
+      "sha256": "1375fe67f46190acaac109d18753c7d7745ad6900ed5f3bc1c4d6c2ae35d3a49",
+      "item": "thin-smooth-wall"
+    },
+    {
+      "imageName": "shortsmoothwall",
+      "file": "artifacts/blueprint-references/shortsmoothwall.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/73/THUMBshortsmoothwall.png/revision/latest",
+      "sha256": "dec52e1e00c25f185288a9362ef72012cecde1dcbca8ea8847c09f9430ebefa8",
+      "item": "short-smooth-wall"
+    },
+    {
+      "imageName": "shortsmoothwall2",
+      "file": "artifacts/blueprint-references/shortsmoothwall2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/72/THUMBshortsmoothwall2.png/revision/latest",
+      "sha256": "be1dc32ba3d613caa47a7839dea2f99b3006467c27865d4a4f1f186557e76857",
+      "item": "thin-short-smooth-wall"
+    },
+    {
+      "imageName": "shortsmoothwallcorner",
+      "file": "artifacts/blueprint-references/shortsmoothwallcorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/5/52/THUMBshortsmoothwallcorner.png/revision/latest",
+      "sha256": "7c214f82ee5e0dfa71be7e62c426c81a7516ead4e25855b2d33331aa5a586cab",
+      "item": "short-smooth-wall-corner"
+    },
+    {
+      "imageName": "smoothwallstub",
+      "file": "artifacts/blueprint-references/smoothwallstub.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/92/THUMBsmoothwallstub.png/revision/latest",
+      "sha256": "65cc326ecd3c29303a0ded8e7f3964c8c07dcf1f453b77b8cb893e40a775d7ae",
+      "item": "smooth-wall-stub"
+    },
+    {
+      "imageName": "smoothwallstub2",
+      "file": "artifacts/blueprint-references/smoothwallstub2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7c/THUMBsmoothwallstub2.png/revision/latest",
+      "sha256": "1a756e62c6019ea11fb2017e0677e816676b033b665ced82bd10b88eabe55f0b",
+      "item": "thin-smooth-wall-stub"
+    },
+    {
+      "imageName": "smoothwallcornerstub",
+      "file": "artifacts/blueprint-references/smoothwallcornerstub.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/34/THUMBsmoothwallcornerstub.png/revision/latest",
+      "sha256": "e91f689c1391b8f57096f1b6a8d7fe4178faaca78b6cf82f6487d41b18819371",
+      "item": "smooth-wall-corner-stub"
+    },
+    {
+      "imageName": "corrugatedwall2",
+      "file": "artifacts/blueprint-references/corrugatedwall2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/bb/THUMBcorrugatedwall2.png/revision/latest",
+      "sha256": "01aaa89477ab7dd3aa5cfa7ef6f115fa377806fa57f790110cc4cc7fa9138fcc",
+      "item": "thin-corrugated-wall"
+    },
+    {
+      "imageName": "shortcorrugatedwall2",
+      "file": "artifacts/blueprint-references/shortcorrugatedwall2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/c/c1/THUMBshortcorrugatedwall2.png/revision/latest",
+      "sha256": "22e2090923dfa1a2f8fa5a8b4805fa7ccb44673ef86ad700cff7a13123e2f3d4",
+      "item": "thin-short-corrugated-wall"
+    },
+    {
+      "imageName": "shortcorrugatedwallcorner",
+      "file": "artifacts/blueprint-references/shortcorrugatedwallcorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/fa/THUMBshortcorrugatedwallcorner.png/revision/latest",
+      "sha256": "dd3d9592a0f1da02162bf3246cdf84d9cc31bdb5062ef1b67a1b31ec5842e9dc",
+      "item": "short-corrugated-wall-corner"
+    },
+    {
+      "imageName": "corrugatedwallstub",
+      "file": "artifacts/blueprint-references/corrugatedwallstub.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a8/THUMBcorrugatedwallstub.png/revision/latest",
+      "sha256": "9a2eac6d7e2fc80d84e3358e6d7b54465bc24b65b6caad926bed4447fd532df9",
+      "item": "corrugated-wall-stub"
+    },
+    {
+      "imageName": "corrugatedwallstub2",
+      "file": "artifacts/blueprint-references/corrugatedwallstub2.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/8b/THUMBcorrugatedwallstub2.png/revision/latest",
+      "sha256": "49c1fdffb2ef13a0e783d2c1578662dc21dfb5b40e75c9ef5648dd23d1242790",
+      "item": "thin-corrugated-wall-stub"
+    },
+    {
+      "imageName": "corrugatedwallcornerstub",
+      "file": "artifacts/blueprint-references/corrugatedwallcornerstub.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/30/THUMBcorrugatedwallcornerstub.png/revision/latest",
+      "sha256": "97fde2f4a1c5d1d0fc0cfbea371bdb21e58e516a3d7e75c2540278bca0afe0bb",
+      "item": "corrugated-wall-corner-stub"
+    },
+    {
+      "imageName": "thinshortfence",
+      "file": "artifacts/blueprint-references/thinshortfence.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e2/THUMBthinshortfence.png/revision/latest",
+      "sha256": "8b402e4d2f935c0112271d22a65885f537e14b41c9d7e612033a5e7f552b5df9",
+      "item": "thin-short-fence"
+    },
+    {
+      "imageName": "tinytile",
+      "file": "artifacts/blueprint-references/tinytile.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/0/05/THUMBtinytile.png/revision/latest",
+      "sha256": "36c0fdb1eb06edd451f2909ae0974a16da677bbd58ed7ebdd04d200217fcdf14",
+      "item": "tiny-tile"
+    },
+    {
+      "imageName": "smalltile",
+      "file": "artifacts/blueprint-references/smalltile.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/5/52/THUMBsmalltile.png/revision/latest",
+      "sha256": "993995b84d9daea9de973219f34631213b97be8191f548862c3b308f3af2c254",
+      "item": "small-tile"
+    },
+    {
+      "imageName": "tile",
+      "file": "artifacts/blueprint-references/tile.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/98/THUMBtile.png/revision/latest",
+      "sha256": "ceaf0aa83f75cf723bf49b5e60781e7ab6b1b82cedb7daf10a232fd2a0f856c2",
+      "item": "tile"
+    },
+    {
+      "imageName": "largetile",
+      "file": "artifacts/blueprint-references/largetile.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/6/64/THUMBlargetile.png/revision/latest",
+      "sha256": "ceaf0aa83f75cf723bf49b5e60781e7ab6b1b82cedb7daf10a232fd2a0f856c2",
+      "item": "large-tile"
+    },
+    {
+      "imageName": "tinyfloor",
+      "file": "artifacts/blueprint-references/tinyfloor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a7/THUMBtinyfloor.png/revision/latest",
+      "sha256": "66f5eefdc30ecd7d5d3b3f8c8a48862bbd391707924158aa86774b1ffe91aee8",
+      "item": "tiny-floor"
+    },
+    {
+      "imageName": "smallfloor",
+      "file": "artifacts/blueprint-references/smallfloor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/85/THUMBsmallfloor.png/revision/latest",
+      "sha256": "aefd6c8f16cd35c84ab2d33fe19ddd1425e70a413c1ea1b037b52bc6e293e576",
+      "item": "small-floor"
+    },
+    {
+      "imageName": "floor",
+      "file": "artifacts/blueprint-references/floor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/b0/THUMBfloor.png/revision/latest",
+      "sha256": "b5e397fe7a296f6c1f11d0b8f9eeeaee45febda5e1558f53bbc7d640db41e894",
+      "item": "floor"
+    },
+    {
+      "imageName": "largefloor",
+      "file": "artifacts/blueprint-references/largefloor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/8e/THUMBlargefloor.png/revision/latest",
+      "sha256": "913db09aa9a45f7c492dd79b8212b5d577ca61aebc1372b74dc563ae2710d043",
+      "item": "large-floor"
+    },
+    {
+      "imageName": "post",
+      "file": "artifacts/blueprint-references/post.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/4b/THUMBpost.png/revision/latest",
+      "sha256": "1c24967caa4484880e87f4f32986db89e0ea31c6ce35248778f1beb9d50895d0",
+      "item": "post"
     }
   ]
 }

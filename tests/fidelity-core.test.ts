@@ -76,3 +76,43 @@ it("separates fixed door and sink hardware from the chosen wood", () => {
   expect(geometryFor("basic-door").groups.map(g=>g.materialIndex)).toContain(1);
   expect(geometryFor("countertop-with-sink").groups.map(g=>g.materialIndex)).toEqual([0,1,2,3]);
 });
+
+describe("close-up reference details", () => {
+  it("joins corner boards without an open slit at the elbow", () => {
+    for (const id of ["fence-corner", "short-fence-corner",
+      "corrugated-wall-corner", "short-corrugated-wall-corner", "corrugated-wall-corner-stub"]) {
+      for (const z of [-.4, -.2, -.06, .06])
+        expect(hit(id, [-.75, 10, z], [0, -1, 0]), `${id} elbow ${z}`).toBeDefined();
+    }
+  });
+  it("leaves a broad inside opening in the thin fence corner", () => {
+    for (const id of ["fence-corner", "short-fence-corner"])
+      expect(hit(id, [.5, 10, -.15], [0, -1, 0]), id).toBeUndefined();
+  });
+  it("places the half-door knob above center and the basic-door knob below center", () => {
+    for (const [id, height] of [["half-door", 3], ["basic-door", 3], ["fat-door", 4]] as const) {
+      const g = geometryFor(id), p = g.getAttribute("position");
+      const group = g.groups.find(g => g.materialIndex === 1)!;
+      const ys = Array.from({length:group.count}, (_, i) => p.getY(group.start + i));
+      const center = (Math.min(...ys) + Math.max(...ys)) / 2 + ITEMS.get(id)!.size[1] / 2;
+      expect(center, id).toBeCloseTo(height, 5);
+      expect(Math.max(...ys) - Math.min(...ys), id).toBeGreaterThan(.6);
+    }
+  });
+  it("uses full round ladder rungs with clear gaps between them", () => {
+    expect(hit("ladder", [0, .22, 5], [0, 0, -1])).toBeDefined();
+    expect(hit("ladder", [0, .375, 5], [0, 0, -1])).toBeUndefined();
+  });
+  it("smooths cylinder sides while keeping caps and box edges sharp", () => {
+    const g = geometryFor("ladder"), p = g.getAttribute("position"), n = g.getAttribute("normal");
+    const groups = new Map<string, number[][]>();
+    for (let i = 0; i < p.count; i++) {
+      if (Math.abs(p.getX(i)) > 1.51 || Math.abs(p.getY(i)) > .26 || Math.abs(n.getX(i)) > .01) continue;
+      const key = [p.getX(i),p.getY(i),p.getZ(i)].map(v=>v.toFixed(5)).join(",");
+      const list = groups.get(key) || []; list.push([n.getX(i),n.getY(i),n.getZ(i)]); groups.set(key,list);
+    }
+    expect(groups.size).toBeGreaterThan(10);
+    for (const normals of groups.values()) for (const normal of normals)
+      expect(new Vector3(...normal).distanceTo(new Vector3(...normals[0]))).toBeLessThan(1e-5);
+  });
+});

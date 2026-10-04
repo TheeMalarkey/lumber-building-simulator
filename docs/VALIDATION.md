@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 60 passing core tests and 25 passing browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 66 passing core tests and 25 passing browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -92,3 +92,7 @@ The full suite, production build and independently served portable-package check
 The production build was checked under `/lumber-building-simulator/`, including all nine texture responses, favicon, 69 catalog cards, placement, save/reload, land expansion and both cameras. The check reported no browser errors, no production debug API, and a fitting compact layout. The 60 core tests and TypeScript/Vite build passed. Evidence: `artifacts/pages-local-check.json`.
 
 Only `dist/` is deployed as the site. Builds remain in browser storage; the public site and localhost have separate storage. The public branch starts from a clean snapshot with a public username and GitHub no-reply author identity; earlier local commit history is not published. Source text was checked for personal identity, user-directory paths and credential patterns, and images for personal metadata before publication.
+
+## Blueprint detail follow-up
+
+Six additional regressions cover continuous corner joins, fence-corner opening, door knob proportions/placement, ladder rung thickness/gaps, smooth cylinder normals, and upright wall/door grain. All 69 items now have direct thumbnail references, with exact measurements still explicitly distinguished from visual estimates. Comparison: `artifacts/blueprint-detail-comparison.png`.

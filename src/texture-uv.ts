@@ -12,10 +12,12 @@ export const TEXTURE_TILE_STUDS = 8;
 export function applyPhysicalUVs(
   geometry: BufferGeometry,
   size: readonly number[],
+  grainAxis?: 0 | 1 | 2,
 ): void {
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   const axes = [0, 1, 2].sort((a, b) => size[b] - size[a]);
+  if (grainAxis !== undefined) axes.unshift(...axes.splice(axes.indexOf(grainAxis), 1));
   const uv = new Float32Array(position.count * 2);
   const n = new Vector3(), u = new Vector3(), v = new Vector3(), p = new Vector3();
   for (let i = 0; i < position.count; i++) {

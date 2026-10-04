@@ -8,7 +8,7 @@ import {
 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { type CatalogItem, ITEMS, stairTreadCount } from "./catalog";
-import { applyPhysicalUVs } from "./texture-uv";
+import { applyPhysicalUVs, TEXTURE_TILE_STUDS } from "./texture-uv";
 const cache = new Map<string, BufferGeometry>();
 export function geometryFor(id: string): BufferGeometry {
   if (cache.has(id)) return cache.get(id)!;
@@ -33,7 +33,8 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
     surface = 0,
   ) => {
     const g = new BoxGeometry(sx, sy, sz);
-    applyPhysicalUVs(g, [sx, sy, sz]);
+    // Wall and door grain stays upright even when a panel is wider than tall.
+    applyPhysicalUVs(g, [sx, sy, sz], item.category === "Walls" || item.shape === "door" ? 1 : undefined);
     g.translate(x, y - h / 2, z);
     g.userData.surface = surface;
     parts.push(g);
@@ -41,10 +42,19 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
   // Fixed surfaces: 0 chosen wood, 1 black hardware, 2 metal, 3 basin.
   const cylinder = (radius: number, length: number, x: number, y: number, z: number,
     axis: "x" | "y" | "z", surface = 0) => {
-    const indexed = new CylinderGeometry(radius, radius, length, 12, 1);
-    const g = indexed.toNonIndexed(); indexed.dispose();
-    g.computeVertexNormals();
-    applyPhysicalUVs(g, [radius * 2, length, radius * 2]);
+    const segments = 16;
+    const g = new CylinderGeometry(radius, radius, length, segments, 1);
+    // Keep the cylinder's smooth side normals and flat cap normals. Unwrap
+    // its polygon perimeter at physical scale; projecting smooth normals
+    // would collapse the circumferential UV coordinate to zero.
+    const uv = g.getAttribute("uv"), normal = g.getAttribute("normal"), p = g.getAttribute("position");
+    const perimeter = 2 * radius * Math.sin(Math.PI / segments) * segments;
+    for (let i = 0; i < uv.count; i++) {
+      if (Math.abs(normal.getY(i)) > .9)
+        uv.setXY(i, p.getX(i) / TEXTURE_TILE_STUDS, p.getZ(i) / TEXTURE_TILE_STUDS);
+      else
+        uv.setXY(i, uv.getY(i) * length / TEXTURE_TILE_STUDS, uv.getX(i) * perimeter / TEXTURE_TILE_STUDS);
+    }
     if (axis === "x") g.rotateZ(Math.PI / 2);
     if (axis === "z") g.rotateX(Math.PI / 2);
     g.translate(x, y - h / 2, z);
@@ -86,14 +96,17 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       break;
     case "corrugated-corner":
       boardWall(w, 1, 0, -d / 2 + .5, .12);
-      boardWall(d - 1, 1, -w / 2 + .5, .5, .12, true);
+      // Continue to the recessed first board, rather than leaving a .12 gap.
+      boardWall(d - 1 + .12, 1, -w / 2 + .5, .5 - .06, .12, true);
       break;
     case "fence":
       boardWall(w, d, 0, 0, .5);
       break;
     case "fence-corner":
-      boardWall(w, 1, 0, -d / 2 + .5, .5);
-      boardWall(d - 1, 1, -w / 2 + .5, .5, .5, true);
+      // The corner reference has thin continuous returns and a broad opening.
+      // Staggering the two arms independently left them disconnected.
+      box(w, h, .5, 0, h / 2, -d / 2 + .25);
+      box(.5, h, d - .5, -w / 2 + .25, h / 2, .25);
       break;
     case "wedge": {
       const shape = new Shape();
@@ -134,15 +147,17 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       break;
     }
     case "door":
-      box(w, h, .6, 0, h / 2, 0);
-      // Plain slab with a short, dark circular knob on each side.
-      for (const side of [-1, 1]) cylinder(.2, .2, -w / 2 + .45, h / 2, side * .4, "z", 1);
+      box(w, h, .5, 0, h / 2, 0);
+      // Thumbnail-derived proportions: half/basic knobs near three studs,
+      // wide door centered. Fine hardware measurements remain estimates.
+      for (const side of [-1, 1])
+        cylinder(.35, .25, -w / 2 + .5, item.id === "fat-door" ? 4 : 3, side * .375, "z", 1);
       break;
     case "ladder":
       box(.5, h, d, -w / 2 + .25);
       box(.5, h, d, w / 2 - .25);
       for (let i = 0; i < 5; i++)
-        cylinder(.18, w - 1, 0, .4 + i * .8, 0, "x");
+        cylinder(.25, w - 1, 0, .5 + i * .75, 0, "x");
       break;
     case "chair":
       box(w, .5, d, 0, 2.25);

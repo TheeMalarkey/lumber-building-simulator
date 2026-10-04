@@ -38,3 +38,13 @@ Cached geometry and chunk instancing remain in place. A browser check confirms t
 Catalog IDs, outer dimensions and saved positions remain stable. Existing pieces adopt the revised geometry. Placement still uses conservative outer bounds, so empty cabinet interiors do not create newly usable placement space.
 
 Exact internal dimensions, unseen faces, pivots, filled-material behavior and current game parity still require measurements or comparison in a live LT2 client. None is claimed as verified by these thumbnails.
+
+## Detail pass — 2026-10-03
+
+An additional 44 directly linked thumbnails extend the image references to all 69 entries. The [remaining-reference contact sheet](../../artifacts/blueprint-remaining-reference-sheet.png) covers the individual wedge, wall, floor, tile and post variants. Their visible primitive forms were reviewed; no unsupported dimension changes were made.
+
+The [new comparison](../../artifacts/blueprint-detail-comparison.png) shows closed corner joints, thinner continuous fence returns, larger round door knobs with variant-specific heights, and thicker ladder rungs inset from the rail ends. Half/basic/fat knob heights of 3/3/4 studs, radius 0.35, half-stud fence thickness and ladder diameter remain thumbnail-derived estimates. The original independent-board recipe left real slits at the corner elbow; geometry raycasts now prevent that regression.
+
+Short walls and square doors now retain upright grain instead of choosing the widest horizontal dimension. Round parts keep smooth side normals and sharp cap normals, using 16 segments. Their UVs unwrap the polygon perimeter at the existing eight-stud scale, so every triangle still passes the physical-density and nondegeneracy tests. Material groups, shared resources and draw-call structure are unchanged; this is not a fresh FPS benchmark. The suite now has 66 core tests, including six new detail regressions.
+
+The first-pass discussion above is retained as history. Direct-image coverage is now complete; exact internal dimensions, back faces, pivots and live filled-state materials are still unverified.
