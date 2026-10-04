@@ -1,0 +1,17 @@
+{
+  "errors": [],
+  "walking": true,
+  "grounded": true,
+  "avatar": true,
+  "pieces": 6,
+  "fps": 60,
+  "frameMs": 16.670416666567327,
+  "drawCalls": 31,
+  "triangles": 2040,
+  "total": 6,
+  "visibleChunks": 1,
+  "geometries": 30,
+  "textures": 8,
+  "pixelRatio": 0.9,
+  "backend": "WebGL2"
+}

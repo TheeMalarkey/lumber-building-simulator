@@ -1,0 +1,15 @@
+{
+  "errors": [],
+  "stats": {
+    "fps": 30,
+    "frameMs": 33.09104477647525,
+    "drawCalls": 82,
+    "triangles": 4564,
+    "total": 122,
+    "visibleChunks": 4,
+    "geometries": 18,
+    "textures": 4,
+    "pixelRatio": 1,
+    "backend": "WebGL2"
+  }
+}

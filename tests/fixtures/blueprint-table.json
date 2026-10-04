@@ -1,0 +1,627 @@
+{
+  "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+  "accessed": "2026-10-03",
+  "entries": [
+    {
+      "name": "Basic Door",
+      "size": [
+        4.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "Half Door",
+      "size": [
+        4.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Fat Door",
+      "size": [
+        8.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 18
+    },
+    {
+      "name": "Stairs",
+      "size": [
+        4.0,
+        2.0,
+        4.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "Steep Stairs",
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "woodCost": 14
+    },
+    {
+      "name": "1/4 Wedge",
+      "size": [
+        4.0,
+        1.0,
+        4.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "1/4 x 1 Wedge",
+      "size": [
+        1.0,
+        1.0,
+        4.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "2/4 Wedge",
+      "size": [
+        4.0,
+        2.0,
+        4.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "2/4 x 1 Wedge",
+      "size": [
+        1.0,
+        2.0,
+        4.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "3/4 Wedge",
+      "size": [
+        4.0,
+        3.0,
+        4.0
+      ],
+      "woodCost": 12
+    },
+    {
+      "name": "3/4 x 1 Wedge",
+      "size": [
+        1.0,
+        3.0,
+        4.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "4/4 Wedge",
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "woodCost": 14
+    },
+    {
+      "name": "4/4 x 1 Wedge",
+      "size": [
+        1.0,
+        4.0,
+        4.0
+      ],
+      "woodCost": 5
+    },
+    {
+      "name": "1/3 Wedge",
+      "size": [
+        4.0,
+        1.0,
+        3.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "1/3 x 1 Wedge",
+      "size": [
+        1.0,
+        1.0,
+        3.0
+      ],
+      "woodCost": 2
+    },
+    {
+      "name": "2/3 Wedge",
+      "size": [
+        4.0,
+        2.0,
+        3.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "2/3 x 1 Wedge",
+      "size": [
+        1.0,
+        2.0,
+        3.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "3/3 Wedge",
+      "size": [
+        4.0,
+        3.0,
+        3.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "3/3 x 1 Wedge",
+      "size": [
+        1.0,
+        3.0,
+        3.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "1/2 Wedge",
+      "size": [
+        4.0,
+        1.0,
+        2.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "1/2 x 1 Wedge",
+      "size": [
+        1.0,
+        1.0,
+        2.0
+      ],
+      "woodCost": 2
+    },
+    {
+      "name": "2/2 Wedge",
+      "size": [
+        4.0,
+        2.0,
+        2.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "2/2 x 1 Wedge",
+      "size": [
+        1.0,
+        2.0,
+        2.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "1/1 Wedge",
+      "size": [
+        4.0,
+        1.0,
+        1.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "1/1 x 1 Wedge",
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "woodCost": 1
+    },
+    {
+      "name": "Smooth Wall",
+      "size": [
+        4.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "(Thin) Smooth Wall",
+      "size": [
+        2.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Smooth Wall Corner",
+      "size": [
+        2.0,
+        8.0,
+        2.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "Short Smooth Wall",
+      "size": [
+        4.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "(Thin) Short Smooth Wall",
+      "size": [
+        2.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "Short Smooth Wall Corner",
+      "size": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "woodCost": 5
+    },
+    {
+      "name": "Smooth Wall Stub",
+      "size": [
+        4.0,
+        2.0,
+        1.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "(Thin) Smooth Wall Stub",
+      "size": [
+        2.0,
+        2.0,
+        1.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Smooth Wall Corner Stub",
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Corrugated Wall",
+      "size": [
+        4.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "(Thin) Corrugated Wall",
+      "size": [
+        2.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Corrugated Wall Corner",
+      "size": [
+        2.0,
+        8.0,
+        2.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "Short Corrugated Wall",
+      "size": [
+        4.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "(Thin) Short Corrugated Wall",
+      "size": [
+        2.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "Short Corrugated Wall Corner",
+      "size": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "woodCost": 5
+    },
+    {
+      "name": "Corrugated Wall Stub",
+      "size": [
+        4.0,
+        2.0,
+        1.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "(Thin) Corrugated Wall Stub",
+      "size": [
+        2.0,
+        2.0,
+        1.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Corrugated Wall Corner Stub",
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Fence",
+      "size": [
+        4.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "(Thin) Fence",
+      "size": [
+        2.0,
+        8.0,
+        1.0
+      ],
+      "woodCost": 5
+    },
+    {
+      "name": "Fence Corner",
+      "size": [
+        2.0,
+        8.0,
+        2.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Short Fence",
+      "size": [
+        4.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 5
+    },
+    {
+      "name": "(Thin) Short Fence",
+      "size": [
+        2.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Short Fence Corner",
+      "size": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "woodCost": 4
+    },
+    {
+      "name": "Tiny Tile",
+      "size": [
+        1.0,
+        0.2,
+        1.0
+      ],
+      "woodCost": 1
+    },
+    {
+      "name": "Small Tile",
+      "size": [
+        2.0,
+        0.2,
+        2.0
+      ],
+      "woodCost": 1
+    },
+    {
+      "name": "Tile",
+      "size": [
+        4.0,
+        0.2,
+        4.0
+      ],
+      "woodCost": 2
+    },
+    {
+      "name": "Large Tile",
+      "size": [
+        8.0,
+        0.2,
+        8.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Tiny Floor",
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "woodCost": 1
+    },
+    {
+      "name": "Small Floor",
+      "size": [
+        2.0,
+        1.0,
+        2.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Floor",
+      "size": [
+        4.0,
+        1.0,
+        4.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Large Floor",
+      "size": [
+        8.0,
+        1.0,
+        8.0
+      ],
+      "woodCost": 18
+    },
+    {
+      "name": "Post",
+      "size": [
+        1.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 3
+    },
+    {
+      "name": "Ladder",
+      "size": [
+        4.0,
+        4.0,
+        1.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Mundane Chair",
+      "size": [
+        2.0,
+        5.0,
+        2.0
+      ],
+      "woodCost": 6
+    },
+    {
+      "name": "Square Table",
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "Long Table",
+      "size": [
+        8.0,
+        4.0,
+        4.0
+      ],
+      "woodCost": 14
+    },
+    {
+      "name": "Thin Cabinet",
+      "size": [
+        4.0,
+        2.4,
+        2.0
+      ],
+      "woodCost": 8
+    },
+    {
+      "name": "Kitchen Cabinet",
+      "size": [
+        4.0,
+        2.4,
+        4.0
+      ],
+      "woodCost": 15
+    },
+    {
+      "name": "Kitchen Cabinet Corner",
+      "size": [
+        4.0,
+        2.4,
+        4.0
+      ],
+      "woodCost": 15
+    },
+    {
+      "name": "Wide Kitchen Cabinet Corner",
+      "size": [
+        6.0,
+        2.4,
+        6.0
+      ],
+      "woodCost": 22
+    },
+    {
+      "name": "Countertop",
+      "size": [
+        4.0,
+        0.4,
+        4.0
+      ],
+      "woodCost": 18
+    },
+    {
+      "name": "Thin Countertop",
+      "size": [
+        4.0,
+        0.4,
+        2.0
+      ],
+      "woodCost": 10
+    },
+    {
+      "name": "Countertop With Sink",
+      "size": [
+        4.0,
+        1.0,
+        4.0
+      ],
+      "woodCost": 30
+    }
+  ]
+}

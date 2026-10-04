@@ -1,0 +1,13 @@
+# Building plots and ground reference
+
+The user's supplied LT2 screenshots and requested dimensions define this feature: one center starter plot, up to a 5×5 layout, each cell 40×40 studs, and a visible 0.1-stud rise from grass onto land. Plot tops use world Y=0 and grass uses Y=-0.1; walking follows the physical height change. Solid slabs include side faces.
+
+Grass uses Roblox's published pre-2022 Grass color/normal maps (7547167347, 7547168653). The warm, speckled plot surface uses brown-tinted pre-2022 Concrete maps (7546653328, 7546653707), selected by comparison with the screenshots. This material choice, tint, eight-stud texture repeat, lighting, and normal strength are visual approximations, not a verified extraction of LT2's land shader. Sources: [Roblox Materials reference](https://create.roblox.com/docs/parts/materials#base-materials). Original PNGs and hashes are recorded in `public/textures/manifest.json`.
+
+The center occupies X/Z -20 through 20. Active expansions must connect by shared edges; corners alone do not connect. Removing the center, disconnecting another plot, or uncovering any part of a placed blueprint is rejected. Full rotated bounds must remain covered by active cells, including elevated pieces and pieces spanning seams. A gap inside the active footprint remains unbuildable. Land edits participate in the same chronological undo/redo history as blueprints and persist in autosave, export, and import.
+
+The one-stud grid is masked to active land. Its major lines are anchored to plot edges, making five equal eight-stud cells along each plot side. Stud-grid visibility and plot-border visibility have separate controls. Analytic antialiasing, subpixel fading, and polygon depth bias stabilize the grid at oblique angles.
+
+The original 20,000-stud, two-triangle grass surface produced depth-interpolation errors: at several free-camera views it covered the raised plots. A 2,048-stud grass patch with 64-stud triangles follows the camera in whole texture repeats instead. The independent pixel probe in `scripts/diagnose-terrain.mjs` checks 840 camera views; the browser regression also checks plot visibility with the grid enabled and disabled.
+
+Rendering uses one shared grass mesh, one instanced slab draw for all active plots, and one optional border draw, plus the optional stud grid. Texture and mesh budgets are fixed, independent of blueprint count. Legacy files without plot metadata infer connected land for builds that fit the 200×200 area; files with pieces outside the supported area or explicit active layout are rejected rather than silently rearranged.

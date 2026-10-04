@@ -1,0 +1,15 @@
+import { chromium } from "@playwright/test";
+const browser = await chromium.launch({channel:"chrome",headless:true});
+const page = await browser.newPage({viewport:{width:1440,height:960}});
+await page.goto("http://127.0.0.1:5178");
+await page.waitForFunction(()=>!!window.timber);
+await page.waitForTimeout(1000);
+await page.screenshot({path:"artifacts/hud-world.png"});
+await page.locator("#build-tool").click();
+await page.screenshot({path:"artifacts/hud-catalog.png"});
+await page.locator('[data-item="smooth-wall"]').click();
+await page.locator("#wood-toggle").click();
+await page.screenshot({path:"artifacts/hud-placement.png"});
+await page.setViewportSize({width:390,height:844});
+await page.screenshot({path:"artifacts/hud-mobile.png"});
+await browser.close();

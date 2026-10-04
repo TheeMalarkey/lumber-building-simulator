@@ -1,0 +1,93 @@
+{
+  "source": "https://create.roblox.com/docs/parts/materials",
+  "materialSet": "Pre-2022 Base",
+  "retrieved": "2026-10-03",
+  "modified": false,
+  "assets": [
+    {
+      "file": "classic-foil-normal.png",
+      "robloxAssetId": "7546644903",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7546644903",
+      "width": 512,
+      "height": 512,
+      "bytes": 423566,
+      "sha256": "e99f5d710d6ff8cabeb8d86f5a450e3faa06fa1eed4e16a1b002ac6e988944bd"
+    },
+    {
+      "file": "classic-granite-color.png",
+      "robloxAssetId": "7547164400",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547164400",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 744627,
+      "sha256": "42f80536701542d5a1be4b35674d87807254c858a10fe8e9169161f9cd0fc1a3"
+    },
+    {
+      "file": "classic-ice-normal.png",
+      "robloxAssetId": "7547171198",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547171198",
+      "width": 512,
+      "height": 512,
+      "bytes": 62477,
+      "sha256": "b4873cf9d10a37f51fd65ef65d4608385285dddc826e7cc61f8d679995d89cd2"
+    },
+    {
+      "file": "classic-wood-color.png",
+      "robloxAssetId": "7547190453",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547190453",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 647163,
+      "sha256": "f5dc21df04d3abcc3f02f2f2f3b80dba595ce76ed68ab9219fa1f08cbb89c887"
+    },
+    {
+      "file": "classic-wood-normal.png",
+      "robloxAssetId": "7547190548",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547190548",
+      "width": 512,
+      "height": 512,
+      "bytes": 109319,
+      "sha256": "b522abb54fd5dcfc458371c32faceab08ae2a4847a52b2eba92de574d8bc3eb0"
+    },
+    {
+      "file": "classic-grass-color.png",
+      "robloxAssetId": "7547167347",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547167347",
+      "materialSet": "Pre-2022 Base",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 2833874,
+      "sha256": "e36259dd69173ef7314eecfee17c1a98f768081837e8d01173701c07730246a0"
+    },
+    {
+      "file": "classic-grass-normal.png",
+      "robloxAssetId": "7547168653",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7547168653",
+      "materialSet": "Pre-2022 Base",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 2116953,
+      "sha256": "434923fe4880c6e6d488065c330c0c983039448def8d158c06ebabd576a1df23"
+    },
+    {
+      "file": "classic-concrete-color.png",
+      "robloxAssetId": "7546653328",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7546653328",
+      "materialSet": "Pre-2022 Base",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 716703,
+      "sha256": "c9574ad180977d2e1b5931c9e197cae682a2da825bc0bf162c30eed3c889cca4"
+    },
+    {
+      "file": "classic-concrete-normal.png",
+      "robloxAssetId": "7546653707",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7546653707",
+      "materialSet": "Pre-2022 Base",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 1065301,
+      "sha256": "5c185eb6380d46323109db1dbd209942c753db907ef88b76a3c108e10a7252c4"
+    }
+  ]
+}

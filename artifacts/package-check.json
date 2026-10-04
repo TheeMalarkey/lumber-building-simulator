@@ -1,0 +1,18 @@
+{
+  "errors": [],
+  "oneStudGrid": true,
+  "landSelector": true,
+  "landExpansion": true,
+  "walkMode": true,
+  "freeMode": true,
+  "initial": {
+    "cards": 69,
+    "pieces": "122 pieces",
+    "fps": "60 FPS",
+    "debugAPI": "undefined",
+    "collisionChecks": true
+  },
+  "placed": "1 pieces",
+  "reloaded": "1 pieces",
+  "compactFits": true
+}

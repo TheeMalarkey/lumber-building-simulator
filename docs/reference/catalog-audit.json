@@ -1,0 +1,1147 @@
+{
+  "count": 69,
+  "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+  "entries": [
+    {
+      "id": "smooth-wall",
+      "name": "Smooth Wall",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        8,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "thin-smooth-wall",
+      "name": "(Thin) Smooth Wall",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "smooth-wall-corner",
+      "name": "Smooth Wall Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        2
+      ],
+      "shape": "corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-reviewed",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7c/THUMBsmoothwallcorner.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "short-smooth-wall",
+      "name": "Short Smooth Wall",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        4,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "thin-short-smooth-wall",
+      "name": "(Thin) Short Smooth Wall",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "short-smooth-wall-corner",
+      "name": "Short Smooth Wall Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        2
+      ],
+      "shape": "corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7c/THUMBsmoothwallcorner.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "smooth-wall-stub",
+      "name": "Smooth Wall Stub",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        2,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "thin-smooth-wall-stub",
+      "name": "(Thin) Smooth Wall Stub",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        2,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "smooth-wall-corner-stub",
+      "name": "Smooth Wall Corner Stub",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "shape": "corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7c/THUMBsmoothwallcorner.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "corrugated-wall",
+      "name": "Corrugated Wall",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        8,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-corrugated-wall",
+      "name": "(Thin) Corrugated Wall",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "corrugated-wall-corner",
+      "name": "Corrugated Wall Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        2
+      ],
+      "shape": "corrugated-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Board detail on both corner legs; exact corner joint and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/9f/THUMBcorrugatedwallcorner.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "short-corrugated-wall",
+      "name": "Short Corrugated Wall",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        4,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/4f/THUMBshortcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-short-corrugated-wall",
+      "name": "(Thin) Short Corrugated Wall",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "short-corrugated-wall-corner",
+      "name": "Short Corrugated Wall Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        2
+      ],
+      "shape": "corrugated-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Board detail on both corner legs; exact corner joint and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/9f/THUMBcorrugatedwallcorner.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "corrugated-wall-stub",
+      "name": "Corrugated Wall Stub",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        2,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "thin-corrugated-wall-stub",
+      "name": "(Thin) Corrugated Wall Stub",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        2,
+        1
+      ],
+      "shape": "corrugated",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Broad vertical boards with shallow alternating relief; thickness and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "corrugated-wall-corner-stub",
+      "name": "Corrugated Wall Corner Stub",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        2,
+        2
+      ],
+      "shape": "corrugated-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Board detail on both corner legs; exact corner joint and relief estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/9f/THUMBcorrugatedwallcorner.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "fence",
+      "name": "Fence",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        8,
+        1
+      ],
+      "shape": "fence",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid staggered vertical boards replace open rails; board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/2/2e/THUMBfence.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-fence",
+      "name": "(Thin) Fence",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        1
+      ],
+      "shape": "fence",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid staggered vertical boards replace open rails; board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/ea/THUMBthinfence.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "fence-corner",
+      "name": "Fence Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        8,
+        2
+      ],
+      "shape": "fence-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid boards continue around the corner; corner join and board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/41/THUMBfencecorner.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "short-fence",
+      "name": "Short Fence",
+      "category": "Walls",
+      "dimensions": [
+        4,
+        4,
+        1
+      ],
+      "shape": "fence",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid staggered vertical boards replace open rails; board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/c/c6/THUMBshortfence.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-short-fence",
+      "name": "(Thin) Short Fence",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        1
+      ],
+      "shape": "fence",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid staggered vertical boards replace open rails; board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/2/2e/THUMBfence.png/revision/latest",
+      "visualEvidence": "Related family thumbnail; variant details inferred"
+    },
+    {
+      "id": "short-fence-corner",
+      "name": "Short Fence Corner",
+      "category": "Walls",
+      "dimensions": [
+        2,
+        4,
+        2
+      ],
+      "shape": "fence-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid boards continue around the corner; corner join and board offsets estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/1c/THUMBshortfencecorner.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "tiny-floor",
+      "name": "Tiny Floor",
+      "category": "Floors",
+      "dimensions": [
+        1,
+        1,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "tiny-tile",
+      "name": "Tiny Tile",
+      "category": "Floors",
+      "dimensions": [
+        1,
+        0.2,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "small-floor",
+      "name": "Small Floor",
+      "category": "Floors",
+      "dimensions": [
+        2,
+        1,
+        2
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "small-tile",
+      "name": "Small Tile",
+      "category": "Floors",
+      "dimensions": [
+        2,
+        0.2,
+        2
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "floor",
+      "name": "Floor",
+      "category": "Floors",
+      "dimensions": [
+        4,
+        1,
+        4
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "tile",
+      "name": "Tile",
+      "category": "Floors",
+      "dimensions": [
+        4,
+        0.2,
+        4
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "large-floor",
+      "name": "Large Floor",
+      "category": "Floors",
+      "dimensions": [
+        8,
+        1,
+        8
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "large-tile",
+      "name": "Large Tile",
+      "category": "Floors",
+      "dimensions": [
+        8,
+        0.2,
+        8
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "basic-door",
+      "name": "Basic Door",
+      "category": "Doors",
+      "dimensions": [
+        4,
+        8,
+        1
+      ],
+      "shape": "door",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Plain slab and dark round knobs; thickness, knob radius and reverse face inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/44/THUMBbasicdoor.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "half-door",
+      "name": "Half Door",
+      "category": "Doors",
+      "dimensions": [
+        4,
+        4,
+        1
+      ],
+      "shape": "door",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Plain slab and dark round knobs; thickness, knob radius and reverse face inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/0/07/THUMBhalfdoor.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "fat-door",
+      "name": "Fat Door",
+      "category": "Doors",
+      "dimensions": [
+        8,
+        8,
+        1
+      ],
+      "shape": "door",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Plain slab and dark round knobs; thickness, knob radius and reverse face inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/bc/THUMBfatdoor.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "stairs",
+      "name": "Stairs",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        2,
+        4
+      ],
+      "shape": "stairs",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Two treads for Stairs, four for Steep Stairs; collision uses the same count.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a9/THUMBstairs.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "steep-stairs",
+      "name": "Steep Stairs",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        4,
+        4
+      ],
+      "shape": "stairs",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Two treads for Stairs, four for Steep Stairs; collision uses the same count.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/2/23/THUMBsteepstairs.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "1-4-wedge",
+      "name": "1/4 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        1,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-4-x-1-wedge",
+      "name": "1/4 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        1,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-4-wedge",
+      "name": "2/4 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        2,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-4-x-1-wedge",
+      "name": "2/4 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        2,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "3-4-wedge",
+      "name": "3/4 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        3,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "3-4-x-1-wedge",
+      "name": "3/4 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        3,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "4-4-wedge",
+      "name": "4/4 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        4,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "4-4-x-1-wedge",
+      "name": "4/4 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        4,
+        4
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-3-wedge",
+      "name": "1/3 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        1,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-3-x-1-wedge",
+      "name": "1/3 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        1,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-3-wedge",
+      "name": "2/3 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        2,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-3-x-1-wedge",
+      "name": "2/3 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        2,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "3-3-wedge",
+      "name": "3/3 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        3,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "3-3-x-1-wedge",
+      "name": "3/3 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        3,
+        3
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-2-wedge",
+      "name": "1/2 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        1,
+        2
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-2-x-1-wedge",
+      "name": "1/2 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        1,
+        2
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-2-wedge",
+      "name": "2/2 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        2,
+        2
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "2-2-x-1-wedge",
+      "name": "2/2 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        2,
+        2
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-1-wedge",
+      "name": "1/1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        4,
+        1,
+        1
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "1-1-x-1-wedge",
+      "name": "1/1 x 1 Wedge",
+      "category": "Wedges",
+      "dimensions": [
+        1,
+        1,
+        1
+      ],
+      "shape": "wedge",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "mundane-chair",
+      "name": "Mundane Chair",
+      "category": "Furniture",
+      "dimensions": [
+        2,
+        5,
+        2
+      ],
+      "shape": "chair",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Solid back, thicker legs and simple seat; internal part dimensions estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/d/d0/THUMBmundanechair.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "square-table",
+      "name": "Square Table",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        4,
+        4
+      ],
+      "shape": "table",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Flush top and four simple legs; removed invented apron, thicknesses estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/6/60/THUMBsquaretable.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "long-table",
+      "name": "Long Table",
+      "category": "Furniture",
+      "dimensions": [
+        8,
+        4,
+        4
+      ],
+      "shape": "table",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Flush top and four simple legs; removed invented apron, thicknesses estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e0/THUMBlongtable.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-cabinet",
+      "name": "Thin Cabinet",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        2.4,
+        2
+      ],
+      "shape": "cabinet",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Open top, front door outlines and regular cabinet divider; part dimensions estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/3f/THUMBthincabinet.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "kitchen-cabinet",
+      "name": "Kitchen Cabinet",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        2.4,
+        4
+      ],
+      "shape": "cabinet",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Open top, front door outlines and regular cabinet divider; part dimensions estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e3/THUMBkitchencabinet.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "kitchen-cabinet-corner",
+      "name": "Kitchen Cabinet Corner",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        2.4,
+        4
+      ],
+      "shape": "cabinet-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Small corner is square/open; wide corner has a 2x2 L notch. Internal subdivisions and frames inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualEvidence": "Direct thumbnail",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a0/THUMBcornercabinet.png/revision/latest"
+    },
+    {
+      "id": "wide-kitchen-cabinet-corner",
+      "name": "Wide Kitchen Cabinet Corner",
+      "category": "Furniture",
+      "dimensions": [
+        6,
+        2.4,
+        6
+      ],
+      "shape": "cabinet-corner",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Small corner is square/open; wide corner has a 2x2 L notch. Internal subdivisions and frames inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualEvidence": "Direct thumbnail",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/5/59/THUMBwidecornercabinet.png/revision/latest"
+    },
+    {
+      "id": "countertop",
+      "name": "Countertop",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        0.4,
+        4
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-reviewed",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/f7/THUMBcounter.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "thin-countertop",
+      "name": "Thin Countertop",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        0.4,
+        2
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-reviewed",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a1/THUMBthincounter.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "countertop-with-sink",
+      "name": "Countertop With Sink",
+      "category": "Furniture",
+      "dimensions": [
+        4,
+        1,
+        4
+      ],
+      "shape": "sink",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Recessed basin, drain, tap and handles; internal measurements and filled hardware finishes inferred.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/34/THUMBcountersink.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    },
+    {
+      "id": "post",
+      "name": "Post",
+      "category": "Other",
+      "dimensions": [
+        1,
+        4,
+        1
+      ],
+      "shape": "box",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Outer dimensions confirmed; existing primitive geometry retained. Exact pivot and current-client parity unverified.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "dimensions-confirmed",
+      "visualEvidence": "No direct thumbnail comparison recorded for this entry"
+    },
+    {
+      "id": "ladder",
+      "name": "Ladder",
+      "category": "Other",
+      "dimensions": [
+        4,
+        4,
+        1
+      ],
+      "shape": "ladder",
+      "dimensionEvidence": "Public blueprint table, independently transcribed and regression-tested, accessed 2026-10-03",
+      "geometryEvidence": "Five cylindrical rungs; rung radius and rail thickness estimated.",
+      "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+      "geometryStatus": "reference-shape-corrected",
+      "visualReference": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/14/THUMBladder.png/revision/latest",
+      "visualEvidence": "Direct thumbnail"
+    }
+  ],
+  "accessed": "2026-10-03",
+  "dimensionFixture": "tests/fixtures/blueprint-table.json",
+  "scope": "All 69 names, outer dimensions and wood requirements checked against the public table. Visual corrections use 25 linked thumbnail references, not live-client measurements."
+}

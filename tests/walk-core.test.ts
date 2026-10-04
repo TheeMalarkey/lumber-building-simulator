@@ -1,0 +1,132 @@
+import { describe, expect, it } from "vitest";
+import { Vector3 } from "three";
+import { WalkPhysics, WALK_HEIGHT, WALK_RADIUS } from "../src/walk";
+import { World, type Piece } from "../src/world";
+
+const still = new Vector3();
+const piece = (id: string, item: string, position: [number, number, number], rotation: [number, number, number] = [0, 0, 0]): Piece => ({ id, item, position, rotation, wood: "oak" });
+function setup(pieces: Piece[] = []) {
+  const world = new World(); world.load(pieces);
+  return new WalkPhysics(world);
+}
+function run(walker: WalkPhysics, seconds: number, direction = still, fast = false) {
+  for (let i = 0; i < Math.round(seconds * 120); i++) walker.update(1 / 120, direction, fast);
+}
+
+describe("walk physics", () => {
+  it("does not step onto raised land when a ceiling leaves no standing clearance", () => {
+    const world = new World();
+    world.load([piece("roof", "large-floor", [-16, 5.7, 0])], [12]);
+    const walker = new WalkPhysics(world); walker.position.set(-20.1, -.1, 0); walker.grounded = true;
+    run(walker, .1, new Vector3(1, 0, 0));
+    expect(walker.position.x).toBeLessThan(-20);
+    expect(walker.canOccupy(walker.position)).toBe(true);
+  });
+  it("walks between raised plot tops and grass one tenth of a stud below", () => {
+    const world = new World(); world.load([], [12]);
+    const walker = new WalkPhysics(world);
+    walker.spawn(new Vector3(22, 8, 0));
+    expect(walker.position.y).toBeCloseTo(-.1);
+    run(walker, .3, new Vector3(-1, 0, 0));
+    expect(walker.position.y).toBe(0);
+    run(walker, .4, new Vector3(1, 0, 0));
+    run(walker, .3);
+    expect(walker.position.y).toBeCloseTo(-.1);
+    expect(walker.grounded).toBe(true);
+  });
+  it("rejects a spawn where the classic head mesh would enter the ceiling", () => {
+    // A floor is one stud thick: its underside is at 5.25, just below the head top.
+    const walker = setup([piece("roof", "floor", [0, 5.75, 0])]);
+    expect(walker.canOccupy(new Vector3())).toBe(false);
+  });
+  it("spawns on ground beneath the freecam and moves at 16 or 24 studs per second", () => {
+    const walker = setup();
+    expect(walker.spawn(new Vector3(40, 30, 44))).toBe(true);
+    expect(walker.position.toArray()).toEqual([40, 0, 44]);
+    run(walker, 1, new Vector3(1, 0, 0));
+    expect(walker.position.x).toBeCloseTo(56, 5);
+    run(walker, 1, new Vector3(1, 0, 0), true);
+    expect(walker.position.x).toBeCloseTo(80, 5);
+    expect(walker.grounded).toBe(true);
+  });
+  it("blocks walls while sliding parallel to them", () => {
+    const walker = setup([piece("wall", "smooth-wall", [0, 4, 0])]);
+    walker.spawn(new Vector3(0, 0, 5));
+    run(walker, 0.5, new Vector3(0.25, 0, -1));
+    expect(walker.position.z).toBeGreaterThanOrEqual(0.5 + WALK_RADIUS - 0.001);
+    expect(walker.position.x).toBeGreaterThan(1);
+    expect(walker.canOccupy(walker.position)).toBe(true);
+  });
+  it("jumps once, falls, and lands without passing through the ground", () => {
+    const walker = setup(); walker.spawn(new Vector3());
+    walker.update(1 / 120, still, false, true);
+    expect(walker.velocity.y).toBeGreaterThan(0);
+    run(walker, 0.15);
+    const airborneVelocity = walker.velocity.y;
+    walker.update(1 / 120, still, false, true);
+    expect(walker.velocity.y).toBeLessThan(airborneVelocity);
+    run(walker, 1);
+    expect(walker.position.y).toBe(0);
+    expect(walker.grounded).toBe(true);
+  });
+  it("stops the head at a ceiling", () => {
+    const walker = setup([piece("roof", "smooth-wall", [0, 6.5, 0], [1, 0, 0])]);
+    walker.spawn(new Vector3());
+    walker.update(1 / 120, still, false, true);
+    let peak = walker.position.y;
+    for (let i = 0; i < 120; i++) { walker.update(1 / 120, still); peak = Math.max(peak, walker.position.y); }
+    expect(peak).toBeGreaterThan(0.3);
+    expect(peak + WALK_HEIGHT).toBeLessThanOrEqual(6.001);
+    expect(walker.grounded).toBe(true);
+  });
+  it("walks up actual steep stair treads and back down", () => {
+    const walker = setup([piece("stairs", "steep-stairs", [0, 2, 0])]);
+    walker.spawn(new Vector3(0, 0, 4));
+    run(walker, 0.3, new Vector3(0, 0, -1));
+    expect(walker.position.z).toBeLessThan(0);
+    expect(walker.position.y).toBeGreaterThanOrEqual(3);
+    expect(walker.canOccupy(walker.position)).toBe(true);
+    run(walker, 0.5, new Vector3(0, 0, 1));
+    run(walker, 0.5);
+    expect(walker.position.y).toBe(0);
+  });
+  it("climbs stairs rotated around Y", () => {
+    const walker = setup([piece("stairs", "steep-stairs", [0, 2, 0], [0, 1, 0])]);
+    walker.spawn(new Vector3(4, 0, 0));
+    run(walker, 0.3, new Vector3(-1, 0, 0));
+    expect(walker.position.x).toBeLessThan(0);
+    expect(walker.position.y).toBeGreaterThanOrEqual(3);
+  });
+  it("finds clear support when a wall occupies the spawn point", () => {
+    const walker = setup([piece("wall", "smooth-wall", [0, 4, 0])]);
+    expect(walker.spawn(new Vector3(0, 30, 0))).toBe(true);
+    expect(walker.canOccupy(walker.position)).toBe(true);
+    expect(walker.position.y).toBe(8);
+    expect(walker.grounded).toBe(true);
+  });
+  it("does not step through a low ceiling", () => {
+    const walker = setup([
+      piece("step", "smooth-wall", [0, 0.5, 0], [1, 0, 0]),
+      piece("roof", "smooth-wall", [0, 6, 0], [1, 0, 0]),
+    ]);
+    walker.spawn(new Vector3(0, 0, 6));
+    run(walker, 0.5, new Vector3(0, 0, -1));
+    expect(walker.position.z).toBeGreaterThanOrEqual(4 + WALK_RADIUS - 0.001);
+    expect(walker.position.y).toBe(0);
+  });
+  it("bounds tab-resume frame time and keeps falling without movement input", () => {
+    const walker = setup(); walker.position.set(0, 20, 0);
+    walker.update(60, new Vector3(1, 0, 0));
+    expect(walker.position.x).toBeCloseTo(1.6, 5);
+    expect(walker.position.y).toBeGreaterThan(18);
+    run(walker, 1);
+    expect(walker.position.y).toBe(0);
+  });
+  it("keeps the camera in front of walls and above ground", () => {
+    const walker = setup([piece("wall", "smooth-wall", [0, 4, 0])]);
+    const camera = walker.cameraPosition(new Vector3(0, 4.6, 5), new Vector3(0, 4.6, -10));
+    expect(camera.z).toBeGreaterThan(0.5);
+    const ground = walker.cameraPosition(new Vector3(10, 4.6, 5), new Vector3(10, -4, 5));
+    expect(ground.y).toBeCloseTo(0.3, 4);
+  });
+});

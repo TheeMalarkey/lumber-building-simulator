@@ -1,0 +1,42 @@
+[
+  {
+    "count": 10000,
+    "layout": "100 x 100 columns, 2-stud spacing, stacked 10-stud layers",
+    "setupMs": 212.40000009536743,
+    "fps": 60,
+    "frameMs": 16.66227544924456,
+    "drawCalls": 650,
+    "triangles": 358340,
+    "total": 10000,
+    "visibleChunks": 16,
+    "geometries": 7,
+    "textures": 4,
+    "pixelRatio": 1,
+    "backend": "WebGL2",
+    "residentPieces": 10000,
+    "medianMs": 16.699999928474426,
+    "p95Ms": 16.800000071525574,
+    "pickMs": 3.700000047683716,
+    "samples": 181
+  },
+  {
+    "count": 100000,
+    "layout": "100 x 100 columns, 2-stud spacing, stacked 10-stud layers",
+    "setupMs": 1735.2999999523163,
+    "fps": 60,
+    "frameMs": 16.662237762571216,
+    "drawCalls": 1412,
+    "triangles": 3644136,
+    "total": 100000,
+    "visibleChunks": 32,
+    "geometries": 7,
+    "textures": 4,
+    "pixelRatio": 1,
+    "backend": "WebGL2",
+    "residentPieces": 100000,
+    "medianMs": 16.699999928474426,
+    "p95Ms": 16.800000071525574,
+    "pickMs": 12.5,
+    "samples": 180
+  }
+]

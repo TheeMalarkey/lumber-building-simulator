@@ -1,0 +1,11 @@
+import {chromium} from "@playwright/test";
+import {writeFileSync,mkdirSync} from "node:fs";
+const stage=process.argv[2]||"after";
+const b=await chromium.launch({channel:"chrome",headless:true});
+const page=await b.newPage({viewport:{width:1440,height:960}});
+await page.goto("http://127.0.0.1:5178");await page.waitForFunction(()=>!!window.timber);
+const data=await page.evaluate(()=>[...window.timber.editor.thumbnails.entries()]);
+mkdirSync("artifacts/blueprint-"+stage,{recursive:true});
+for(const [id,url] of data) writeFileSync("artifacts/blueprint-"+stage+"/"+id+".webp",Buffer.from(url.split(",")[1],"base64"));
+console.log(stage+": "+data.length+" model previews");
+await b.close();

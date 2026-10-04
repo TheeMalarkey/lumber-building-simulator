@@ -1,0 +1,17 @@
+{
+  "errors": [],
+  "full": {
+    "fps": 60,
+    "frameMs": 16.660833333432674,
+    "drawCalls": 4,
+    "triangles": 2860,
+    "total": 0,
+    "visibleChunks": 0,
+    "geometries": 20,
+    "textures": 9,
+    "pixelRatio": 1,
+    "backend": "WebGL2",
+    "plots": 25
+  },
+  "compact": true
+}

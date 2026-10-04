@@ -1,0 +1,828 @@
+import { Vector3 } from "three";
+import { CATALOG, ITEMS, WOOD_MAP, type Vec3 } from "./catalog";
+import { World, type Piece } from "./world";
+import { Viewport } from "./renderer";
+import {
+  rotatedSize,
+  snapOnSurface,
+  round,
+  STUD_STEP,
+  snapMovement,
+  turnRotation,
+} from "./placement";
+import { shell, renderCatalog, icon } from "./ui";
+import { createDemo, createBenchmark } from "./demo";
+import { loadProject, saveProject } from "./storage";
+import { parseProject, type Project } from "./project";
+import { ALL_PLOTS, inferPlots } from "./plots";
+import { pieceBounds } from "./world";
+const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
+  document.getElementById(id)! as T;
+const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
+const OUTSIDE_PLOTS_MESSAGE = "The entire blueprint must stay inside active plots. Expand your land first.";
+export class Editor {
+  world = new World();
+  view: Viewport;
+  thumbnails: Map<string, string>;
+  item = "smooth-wall";
+  wood = "oak";
+  rotation: Vec3 = [0, 0, 0];
+  category = "All pieces";
+  search = "";
+  selected: string | null = null;
+  placing = false;
+  moving: string | null = null;
+  ghost: Piece | null = null;
+  orbit = false;
+  pointer: [number, number] | null = null;
+  dirty = false;
+  private toastTimer = 0;
+  private saveTimer = 0;
+  private saving = false;
+  private saveAgain = false;
+  private lastPointer = "";
+  private initialized = false;
+  private savedRevision = 0;
+  private generation = 0;
+  constructor() {
+    $("app").innerHTML = shell();
+    this.view = new Viewport($("viewport"), this.world);
+    this.thumbnails = this.view.thumbnails();
+    this.catalog();
+    this.inspect();
+    this.bind();
+    this.view.camera.onModeChange = () => this.updateCameraUI();
+    this.updateCameraUI();
+    this.world.onChange = () => {
+      this.updateWorldUI();
+      if (this.initialized) {
+        this.dirty = true;
+        $("save-state").textContent = "Unsaved changes";
+        window.clearTimeout(this.saveTimer);
+        this.saveTimer = window.setTimeout(() => this.save(), 1200);
+      }
+    };
+    this.view.onStats = () => {
+      $("fps").textContent = `${this.view.fps} FPS`;
+      $("draw-calls").textContent = `${this.view.stats.drawCalls} draw calls`;
+    };
+    this.view.onFrame = () => {
+      if (this.placing && this.pointer && !this.view.camera.flying) {
+        const key =
+          this.pointer.join(",") +
+          this.view.camera.camera.position.toArray().join(",") +
+          this.view.camera.camera.quaternion.toArray().join(",") +
+          this.world.revision;
+        if (key !== this.lastPointer) {
+          this.lastPointer = key;
+          this.updateGhost();
+        }
+      }
+    };
+  }
+  async start() {
+    const params = new URLSearchParams(location.search);
+    const benchmark = Number(params.get("benchmark"));
+    try {
+      const saved = await loadProject();
+      if (saved.project) {
+        this.world.load(saved.project.pieces, saved.project.plots ?? [12]);
+        $("project-name").setAttribute("value", saved.project.name);
+        $("welcome-note").hidden = true;
+        if (saved.recovered)
+          this.toast("Recovered the previous saved project.");
+      } else {
+        this.world.load(createDemo(), [12]);
+        $("save-state").textContent = "Editable example";
+      }
+    } catch (error) {
+      this.world.load(createDemo(), [12]);
+      this.toast(`Local save unavailable: ${(error as Error).message}`);
+      $("save-state").textContent = "Export to keep your work";
+    }
+    if (benchmark > 0 && benchmark <= 100000) {
+      this.world.load(createBenchmark(benchmark, params.has("mixed")));
+      ($("project-name") as HTMLInputElement).value = "Performance scene";
+      $("welcome-note").hidden = true;
+      this.view.camera.focus(new Vector3(75, 4, 75), 140);
+    }
+    this.initialized = !benchmark;
+    this.savedRevision = this.world.revision;
+    this.view.sync(true);
+    this.updateWorldUI();
+  }
+  get project(): Project {
+    return {
+      version: 1,
+      name:
+        ($("project-name") as HTMLInputElement).value.trim() ||
+        "Untitled build",
+      pieces: [...this.world.pieces.values()],
+      plots: [...(this.world.plots ?? [12])],
+    };
+  }
+  toast(message: string) {
+    $("toast").textContent = message;
+    $("toast").classList.add("visible");
+    clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(
+      () => $("toast").classList.remove("visible"),
+      4000,
+    );
+  }
+  catalog() {
+    renderCatalog(this.thumbnails, this.category, this.search, this.item);
+  }
+  panel(id: "build-panel" | "project-menu" | "woods", open: boolean) {
+    const triggers = { "build-panel": "build-tool", "project-menu": "menu-tool", woods: "wood-toggle" };
+    if (open) {
+      for (const other of ["build-panel", "project-menu", "woods"] as const)
+        if (other !== id) this.panel(other, false);
+    }
+    $(id).hidden = !open;
+    $(triggers[id]).setAttribute("aria-expanded", String(open));
+    $(triggers[id]).classList.toggle("active", open);
+    if (id === "build-panel") {
+      $("edit-panel").hidden = open || !(this.placing || this.selected);
+      $("placement-bar").hidden = open || !this.placing;
+    }
+    if (open && id === "build-panel") $("search").focus();
+    if (!open && $(id).contains(document.activeElement))
+      this.view.renderer.domElement.focus({ preventScroll: true });
+  }
+  inspect() {
+    const p = this.selected ? this.world.pieces.get(this.selected) : null;
+    if (p && !this.placing) {
+      this.item = p.item;
+      this.wood = p.wood;
+      this.rotation = [...p.rotation];
+    }
+    $("edit-panel").hidden = !(p || this.placing) || !$("build-panel").hidden;
+    $("selection-actions").hidden = !p || this.placing;
+    $("elevation-row").hidden = !this.placing;
+    $("wood-color").style.background = WOOD_MAP.get(this.wood)!.color;
+    if (!(p || this.placing)) this.panel("woods", false);
+    const item = ITEMS.get(this.item)!;
+    ($("piece-preview") as HTMLImageElement).src = this.thumbnails.get(
+      item.id,
+    )!;
+    $("piece-name").textContent = item.name;
+    $("piece-size").textContent = item.size.join(" × ") + " studs";
+    $("piece-category").textContent = item.category.toUpperCase();
+    $("wood-name").textContent = WOOD_MAP.get(this.wood)!.name;
+    document
+      .querySelectorAll<HTMLElement>("[data-wood]")
+      .forEach((b) =>
+        b.classList.toggle("active", b.dataset.wood === this.wood),
+      );
+    $("transform-section").hidden = !p || this.placing;
+    if (p)
+      for (let i = 0; i < 3; i++) {
+        const input = $<HTMLInputElement>(`pos-${i}`);
+        // Anchor native number-input steps to the piece's surface offset.
+        input.defaultValue = String(p.position[i]);
+        input.value = String(p.position[i]);
+      }
+    this.view.select(p ?? null);
+    $("place-selected").innerHTML = icon("plus") + " Place blueprint";
+  }
+  updateWorldUI() {
+    this.view.setPlots(this.world.plots ?? [12]);
+    $("plot-status").textContent = `${this.world.plots?.length ?? 1} / 25 plots`;
+    if (this.selected && !this.world.pieces.has(this.selected))
+      this.selected = null;
+    $("piece-count").textContent =
+      `${this.world.pieces.size.toLocaleString()} pieces`;
+    ($("undo") as HTMLButtonElement).disabled = !this.world.canUndo;
+    ($("redo") as HTMLButtonElement).disabled = !this.world.canRedo;
+    for (const id of ["move-tool", "duplicate-tool", "delete-tool"])
+      $<HTMLButtonElement>(id).disabled = !this.selected;
+    this.inspect();
+  }
+  setMode(placing: boolean) {
+    this.placing = placing;
+    this.orbit = false;
+    this.view.camera.orbitMode(false);
+    $("orbit-tool").classList.remove("active");
+    $("select-tool").classList.toggle("active", !placing);
+    $("placement-bar").hidden = !placing;
+    $("mode-label").innerHTML =
+      icon(placing ? "cube" : "arrow") +
+      (placing ? "Place mode" : "Select mode");
+    if (placing) {
+      $("placing-name").textContent = ITEMS.get(this.item)!.name;
+      $("welcome-note").hidden = true;
+    } else {
+      this.ghost = null;
+      this.view.showGhost(null);
+      this.moving = null;
+    }
+    this.lastPointer = "";
+    this.inspect();
+  }
+  updateCameraUI() {
+    const walking = this.view.camera.walking;
+    $("walk-tool").classList.toggle("active", walking);
+    $("walk-tool").setAttribute("aria-pressed", String(walking));
+    $("walk-tool").innerHTML =
+      icon(walking ? "eye" : "walk") +
+      `<span>${walking ? "Free cam" : "Walk"}</span><kbd>C</kbd>`;
+    $("camera-hint").innerHTML = walking
+      ? "<span><kbd>W A S D</kbd> Walk · RMB Look</span><span><kbd>Space</kbd> Jump · <kbd>Shift</kbd> Run</span><span>Wheel Zoom · <kbd>C</kbd> Free camera</span>"
+      : "<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Fly · RMB Look</span><span><kbd>Q</kbd><kbd>E</kbd> Elevate</span><span>MMB Orbit · Wheel Zoom</span>";
+  }
+  toggleWalk() {
+    const entering = !this.view.camera.walking;
+    this.pickSelection(null);
+    this.view.camera.setWalking(entering);
+    $("welcome-note").hidden = true;
+    this.view.renderer.domElement.focus({ preventScroll: true });
+    this.toast(
+      entering
+        ? "Walk with WASD. Space jumps; hold right mouse to look."
+        : "Free camera. WASD to fly; Q/E to rise and descend.",
+    );
+  }
+  choose(id: string) {
+    this.panel("build-panel", false);
+    this.item = id;
+    this.selected = null;
+    this.moving = null;
+    this.rotation = [0, 0, 0];
+    this.setMode(true);
+    this.inspect();
+    this.catalog();
+    this.updateGhost();
+    this.updateWorldUI();
+  }
+  pickSelection(id: string | null) {
+    this.setMode(false);
+    this.selected = id;
+    const p = id ? this.world.pieces.get(id) : null;
+    if (p) {
+      this.item = p.item;
+      this.wood = p.wood;
+      this.rotation = [...p.rotation];
+      $("welcome-note").hidden = true;
+    }
+    this.inspect();
+    this.catalog();
+    this.updateWorldUI();
+  }
+  updateGhost() {
+    if (!this.placing || !this.pointer) return;
+    const pick = this.view.pick(...this.pointer, this.moving);
+    if (!pick) {
+      this.ghost = null;
+      this.view.showGhost(null);
+      return;
+    }
+    const size = rotatedSize(ITEMS.get(this.item)!.size, this.rotation);
+    const pos = snapOnSurface(pick.point, pick.normal, size, STUD_STEP);
+    const elevation = snapMovement(
+      Number($<HTMLInputElement>("elevation").value) || 0,
+    );
+    pos[1] = round(pos[1] + elevation);
+    this.ghost = {
+      id: this.moving ?? "ghost",
+      item: this.item,
+      wood: this.wood,
+      position: pos,
+      rotation: [...this.rotation],
+    };
+    this.view.showGhost(this.ghost, this.valid(this.ghost));
+  }
+  valid(p: Piece) {
+    return this.world.canPlace(p, this.moving);
+  }
+  place() {
+    if (!this.ghost) return;
+    const issue = this.world.placementIssue(this.ghost, this.moving);
+    if (issue) {
+      this.toast(
+        issue === "below-ground"
+          ? BELOW_GROUND_MESSAGE
+          : issue === "outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "This piece overlaps another. Choose a clear position.",
+      );
+      return;
+    }
+    const p = {
+      ...structuredClone(this.ghost),
+      id: this.moving ?? crypto.randomUUID(),
+    };
+    if (this.moving) {
+      this.world.execute([
+        { before: this.world.pieces.get(this.moving)!, after: p },
+      ]);
+      this.pickSelection(p.id);
+    } else {
+      this.world.execute([{ before: null, after: p }]);
+      this.lastPointer = "";
+    }
+  }
+  rotate(axis: number) {
+    if (this.placing) {
+      this.rotation = turnRotation(this.rotation, axis);
+      this.updateGhost();
+      return;
+    }
+    const p = this.selected ? this.world.pieces.get(this.selected) : null;
+    if (p) {
+      const q = structuredClone(p);
+      q.rotation = turnRotation(q.rotation, axis);
+      const issue = this.world.placementIssue(q, p.id);
+      if (issue) {
+        this.toast(
+          issue === "below-ground"
+            ? BELOW_GROUND_MESSAGE
+            : issue === "outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot rotate here: this piece would overlap another.",
+        );
+        return;
+      }
+      this.rotation = [...q.rotation];
+      this.world.execute([{ before: p, after: q }]);
+    } else {
+      this.rotation = turnRotation(this.rotation, axis);
+      this.toast("Choose a blueprint to place it.");
+    }
+  }
+  move(copy = false) {
+    const p = this.selected ? this.world.pieces.get(this.selected) : null;
+    if (!p) {
+      this.toast("Select a placed piece first.");
+      return;
+    }
+    this.item = p.item;
+    this.wood = p.wood;
+    this.rotation = [...p.rotation];
+    this.moving = copy ? null : p.id;
+    this.setMode(true);
+    this.moving = copy ? null : p.id;
+    this.updateGhost();
+    this.toast(
+      copy
+        ? "Place the duplicate."
+        : "Place to move. Escape keeps the original.",
+    );
+  }
+  remove() {
+    const p = this.selected ? this.world.pieces.get(this.selected) : null;
+    if (!p) return;
+    this.world.execute([{ before: p, after: null }]);
+    this.pickSelection(null);
+  }
+  async save() {
+    if (this.saving) {
+      this.saveAgain = true;
+      return;
+    }
+    this.saving = true;
+    const revision = this.world.revision;
+    const gen = this.generation;
+    $("save-state").textContent = "Saving…";
+    try {
+      await saveProject(this.project);
+      if (gen === this.generation && revision === this.world.revision) {
+        this.dirty = false;
+        this.savedRevision = revision;
+        $("save-state").textContent = "Saved on this device";
+      }
+    } catch (e) {
+      $("save-state").textContent = "Save failed · export";
+      this.toast(
+        `Could not save: ${(e as Error).message}. Export your project.`,
+      );
+    } finally {
+      this.saving = false;
+      if (this.saveAgain) {
+        this.saveAgain = false;
+        void this.save();
+      }
+    }
+  }
+  async confirm(title: string, message: string, action = "Continue") {
+    return new Promise<boolean>((resolve) => {
+      const modal = $<HTMLDialogElement>("modal");
+      $("modal-content").innerHTML =
+        `<h2></h2><p></p><div class="dialog-actions"><button id="cancel-action">Cancel</button><button class="confirm" id="confirm-action"></button></div>`;
+      $("modal-content").querySelector("h2")!.textContent = title;
+      $("modal-content").querySelector("p")!.textContent = message;
+      $("confirm-action").textContent = action;
+      const done = (value: boolean) => {
+        modal.close();
+        modal.removeEventListener("cancel", cancel);
+        resolve(value);
+      };
+      const cancel = (e: Event) => {
+        e.preventDefault();
+        done(false);
+      };
+      modal.addEventListener("cancel", cancel);
+      $("cancel-action").onclick = () => done(false);
+      $("confirm-action").onclick = () => done(true);
+      modal.showModal();
+    });
+  }
+  async replace(p: Project) {
+    if (
+      this.world.pieces.size &&
+      !(await this.confirm(
+        "Replace this project?",
+        "Export the current project first if you want to keep a separate copy. The new project will become your local autosave.",
+        "Replace project",
+      ))
+    )
+      return;
+    this.generation++;
+    this.pickSelection(null);
+    this.world.load(p.pieces, p.plots ?? inferPlots(p.pieces.map(pieceBounds)));
+    $<HTMLInputElement>("project-name").value = p.name;
+    $("welcome-note").hidden = true;
+    this.view.camera.home();
+    this.view.sync(true);
+    void this.save();
+  }
+  async import(file: File) {
+    try {
+      if (file.size > 256 * 1024 * 1024)
+        throw new Error("This file exceeds the 256 MB import safety budget.");
+      const project = parseProject(await file.text());
+      await this.replace(project);
+    } catch (e) {
+      this.toast((e as Error).message);
+    } finally {
+      $<HTMLInputElement>("file-input").value = "";
+    }
+  }
+  export() {
+    const blob = new Blob([JSON.stringify(this.project)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download =
+      (this.project.name.replace(/[^a-z0-9 _-]/gi, "") || "build") + ".timber";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    this.toast("Project exported. Keep this file as a backup.");
+  }
+  help() {
+    this.setMode(false);
+    const modal = $<HTMLDialogElement>("modal");
+    $("modal-content").innerHTML =
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+    $("close-modal").onclick = () => modal.close();
+    modal.showModal();
+  }
+  settings() {
+    const modal = $<HTMLDialogElement>("modal");
+    const stats = this.view.stats;
+    $("modal-content").innerHTML =
+      `<h2>Your view, your pace.</h2><label class="setting-row"><span>Visual quality</span><select id="quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select></label><label class="setting-row"><span>Adaptive resolution</span><input type="checkbox" id="adaptive" ${this.view.adaptive ? "checked" : ""}></label><label class="setting-row"><span>View distance</span><select id="distance"><option value="192">192 studs</option><option value="384">384 studs</option><option value="640">640 studs</option><option value="896">896 studs</option></select></label><div class="stats-grid"><div>Rendering<strong>${stats.backend}</strong></div><div>Draw calls<strong>${stats.drawCalls}</strong></div><div>Resident chunks<strong>${stats.visibleChunks}</strong></div><div>Triangles<strong>${stats.triangles.toLocaleString()}</strong></div></div><p style="margin-top:16px">Lower view distance and quality keep large builds responsive. Distant pieces stay in your project.</p><div class="dialog-actions"><button id="load-demo">Load example studio</button><button class="confirm" id="close-modal">Done</button></div>`;
+    $<HTMLSelectElement>("quality").value = this.view.quality;
+    $<HTMLSelectElement>("distance").value = String(this.view.renderDistance);
+    $("quality").onchange = (e) =>
+      this.view.setQuality((e.target as HTMLSelectElement).value);
+    $("adaptive").onchange = (e) =>
+      (this.view.adaptive = (e.target as HTMLInputElement).checked);
+    $("distance").onchange = (e) => {
+      this.view.renderDistance = Number((e.target as HTMLSelectElement).value);
+      this.view.sync(true);
+    };
+    $("close-modal").onclick = () => modal.close();
+    $("load-demo").onclick = () => {
+      modal.close();
+      void this.replace({
+        version: 1,
+        name: "Woodland studio",
+        pieces: createDemo(),
+      });
+    };
+    modal.showModal();
+  }
+  land() {
+    this.setMode(false);
+    const modal = $<HTMLDialogElement>("modal");
+    $("modal-content").innerHTML = `<span class="eyebrow">YOUR LAND</span><h2>Room to grow.</h2><p>Each plot is 40 × 40 studs. Expand from the center by connecting edges. Your full build must stay on active land.</p><div class="plot-summary"><strong id="land-count"></strong><span>Up to 200 × 200 studs</span></div><div class="plot-picker" id="plot-picker" role="group" aria-label="Building plots"></div><p id="land-feedback" class="land-feedback" role="status">Choose an adjoining plot to expand.</p><div class="plot-legend"><span>■ Active land</span><span>+ Available expansion</span><span>· Not connected</span></div><label class="setting-row"><span>Stud placement grid</span><input id="land-grid" type="checkbox" ${this.view.grid.visible ? "checked" : ""}></label><label class="setting-row"><span>40-stud plot borders</span><input id="land-borders" type="checkbox" ${this.view.terrain.borders.visible ? "checked" : ""}></label><div class="dialog-actions"><button id="land-focus">View all land</button><button class="confirm" id="close-modal">Done</button></div>`;
+    const reasons = { center: "The starter plot always stays active.", occupied: "Move or delete the blueprints on this plot before turning it off.", disconnected: "Every active plot must connect by edges to the center. This change would leave disconnected land.", invalid: "Choose a plot inside the 5 × 5 layout." };
+    const render = () => {
+      const plots = this.world.plots ?? [12];
+      $("land-count").textContent = `${plots.length} / 25 active · ${(plots.length * 1600).toLocaleString()} studs²`;
+      $("plot-picker").innerHTML = ALL_PLOTS.map(id => {
+        const active = plots.includes(id), issue = this.world.plotIssue(id);
+        const label = `Plot ${Math.floor(id / 5) + 1}, ${id % 5 + 1}`;
+        return `<button class="plot-cell ${active ? "owned" : issue ? "unavailable" : "available"}" data-plot="${id}" aria-label="${label}${id === 12 ? ", starter" : ""}" aria-pressed="${active}" aria-disabled="${!!issue}" title="${issue ? reasons[issue] : active ? "Deactivate plot" : "Activate plot"}"><strong>${id === 12 ? icon("home") : active ? icon("check") : issue ? "·" : "+"}</strong><span>${id === 12 ? "START" : "40 × 40"}</span></button>`;
+      }).join("");
+    };
+    render();
+    $("plot-picker").onclick = e => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>("[data-plot]");
+      if (!cell) return;
+      const id = Number(cell.dataset.plot), active = this.world.plots?.includes(id);
+      const issue = this.world.togglePlot(id);
+      $("land-feedback").textContent = issue ? reasons[issue] : active ? "Plot returned to grass." : "Plot activated. Ready to build.";
+      render();
+      $("plot-picker").querySelector<HTMLElement>(`[data-plot="${id}"]`)?.focus();
+    };
+    $("land-grid").onchange = e => {
+      this.view.grid.visible = (e.target as HTMLInputElement).checked;
+      $("grid").classList.toggle("active", this.view.grid.visible);
+    };
+    $("land-borders").onchange = e => { this.view.terrain.borders.visible = (e.target as HTMLInputElement).checked; };
+    $("land-focus").onclick = () => { this.view.camera.focus(new Vector3(0, 0, 0), 265); modal.close(); };
+    $("close-modal").onclick = () => modal.close();
+    modal.showModal();
+  }
+  bind() {
+    $("catalog").onclick = (e) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>(
+        "[data-item]",
+      );
+      if (card) this.choose(card.dataset.item!);
+    };
+    $("categories").onclick = (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>(
+        "[data-category]",
+      );
+      if (!b) return;
+      this.category = b.dataset.category!;
+      document
+        .querySelectorAll(".category")
+        .forEach((el) => el.classList.toggle("active", el === b));
+      this.catalog();
+    };
+    $("search").oninput = (e) => {
+      this.search = (e.target as HTMLInputElement).value;
+      this.catalog();
+    };
+    $("woods").onclick = (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-wood]");
+      if (!b) return;
+      this.wood = b.dataset.wood!;
+      const p = this.selected ? this.world.pieces.get(this.selected) : null;
+      if (p && !this.placing)
+        this.world.execute([{ before: p, after: { ...p, wood: this.wood } }]);
+      this.panel("woods", false);
+      this.inspect();
+      this.updateGhost();
+    };
+    const actions: Record<string, () => unknown> = {
+      "select-tool": () => this.pickSelection(null),
+      "orbit-tool": () => {
+        this.setMode(false);
+        this.orbit = true;
+        this.view.camera.orbitMode(true);
+        $("orbit-tool").classList.add("active");
+        $("select-tool").classList.remove("active");
+        $("mode-label").innerHTML = icon("orbit") + "Orbit mode";
+      },
+      "move-tool": () => this.move(),
+      "walk-tool": () => this.toggleWalk(),
+      "duplicate-tool": () => this.move(true),
+      "delete-tool": () => this.remove(),
+      undo: () => {
+        this.setMode(false);
+        this.world.undo();
+      },
+      redo: () => {
+        this.setMode(false);
+        this.world.redo();
+      },
+      rotate: () => this.rotate(1),
+      tilt: () => this.rotate(0),
+      home: () => this.view.camera.home(),
+      top: () => this.view.camera.top(),
+      focus: () => this.focus(),
+      grid: () => {
+        this.view.grid.visible = !this.view.grid.visible;
+        $("grid").classList.toggle("active", this.view.grid.visible);
+      },
+      "place-selected": () => {
+        this.selected = null;
+        this.moving = null;
+        this.setMode(true);
+        this.updateWorldUI();
+        this.updateGhost();
+      },
+      "build-tool": () => this.panel("build-panel", !!$("build-panel").hidden),
+      "menu-tool": () => this.panel("project-menu", !!$("project-menu").hidden),
+      "wood-toggle": () => this.panel("woods", !!$("woods").hidden),
+      "close-edit": () => this.pickSelection(null),
+      collapse: () => this.panel("build-panel", false),
+      help: () => this.help(),
+      settings: () => this.settings(),
+      "land-tool": () => this.land(),
+      "dismiss-welcome": () => {
+        $("welcome-note").hidden = true;
+      },
+      new: () =>
+        this.replace({ version: 1, name: "Untitled build", pieces: [] }),
+      "blank-start": () =>
+        this.replace({ version: 1, name: "Untitled build", pieces: [] }),
+      save: () => this.save(),
+      export: () => this.export(),
+      import: () => $<HTMLInputElement>("file-input").click(),
+    };
+    for (const [id, action] of Object.entries(actions))
+      $(id).onclick = () => {
+        if ($(id).closest("#project-menu")) this.panel("project-menu", false);
+        if (["land-tool", "walk-tool", "select-tool"].includes(id)) this.panel("build-panel", false);
+        void action();
+      };
+    $("elevation").oninput = () => this.updateGhost();
+    $("elevation").onchange = () => {
+      const input = $<HTMLInputElement>("elevation");
+      input.value = String(snapMovement(Number(input.value) || 0));
+      this.updateGhost();
+    };
+    $("project-name").onchange = () => {
+      this.dirty = true;
+      this.world.revision++;
+      void this.save();
+    };
+    $("file-input").onchange = () => {
+      const f = $<HTMLInputElement>("file-input").files?.[0];
+      if (f) void this.import(f);
+    };
+    for (let i = 0; i < 3; i++)
+      $(`pos-${i}`).onchange = () => {
+        const p = this.selected ? this.world.pieces.get(this.selected) : null;
+        if (!p) return;
+        const n = Number($<HTMLInputElement>(`pos-${i}`).value);
+        if (
+          !Number.isFinite(n) ||
+          Math.abs(n) > Number.MAX_SAFE_INTEGER / 10000
+        ) {
+          this.inspect();
+          return;
+        }
+        const q = structuredClone(p);
+        q.position[i] = snapMovement(n, p.position[i]);
+        const issue = this.world.placementIssue(q, p.id);
+        if (issue) {
+          this.toast(
+            issue === "below-ground"
+              ? BELOW_GROUND_MESSAGE
+              : issue === "outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot move here: this piece would overlap another.",
+          );
+          this.inspect();
+          return;
+        }
+        this.world.execute([{ before: p, after: q }]);
+      };
+    const canvas = this.view.renderer.domElement;
+    let down: [number, number] | null = null;
+    let selectionClicks: string[] = [];
+    canvas.addEventListener("pointermove", (e) => {
+      this.pointer = [e.clientX, e.clientY];
+    });
+    canvas.addEventListener("pointerleave", () => {
+      this.pointer = null;
+      this.view.showGhost(null);
+    });
+    canvas.addEventListener("pointerdown", (e) => {
+      if (this.placing || this.orbit || this.view.camera.flying)
+        selectionClicks = [];
+      if (e.button === 0) down = [e.clientX, e.clientY];
+    });
+    canvas.addEventListener("pointercancel", () => {
+      down = null;
+      selectionClicks = [];
+    });
+    canvas.addEventListener("pointerup", (e) => {
+      if (e.button !== 0 || !down) return;
+      const delta = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
+      down = null;
+      if (delta > 5 || this.orbit || this.view.camera.flying) {
+        selectionClicks = [];
+        return;
+      }
+      this.pointer = [e.clientX, e.clientY];
+      if (this.placing) {
+        selectionClicks = [];
+        this.updateGhost();
+        this.place();
+      } else {
+        const hit = this.view.pick(e.clientX, e.clientY);
+        selectionClicks = hit?.id ? [...selectionClicks.slice(-1), hit.id] : [];
+        this.pickSelection(hit?.id ?? null);
+      }
+    });
+    canvas.addEventListener("dblclick", (e) => {
+      // Only two selection clicks may start a move; placement clicks must not.
+      const samePiece =
+        selectionClicks.length === 2 &&
+        selectionClicks.every((id) => id === this.selected);
+      selectionClicks = [];
+      if (
+        e.button !== 0 ||
+        !samePiece ||
+        this.placing ||
+        this.orbit ||
+        this.view.camera.flying
+      )
+        return;
+      e.preventDefault();
+      this.pointer = [e.clientX, e.clientY];
+      this.move();
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Escape" && !document.querySelector("dialog[open]")) {
+        for (const id of ["woods", "build-panel", "project-menu"] as const) {
+          if (!$(id).hidden) { e.preventDefault(); this.panel(id, false); return; }
+        }
+      }
+      if (
+        (e.target as HTMLElement).matches("input,textarea,select") ||
+        document.querySelector("dialog[open]")
+      )
+        return;
+      if (this.view.camera.flying) return;
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl) {
+        if (e.code === "KeyZ") {
+          e.preventDefault();
+          this.setMode(false);
+          e.shiftKey ? this.world.redo() : this.world.undo();
+        } else if (e.code === "KeyY") {
+          e.preventDefault();
+          this.world.redo();
+        } else if (e.code === "KeyD") {
+          e.preventDefault();
+          this.move(true);
+        } else if (e.code === "KeyS") {
+          e.preventDefault();
+          void this.save();
+        }
+        return;
+      }
+      if (e.repeat) return;
+      switch (e.code) {
+        case "KeyB":
+          e.preventDefault();
+          this.panel("build-panel", !!$("build-panel").hidden);
+          break;
+        case "KeyC":
+          this.toggleWalk();
+          break;
+        case "Escape":
+          this.pickSelection(null);
+          break;
+        case "KeyV":
+          this.pickSelection(null);
+          break;
+        case "KeyO":
+          void actions["orbit-tool"]();
+          break;
+        case "KeyR":
+          this.rotate(1);
+          break;
+        case "KeyT":
+          this.rotate(0);
+          break;
+        case "KeyG":
+          this.move();
+          break;
+        case "KeyF":
+          this.focus();
+          break;
+        case "Delete":
+        case "Backspace":
+          e.preventDefault();
+          this.remove();
+          break;
+        case "Slash":
+          e.preventDefault();
+          this.panel("build-panel", true);
+          break;
+        case "KeyH":
+          this.help();
+          break;
+      }
+    });
+    window.addEventListener("beforeunload", (e) => {
+      if (this.dirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && this.dirty) void this.save();
+    });
+    $("viewport").addEventListener("graphicslost", () =>
+      this.toast(
+        "Graphics context lost. Your build is retained; export or reload to recover the view.",
+      ),
+    );
+  }
+  focus() {
+    const p = this.selected ? this.world.pieces.get(this.selected) : null;
+    if (p)
+      this.view.camera.focus(
+        new Vector3(...p.position),
+        Math.max(...ITEMS.get(p.item)!.size) * 3,
+      );
+    else this.view.camera.home();
+  }
+}

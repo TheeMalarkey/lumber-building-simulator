@@ -1,0 +1,157 @@
+{
+  "source": "https://lumber-tycoon-2.fandom.com/wiki/Blueprints",
+  "accessed": "2026-10-03",
+  "note": "Unmodified public game-reference thumbnails, 2022 revisions. Reference evidence only; not production assets. Original imagery remains attributable to the game and wiki contributors; no new license asserted.",
+  "images": [
+    {
+      "item": "basic-door",
+      "file": "artifacts/blueprint-references/basicdoor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/44/THUMBbasicdoor.png/revision/latest",
+      "sha256": "fbcfb9742880cbc87d68df0d2198bdca9ef5ebbde5befa7550e2c606106223aa"
+    },
+    {
+      "item": "half-door",
+      "file": "artifacts/blueprint-references/halfdoor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/0/07/THUMBhalfdoor.png/revision/latest",
+      "sha256": "1c73c7f3adba9eeb2d16a1e88bc89d840abffce783fc69a3d570ad4c784a4d9b"
+    },
+    {
+      "item": "fat-door",
+      "file": "artifacts/blueprint-references/fatdoor.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/b/bc/THUMBfatdoor.png/revision/latest",
+      "sha256": "aa5ce9d41ca4282f8d6e2752a86d9ef7df014fb6d8d5a8e29d963c7d67e3c77f"
+    },
+    {
+      "item": "stairs",
+      "file": "artifacts/blueprint-references/stairs.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a9/THUMBstairs.png/revision/latest",
+      "sha256": "6555256ef914652d35bbe483d07af9badf2a1307d6431668410dcc011304f84a"
+    },
+    {
+      "item": "steep-stairs",
+      "file": "artifacts/blueprint-references/steepstairs.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/2/23/THUMBsteepstairs.png/revision/latest",
+      "sha256": "fdf7c4aa8875f7695b2ebe64c5e38d9fad9cfec9fc35566e78c2d6b01425edbb"
+    },
+    {
+      "item": "smooth-wall-corner",
+      "file": "artifacts/blueprint-references/smoothwallcorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/7c/THUMBsmoothwallcorner.png/revision/latest",
+      "sha256": "0ee1888884ca29ac59b053254613204dcd5e131ccaa515d3800ee8c4d89753ce"
+    },
+    {
+      "item": "corrugated-wall",
+      "file": "artifacts/blueprint-references/corrugatedwall.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/8/84/THUMBcorrugatedwall.png/revision/latest",
+      "sha256": "16d10353d7c1becdbc4347fc19ee035cfaa031067a8c07d95c766ec2af922e61"
+    },
+    {
+      "item": "corrugated-wall-corner",
+      "file": "artifacts/blueprint-references/corrugatedwallcorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/9/9f/THUMBcorrugatedwallcorner.png/revision/latest",
+      "sha256": "3e4471a384107e98f2e8923012bf0da757574eba05b26365bbe6c9e8e976e676"
+    },
+    {
+      "item": "short-corrugated-wall",
+      "file": "artifacts/blueprint-references/shortcorrugatedwall.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/4f/THUMBshortcorrugatedwall.png/revision/latest",
+      "sha256": "bc278d691ed59d8d3cff98a0f84cdbd404af942d5c5bed96e0b76564f15ce644"
+    },
+    {
+      "item": "fence",
+      "file": "artifacts/blueprint-references/fence.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/2/2e/THUMBfence.png/revision/latest",
+      "sha256": "39f79fe43d5c27c5c8d1782658ad4d3bffea5466c8171acb4eb7e5990b0fca55"
+    },
+    {
+      "item": "thin-fence",
+      "file": "artifacts/blueprint-references/thinfence.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/ea/THUMBthinfence.png/revision/latest",
+      "sha256": "ea5c2c31048bb4011ee6c8cac0b2d239a0972956a44d50c955bf96f58dc8ecca"
+    },
+    {
+      "item": "fence-corner",
+      "file": "artifacts/blueprint-references/fencecorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/4/41/THUMBfencecorner.png/revision/latest",
+      "sha256": "f9406d9cc1dd76e07ecba8e8f7052e4f64154c5bc95e72be6fc99cfc3f6e9ca4"
+    },
+    {
+      "item": "short-fence",
+      "file": "artifacts/blueprint-references/shortfence.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/c/c6/THUMBshortfence.png/revision/latest",
+      "sha256": "40c8f9e0f31f49d3d11d45b3351b4483231f11c7580f011cc41fd7407624d528"
+    },
+    {
+      "item": "short-fence-corner",
+      "file": "artifacts/blueprint-references/shortfencecorner.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/1c/THUMBshortfencecorner.png/revision/latest",
+      "sha256": "7f54ac9a6dbbe28efba43ef04a530144dbe9187c897b03346fa2811742d93867"
+    },
+    {
+      "item": "ladder",
+      "file": "artifacts/blueprint-references/ladder.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/1/14/THUMBladder.png/revision/latest",
+      "sha256": "eb44ba90fdd00eacdf2ccccc7cdf0d66fac0242dc56c5f7196bcb8b735078e5f"
+    },
+    {
+      "item": "mundane-chair",
+      "file": "artifacts/blueprint-references/mundanechair.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/d/d0/THUMBmundanechair.png/revision/latest",
+      "sha256": "6422ccf33514466a68806a9e0f1e9ce5eefc7a1c013e1249ec62fa9c872738e5"
+    },
+    {
+      "item": "square-table",
+      "file": "artifacts/blueprint-references/squaretable.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/6/60/THUMBsquaretable.png/revision/latest",
+      "sha256": "e1c888de617f03a81322e6f0c777f5e7a245267bf3121f03f8d579a68db6b187"
+    },
+    {
+      "item": "long-table",
+      "file": "artifacts/blueprint-references/longtable.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e0/THUMBlongtable.png/revision/latest",
+      "sha256": "de55df38f1c74d79a5df9b62887fafe199c158f1749cbb204a6ad0180d60044a"
+    },
+    {
+      "item": "thin-cabinet",
+      "file": "artifacts/blueprint-references/thincabinet.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/3f/THUMBthincabinet.png/revision/latest",
+      "sha256": "dfd943a3749888dde449da6a531e9e923fbddc78d6fe06c764a7378e9dcb0655"
+    },
+    {
+      "item": "kitchen-cabinet",
+      "file": "artifacts/blueprint-references/kitchencabinet.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/e/e3/THUMBkitchencabinet.png/revision/latest",
+      "sha256": "4ad6474963a8d9f27ebf61f2ed2b0c3c91e46cd747f0b7aae18f81c713a0ef63"
+    },
+    {
+      "item": "kitchen-cabinet-corner",
+      "file": "artifacts/blueprint-references/cornercabinet.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a0/THUMBcornercabinet.png/revision/latest",
+      "sha256": "ea8f19bf616ccd01d11fc736be38816c13dc066cc7a029136ea19436acb260d2"
+    },
+    {
+      "item": "wide-kitchen-cabinet-corner",
+      "file": "artifacts/blueprint-references/widecornercabinet.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/5/59/THUMBwidecornercabinet.png/revision/latest",
+      "sha256": "672de5663945a399a7766837f447e9c7d001c323f85fc3da1c520be9ac3b47bf"
+    },
+    {
+      "item": "countertop",
+      "file": "artifacts/blueprint-references/counter.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/f/f7/THUMBcounter.png/revision/latest",
+      "sha256": "c629758370e37c724c12351d0da87634277d6936380e7e9d72e28b40bd5220b0"
+    },
+    {
+      "item": "thin-countertop",
+      "file": "artifacts/blueprint-references/thincounter.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/a/a1/THUMBthincounter.png/revision/latest",
+      "sha256": "6c6c0d7a94b89e360b55a0cb6e5e607e13b0cb4751be43737a274495b3b73777"
+    },
+    {
+      "item": "countertop-with-sink",
+      "file": "artifacts/blueprint-references/countersink.png",
+      "url": "https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/34/THUMBcountersink.png/revision/latest",
+      "sha256": "7a3e8f4ecf4255e0c0754b56575d7f2a32db2679443971c62b03d3b71b0f7201"
+    }
+  ]
+}
