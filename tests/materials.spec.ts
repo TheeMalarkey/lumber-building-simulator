@@ -1,5 +1,50 @@
 import { expect, test } from "@playwright/test";
 
+test('glass shares a fixed translucent finish and keeps opaque door hardware',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+  const result=await page.evaluate(()=>{
+    const e=(window as any).timber.editor,v=e.view;
+    const pane=v.materialFor('glass-pane','oak'),other=v.materialFor('glass-pane','volcano'),door=v.materialFor('glass-door','pine');
+    e.world.load(Array.from({length:20},(_,i)=>({id:String(i),item:'glass-pane',wood:i%2?'oak':'pine',position:[4+(i%4)*5,4,4+Math.floor(i/4)*5],rotation:[0,0,0]})),null);
+    v.sync(true);
+    const meshes=[...v.loaded.values()].flatMap((g:any)=>g.children) as any[];
+    return {same:pane===other && pane===door[0],transparent:pane.transparent,opacity:pane.opacity,depthWrite:pane.depthWrite,
+      hardwareOpaque:!door[1].transparent,untextured:!pane.map,meshes:meshes.length,instances:meshes.reduce((n,m)=>n+m.count,0),
+      shadows:meshes.some(m=>m.castShadow)};
+  });
+  expect(result).toMatchObject({same:true,transparent:true,depthWrite:false,hardwareOpaque:true,untextured:true,meshes:1,instances:20,shadows:false});
+  expect(result.opacity).toBeGreaterThan(0);expect(result.opacity).toBeLessThan(1);expect(errors).toEqual([]);
+});
+
+test('glass catalog and mixed selections preserve fixed finishes through editing and saves',async({page})=>{
+  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+  await page.locator('#build-tool').click();await page.locator('[data-category="Glass"]').click();
+  await expect(page.locator('.catalog-card')).toHaveCount(5);await page.locator('[data-item="glass-pane"]').click();
+  await expect(page.locator('#wood-picker')).toBeHidden();
+  await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([
+      {id:'pane',item:'glass-pane',wood:'oak',position:[-5,2,0],rotation:[0,0,0]},
+      {id:'door',item:'glass-door',wood:'oak',position:[5,4,0],rotation:[0,0,0]},
+      {id:'wood',item:'smooth-wall',wood:'oak',position:[0,4,5],rotation:[0,0,0]},
+    ],[12]);e.pickSelections(['pane','wood']);
+  });
+  await page.locator('#wood-toggle').click();await page.locator('[data-wood="pine"]').click();
+  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].map((p:any)=>p.wood))).toEqual(['oak','oak','pine']);
+  await page.evaluate(()=>(window as any).timber.editor.pickSelections(['pane','door']));
+  await expect(page.locator('#wood-picker')).toBeHidden();
+  await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();
+  await page.locator('#step-buttons-details').evaluate((el:HTMLDetailsElement)=>el.open=true);
+  for(let i=0;i<8;i++) await page.locator('[data-nudge="up"]').click();
+  await page.locator('#commit-preview').click();
+  await expect(page.locator('#piece-count')).toHaveText('5 pieces');
+  await page.locator('#undo').click();await expect(page.locator('#piece-count')).toHaveText('3 pieces');
+  await page.locator('#redo').click();await page.keyboard.press('Control+s');
+  await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+  await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
+  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].filter((p:any)=>p.item.includes('glass')).length)).toBe(4);
+});
+
 test("classic maps preload, share textures, and render every material kind without shader errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

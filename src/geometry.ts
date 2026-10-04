@@ -152,6 +152,10 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
         );
       break;
     }
+    case "glass-door":
+      box(w,h,d);
+      for(const side of [-1,1]) cylinder(.3,.25,-w/2+.5,h/2,side*.225,"z",1);
+      break;
     case "door":
       box(w, h, .5, 0, h / 2, 0);
       // Thumbnail-derived proportions: half/basic knobs near three studs,

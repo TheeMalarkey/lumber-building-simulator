@@ -23,7 +23,8 @@ export function buildPath(template: Piece, anchors: readonly Vec3[], options: Pa
   if (!anchors.length) return {pieces:[],guide:[]};
   const start=new Vector3(...anchors[0]),end=new Vector3(...anchors[anchors.length-1]);
   const length=start.distanceTo(end),direction=end.clone().sub(start).normalize();
-  const size=rotatedSize(ITEMS.get(template.item)!.size,template.rotation);
+  const item=ITEMS.get(template.item)!;
+  const size=rotatedSize(item.boundsSize ?? item.size,template.rotation);
   const span=Math.abs(direction.x)*size[0]+Math.abs(direction.y)*size[1]+Math.abs(direction.z)*size[2];
   const step=options.fill ? 1 : Math.max(1,Math.ceil(span-1e-5));
   const seen=new Set<string>(),pieces:Piece[]=[];

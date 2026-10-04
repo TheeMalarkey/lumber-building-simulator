@@ -15,8 +15,9 @@ const piece = (id = "a"): Piece => ({
 });
 describe("catalog", () => {
   it("covers the 69 individually listed obtainable blueprints without duplicate ids", () => {
-    expect(CATALOG).toHaveLength(69);
-    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(69);
+    expect(CATALOG.filter(p=>!p.fixedMaterial)).toHaveLength(69);
+    expect(CATALOG).toHaveLength(74);
+    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(74);
   });
   it("preserves thin tile dimensions", () =>
     expect(CATALOG.find((x) => x.id === "tiny-tile")?.size).toEqual([
@@ -28,7 +29,7 @@ describe("catalog", () => {
       const s = g.boundingBox!.getSize(new Vector3()).toArray();
       for (let i = 0; i < 3; i++) {
         expect(s[i], `${c.id} axis ${i}`).toBeLessThanOrEqual(
-          c.size[i] + 0.001,
+          (c.boundsSize ?? c.size)[i] + 0.001,
         );
         expect(s[i]).toBeGreaterThan(0);
       }
@@ -218,7 +219,7 @@ describe("collision checks", () => {
         [1, 0, 0],
         [0, 0, 1],
       ] as [number, number, number][]) {
-        const height = rotatedSize(item.size, rotation)[1];
+        const height = rotatedSize(item.boundsSize ?? item.size, rotation)[1];
         const p: Piece = {
           ...piece(),
           item: item.id,

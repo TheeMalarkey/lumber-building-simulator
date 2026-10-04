@@ -74,6 +74,12 @@ export function makeTerrainMaterials() {
   };
 }
 
+/** Shared fixed glass; no scene capture or refraction pass per pane. */
+export function makeGlassMaterial() {
+  return new MeshStandardMaterial({name:"Fixed translucent glass",color:0xc4d2d6,
+    transparent:true,opacity:.32,depthWrite:false,roughness:.18,metalness:0});
+}
+
 
 /** Fixed hardware is shared by all blueprints, independent of selected wood. */
 export function makeBlueprintHardwareMaterials() {

@@ -1,6 +1,6 @@
 # Timber Studio
 
-A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes the 69 blueprints listed in the community reference, 20 wood finishes, free and walking cameras, surface/grid placement, editing, undo/redo, and local project files.
+A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 69 wood blueprints, all five glass building pieces listed in the community reference, 20 wood finishes, free and walking cameras, surface/grid placement, editing, undo/redo, and local project files.
 
 **[Open Timber Studio in your browser](https://theemalarkey.github.io/lumber-building-simulator/)** — no installation required.
 
@@ -40,6 +40,8 @@ The portable ZIP contains the compiled site and a small Node server. Extract it,
 - **Land** opens the 5×5 selector. Start with the center 40×40-stud plot and expand by shared edges, up to 200×200 studs. The full blueprint footprint must remain on active land. You cannot remove the center, disconnect land, or deactivate occupied plots. Land changes save with the project and support undo/redo. The dialog separately toggles the stud grid and plot borders. Thick grid lines divide each plot into five equal 8-stud cells.
 - Plots stand 0.1 stud above the textured grass; walking steps up and down at their edges.
 - The starter cabin is made entirely from editable catalog pieces. **New project** starts a blank scene.
+
+The **Glass** category contains Tiny, Small, regular and Large Glass Panes plus the Glass Door. Panels are frameless and 0.2 studs thick, with fixed translucent finishes. Wood changes affect only wood pieces in a mixed selection. Glass supports the same placement, drag building, rotation, tilt, copy, collision and undo tools. The door is a static closed piece with a dark knob. Dimensions and visual estimates are documented in [the glass reference](docs/reference/glass.md).
 
 ## Keep your work
 

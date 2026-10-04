@@ -26,7 +26,8 @@ export function pieceBounds(p: Piece) {
       max:[0,1,2].map(i=>Math.max(...solids.map(s=>s.bounds.max.getComponent(i)))) as Vec3,
     };
   }
-  const s = rotatedSize(ITEMS.get(p.item)!.size, p.rotation);
+  const item=ITEMS.get(p.item)!;
+  const s = rotatedSize(item.boundsSize ?? item.size, p.rotation);
   return {
     min: p.position.map((v, i) => v - s[i] / 2) as Vec3,
     max: p.position.map((v, i) => v + s[i] / 2) as Vec3,

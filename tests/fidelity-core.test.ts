@@ -64,7 +64,7 @@ describe("blueprint wood requirements", () => {
 });
 
 it("matches every independently recorded name, dimension, and wood requirement", () => {
-  expect(CATALOG.length).toBe(reference.entries.length);
+  expect(CATALOG.filter(p=>!p.fixedMaterial).length).toBe(reference.entries.length);
   for(const row of reference.entries) {
     const item=CATALOG.find(c=>c.name===row.name);
     expect(item,row.name).toBeDefined();

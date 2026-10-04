@@ -9,6 +9,7 @@ export type Shape =
   | "wedge"
   | "stairs"
   | "door"
+  | "glass-door"
   | "ladder"
   | "chair"
   | "table"
@@ -22,12 +23,16 @@ export interface CatalogItem {
   size: Vec3;
   shape: Shape;
   woodCost: number;
+  fixedMaterial?: "glass";
+  /** Full hardware envelope; size remains the reference panel dimensions. */
+  boundsSize?: Vec3;
 }
 export const CATEGORIES = [
   "All pieces",
   "Walls",
   "Floors",
   "Doors",
+  "Glass",
   "Wedges",
   "Furniture",
   "Other",
@@ -131,6 +136,9 @@ add("Thin Countertop", "Furniture", [4, 0.4, 2], "box", 10);
 add("Countertop With Sink", "Furniture", [4, 1, 4], "sink", 30);
 add("Post", "Other", [1, 4, 1], "box", 3);
 add("Ladder", "Other", [4, 4, 1], "ladder", 6);
+for(const [name,side] of [["Tiny Glass Pane",1],["Small Glass Pane",2],["Glass Pane",4],["Large Glass Pane",8]] as const)
+  CATALOG.push({id:name.toLowerCase().replaceAll(" ","-"),name,category:"Glass",size:[side,side,.2],shape:"box",woodCost:0,fixedMaterial:"glass"});
+CATALOG.push({id:"glass-door",name:"Glass Door",category:"Glass",size:[4,8,.2],boundsSize:[4,8,.7],shape:"glass-door",woodCost:0,fixedMaterial:"glass"});
 export const ITEMS = new Map(CATALOG.map((x) => [x.id, x]));
 export interface Wood {
   id: string;

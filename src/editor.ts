@@ -168,7 +168,8 @@ export class Editor {
     const multi = pieces.length > 1;
     const finishPieces=this.groupPlacement
       ? this.groupPreview.length ? this.groupPreview : this.groupPlacement.source : pieces;
-    const mixedWood=multi && new Set(finishPieces.map(p=>p.wood)).size>1;
+    const woodPieces=finishPieces.filter(p=>!ITEMS.get(p.item)!.fixedMaterial);
+    const mixedWood=multi && new Set(woodPieces.map(p=>p.wood)).size>1;
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
     if (p && !this.placing) {
       this.item = p.item;
@@ -189,7 +190,7 @@ export class Editor {
       ? "Drag an X, Y or Z arrow to copy your selection.<br>Release to place; Esc cancels."
       : "Drag the X, Y or Z arrow on your selection.<br>Hold a placement with L to adjust it in the air.";
     $("step-buttons-details").querySelector("summary")!.textContent=this.copyWithArrows && !this.placing ? "Move step buttons" : "Step buttons";
-    const displayedWood=multi ? finishPieces[0]?.wood ?? this.wood : this.wood;
+    const displayedWood=multi ? woodPieces[0]?.wood ?? this.wood : this.wood;
     $("wood-color").style.background = mixedWood
       ? "linear-gradient(135deg, #d7c59a 50%, #694028 50%)" : WOOD_MAP.get(displayedWood)!.color;
     if (!(p || this.placing)) this.panel("woods", false);
@@ -201,7 +202,9 @@ export class Editor {
     $("piece-size").textContent = multi ? "Rotate, tilt, move or finish together" : item.size.join(" × ") + " studs";
     $("piece-category").textContent = multi ? "GROUP SELECTION" : item.category.toUpperCase();
     $("piece-preview").hidden = multi;
-    $("wood-picker").hidden = false;
+    const fixedFinish=multi ? !woodPieces.length : !!item.fixedMaterial;
+    $("wood-picker").hidden = fixedFinish;
+    if(fixedFinish) this.panel("woods",false);
     $("rotate-controls").hidden = false;
     $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
     $("place-selected").hidden = multi;
@@ -500,12 +503,13 @@ export class Editor {
   }
   changeWood(wood: string) {
     if (!WOOD_MAP.has(wood)) return;
+    if(!this.groupPlacement && (this.placing ? !!ITEMS.get(this.item)!.fixedMaterial : this.selectedPieces.every(p=>!!ITEMS.get(p.item)!.fixedMaterial))) return;
     this.wood=wood;
     if (this.groupPlacement) {
-      this.groupPlacement.source=this.groupPlacement.source.map(p=>({...p,wood}));
-      this.groupPreview=this.groupPreview.map(p=>({...p,wood}));
+      this.groupPlacement.source=this.groupPlacement.source.map(p=>ITEMS.get(p.item)!.fixedMaterial ? p : {...p,wood});
+      this.groupPreview=this.groupPreview.map(p=>ITEMS.get(p.item)!.fixedMaterial ? p : {...p,wood});
     } else if (!this.placing) {
-      const changes=this.selectedPieces.filter(p=>p.wood!==wood).map(p=>({before:p,after:{...p,wood}}));
+      const changes=this.selectedPieces.filter(p=>!ITEMS.get(p.item)!.fixedMaterial && p.wood!==wood).map(p=>({before:p,after:{...p,wood}}));
       this.world.execute(changes);
     }
     this.panel("woods",false);this.inspect();this.updateGhost();
@@ -648,7 +652,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 wood blueprints and five glass pieces are available. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }

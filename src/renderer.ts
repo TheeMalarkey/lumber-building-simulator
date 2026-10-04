@@ -2,7 +2,7 @@ import * as T from "three";
 import { World, CHUNK, chunkKey, type Piece } from "./world";
 import { ITEMS, type Vec3, CATALOG } from "./catalog";
 import { geometryFor } from "./geometry";
-import { makeMaterials, makeBlueprintHardwareMaterials } from "./materials";
+import { makeMaterials, makeBlueprintHardwareMaterials, makeGlassMaterial } from "./materials";
 import { quaternionRotation, STUD_STEP } from "./placement";
 import { CameraController } from "./camera";
 import { Terrain } from "./terrain";
@@ -23,6 +23,8 @@ export class Viewport {
   gizmo = new MoveGizmo();
   materials = makeMaterials();
   hardwareMaterials = makeBlueprintHardwareMaterials();
+  glassMaterial = makeGlassMaterial();
+  private glassDoorMaterials = [this.glassMaterial,this.hardwareMaterials[0]];
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
   loaded = new Map<string, T.Group>();
   raycaster = new T.Raycaster();
@@ -172,6 +174,7 @@ export class Viewport {
     this.resize();
   }
   materialFor(item: string, wood: string): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(ITEMS.get(item)!.fixedMaterial === "glass") return item === "glass-door" ? this.glassDoorMaterials : this.glassMaterial;
     const shape = ITEMS.get(item)!.shape;
     return shape === "door" || shape === "sink" ? this.blueprintMaterials.get(wood)! : this.materials.get(wood)!;
   }
@@ -187,7 +190,7 @@ export class Viewport {
     const batches = new Map<string, Piece[]>();
     for (const id of this.world.chunks.get(key) ?? []) {
       const p = this.world.pieces.get(id)!;
-      const k = p.item + "|" + p.wood;
+      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood);
       if (!batches.has(k)) batches.set(k, []);
       batches.get(k)!.push(p);
     }
@@ -210,7 +213,7 @@ export class Viewport {
           Math.max(8, 2 ** Math.ceil(Math.log2(pieces.length))),
         );
         mesh.name = k;
-        mesh.castShadow = true;
+        mesh.castShadow = ITEMS.get(first.item)!.fixedMaterial !== "glass";
         mesh.receiveShadow = true;
         mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);
         group.add(mesh);
