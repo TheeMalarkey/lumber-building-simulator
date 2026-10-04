@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 90 passing core tests and 46 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 93 core tests and 48 browser scenarios. Verification for each update is recorded below. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -27,7 +27,7 @@ Double-click moving is browser-tested for single-click selection, pickup without
 
 The ground boundary rejects fully and partially buried blueprints using their rotated bounds. All catalog entries are checked for flush ground contact and small penetration in upright and tilted orientations. Browser checks cover red previews, negative elevation, rejected placement, rejected movement, numeric Y edits, and tilting a thin tile, with the original piece retained on rejection.
 
-The collision fix additionally verifies full/partial intersection rejection, touching faces, stacking, thin tiles, negative chunk boundaries, rotation-aware bounds, moving-piece exclusion, red invalid previews, rejected placement clicks, and rejected numeric position edits. The permissive overlap toggle has been removed. Original objects remain unchanged when an edit is rejected.
+The collision fix additionally verifies full/partial intersection rejection, touching faces, stacking, thin tiles, negative chunk boundaries, rotation-aware bounds, moving-piece exclusion, red invalid previews, rejected placement clicks, and rejected numeric position edits. The original permissive overlap toggle was removed in that fix; the explicit, default-off option below supersedes that behavior. Original objects remain unchanged when an edit is rejected.
 
 The independently served production package was also checked: 69 catalog cards, 122 editable example pieces, successful placement followed by save/reload, no browser errors, no development debug API, and no horizontal overflow at 1024 × 768. Evidence is in `artifacts/package-check.json`.
 
@@ -70,7 +70,7 @@ A separate code reviewer found history notification timing, finish edits leaking
 - World records and spatial indices stay in RAM. Distant GPU chunks unload, but disk-paged world records and a distant overview proxy are not implemented.
 - Saves are debounced, atomic whole-project IndexedDB snapshots with a preceding backup. Incremental chunk persistence and worker-driven large imports/exports are not implemented. Large file operations may briefly block input.
 - The current graphics backend is WebGL 2. WebGPU fallback was deferred in favor of a single tested renderer.
-- Collision checks are mandatory for new placement, moving, duplication, rotation, and numeric position edits. Spatial and outer-bounds filtering is followed by convex component checks derived from the rendering recipes. Touching faces and open furniture spaces remain usable. Ground and active-plot checks still require the full blueprint bounds to fit. Existing saved/imported projects are retained as authored; the fix does not delete or rearrange old overlapping pieces.
+- Overlap checks are enabled by default for new placement, moving, duplication, rotation, and numeric position edits. Players can opt into Allow overlaps; ground and active-land limits remain mandatory. Spatial and outer-bounds filtering is followed by convex component checks derived from the rendering recipes. Touching faces and open furniture spaces remain usable. Ground and active-plot checks still require the full blueprint bounds to fit. Existing saved/imported projects are retained as authored; the fix does not delete or rearrange old overlapping pieces.
 - Adaptive quality currently reduces resolution under sustained load; it does not automatically restore resolution. Selecting a quality preset resets it.
 - The only file-size guard is a 256 MB import safety budget; there is no placed-piece cap; active land is limited to a 5×5 layout of 40×40-stud plots. Actual capacity depends on hardware and storage.
 - The application is a static website with local and GitHub Pages deployment. Accounts, cloud project storage, cross-device synchronization, machinery simulation, and Roblox integration are not implemented.
@@ -130,3 +130,10 @@ The wood picker applies a chosen finish to every selected blueprint in one undoa
 Four core cases cover all three rotation axes, unchanged originals, per-member orientation composition and four-turn restoration with fractional offsets. Six browser cases exercise group rotate/tilt, atomic rejection, mixed finish display, one-step undo/redo, save/reload, transformed and recolored copies, cursor-following previews and held moves. The separate production check verifies visible controls and exported poses without a development API, including compact-screen layout. Reproduce with `node scripts/verify-group-edit-live.mjs`; screenshot: `artifacts/group-editing.png`. Group calculations run only when editing; no additional per-frame simulation or render batches were added.
 
 All 90 core tests, 46 browser scenarios, the production build and the separately served production group-edit check passed.
+
+
+## Optional blueprint overlaps — 2026-10-04
+
+The blueprint panel now has an Allow overlaps checkbox, switched off by default. Enabling it bypasses only inter-blueprint placement checks, so all existing movement, rotation, duplication and group-edit paths share the same behavior. Ground and active-plot validation run before that bypass. Retained single/group previews refresh immediately when the toggle changes. Switching it off keeps existing objects intact and restores blocking for subsequent edits. This is a session preference rather than project data or an undo action; reloading starts with overlap protection enabled.
+
+All 93 core tests and nine focused browser checks passed, along with the production build. New cases cover default blocking, opt-in intersection, preserved builds, full ground/plot limits, group rotation/movement, live preview color and compact controls. A walking regression confirms the option does not disable character collision. The separately served production check uses visible controls to place an exact overlapping copy, restores blocking, verifies exported positions and undoes the placement. Reproduce with `node scripts/verify-overlap-live.mjs`.

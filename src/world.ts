@@ -53,6 +53,7 @@ export class World {
   dirty = new Set<string>();
   // Null is used by standalone spatial/benchmark fixtures; the editor always loads land.
   plots: number[] | null = null;
+  allowOverlaps = false;
   private past: HistoryEntry[] = [];
   private future: HistoryEntry[] = [];
   revision = 0;
@@ -203,6 +204,7 @@ export class World {
     // Check the rotated footprint, not just the center. Allow only roundoff.
     if (candidate.min[1] < -1e-8) return "below-ground";
     if (this.plots && !coveredByPlots(candidate, this.plots)) return "outside-plots";
+    if (this.allowOverlaps) return null;
     const visited = new Set<string>();
     // Use cells touched by the proposed bounds, independent of item size.
     for (const key of keys(piece)) {

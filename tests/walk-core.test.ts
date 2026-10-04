@@ -193,3 +193,12 @@ describe("walk physics", () => {
     expect(ground.y).toBeCloseTo(0.3, 4);
   });
 });
+
+it("keeps walking collision solid while blueprint overlaps are allowed", () => {
+  const walker=setup([piece("wall","smooth-wall",[0,4,0])]);
+  walker.world.allowOverlaps=true;
+  expect(walker.spawn(new Vector3(0,0,4))).toBe(true);
+  run(walker,.5,new Vector3(0,0,-1));
+  expect(walker.position.z).toBeGreaterThanOrEqual(.5+WALK_RADIUS-.001);
+  expect(walker.canOccupy(new Vector3(0,0,0))).toBe(false);
+});

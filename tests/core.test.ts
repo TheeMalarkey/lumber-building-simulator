@@ -184,6 +184,24 @@ describe("ray broad phase", () => {
   });
 });
 describe("collision checks", () => {
+  it("allows blueprint intersections only while the overlap option is enabled", () => {
+    const w=new World();w.load([piece("a")],[12]);
+    expect(w).toHaveProperty("allowOverlaps",false);
+    expect(w.placementIssue(piece("new"))).toBe("overlap");
+    w.allowOverlaps=true;
+    expect(w.canPlace(piece("new"))).toBe(true);
+    w.execute([{before:null,after:piece("new")}]);
+    w.allowOverlaps=false;
+    expect(w.pieces.size).toBe(2);
+    expect(w.placementIssue(piece("another"))).toBe("overlap");
+    w.undo();expect(w.pieces.size).toBe(1);
+  });
+  it("keeps ground and active-land checks enabled when overlaps are allowed", () => {
+    const w=new World();w.load([piece("a")],[12]);
+    w.allowOverlaps=true;
+    expect(w.placementIssue({...piece("new"),position:[0,3,0]})).toBe("below-ground");
+    expect(w.placementIssue({...piece("new"),position:[20,4,0]})).toBe("outside-plots");
+  });
   it("rejects fully and partly underground pieces even when their centers are above ground", () => {
     const w = new World();
     expect(w.canPlace({ ...piece(), position: [0, -5, 0] })).toBe(false);

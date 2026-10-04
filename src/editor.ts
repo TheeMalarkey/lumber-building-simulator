@@ -192,6 +192,7 @@ export class Editor {
     $("piece-preview").hidden = multi;
     $("wood-picker").hidden = false;
     $("rotate-controls").hidden = false;
+    $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
     $("place-selected").hidden = multi;
     $("selection-hint").hidden = !multi;
     $("selection-count").hidden = !pieces.length;
@@ -792,6 +793,16 @@ export class Editor {
     $("nudge-buttons").onclick = e => {
       const b=(e.target as HTMLElement).closest<HTMLElement>("[data-nudge]");
       if (b) this.nudge(b.dataset.nudge!);
+    };
+    $("overlap-toggle").onchange = e => {
+      this.world.allowOverlaps=(e.target as HTMLInputElement).checked;
+      this.lastPointer="";this.updateGhost();
+      // A retained preview must also refresh while the pointer is over the panel.
+      if (this.placing && !this.pointer) {
+        if (this.groupPlacement) this.view.showGroupGhosts(this.groupPreview,!this.groupIssue());
+        else if (this.ghost) this.view.showGhost(this.ghost,this.valid(this.ghost));
+      }
+      this.inspect();
     };
     $("elevation").oninput = () => this.updateGhost();
     $("elevation").onchange = () => {

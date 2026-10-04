@@ -11,6 +11,7 @@ export default defineConfig({
     "selection.spec.ts",
     "precision.spec.ts",
     "gizmo.spec.ts",
+    "overlap.spec.ts",
   ],
   timeout: 40000,
   workers: 1,
