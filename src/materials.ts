@@ -80,6 +80,17 @@ export function makeGlassMaterial() {
     transparent:true,opacity:.32,depthWrite:false,roughness:.18,metalness:0});
 }
 
+/** Shared fixed store finishes; no wood palette or per-instance textures. */
+export function makeFurnitureMaterials() {
+  return [
+    ["Warm beige upholstery",0xc9966b,.85], ["Black feet and handles",0x17242b,.65],
+    ["White enamel and bedding",0xf1f0e9,.48], ["Brown bed frame",0x866044,.8],
+    ["Gray metal handles",0xa3a5a4,.4], ["Stove body",0x625d66,.65],
+    ["Bowl water",0x9eafb9,.28], ["Appliance gray",0x999b9e,.65],
+    ["Oven window",0x3e464b,.4],
+  ].map(([name,color,roughness])=>new MeshStandardMaterial({name:name as string,color:color as number,roughness:roughness as number}));
+}
+
 
 /** Fixed hardware is shared by all blueprints, independent of selected wood. */
 export function makeBlueprintHardwareMaterials() {

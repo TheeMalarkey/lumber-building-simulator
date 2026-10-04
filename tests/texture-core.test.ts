@@ -14,6 +14,8 @@ describe("physical material coordinates", () => {
       const uv = geometry.getAttribute("uv");
       expect(uv.count, item.id).toBe(positions.count);
       expect([...uv.array].every(Number.isFinite), item.id).toBe(true);
+      // Store furniture has deliberately untextured fixed surfaces.
+      if(item.fixedMaterial === 'furniture') continue;
       for (let i = 0; i < positions.count; i += 3) {
         for (let edge = 0; edge < 3; edge++) {
           const j = i + edge, k = i + (edge + 1) % 3;

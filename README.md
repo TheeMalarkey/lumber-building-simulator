@@ -1,6 +1,6 @@
 # Timber Studio
 
-A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 69 wood blueprints, all five glass building pieces listed in the community reference, 20 wood finishes, free and walking cameras, surface/grid placement, editing, undo/redo, and local project files.
+A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 69 wood blueprints, five glass pieces, nine store furnishings, 20 wood finishes, free and walking cameras, surface/grid placement, editing, undo/redo, and local project files.
 
 **[Open Timber Studio in your browser](https://theemalarkey.github.io/lumber-building-simulator/)** — no installation required.
 
@@ -18,6 +18,8 @@ Open http://127.0.0.1:5178. For a production build, run `npm run build`, then `n
 The portable ZIP contains the compiled site and a small Node server. Extract it, double-click **Start Studio.cmd**, and keep its console open. It does not need npm packages. Your browser will open the editor. Node.js must be installed.
 
 ## Build
+
+**Build → Store furniture** contains Armchair, Loveseat, Couch, Single Bed, Twin Bed, Toilet, Refrigerator, Stove and Dishwasher. They have fixed original-style finishes, detailed collision shapes, and the usual move/copy/rotate/tilt/save tools. Designs follow inspected game references; dimensions and fine details are estimates documented in [the furniture reference](docs/reference/store-furniture.md). Appliance doors are currently closed and static; sitting interactions and lighting are not part of this catalog update.
 
 - Click **Build** or press **B** to open the blueprint inventory; **/** opens its search. Pick a piece to close the inventory and click a surface to place it repeatedly. **Escape** closes an open panel before cancelling placement or selection.
 - The world fills the window. The small editing panel appears only while placing or selecting a piece; its **Wood** swatch opens the finish palette. Project name, new/import/export/save, settings, and help are in the **TIMBER** corner menu.

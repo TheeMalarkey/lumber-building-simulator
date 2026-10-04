@@ -10,6 +10,7 @@ export type Shape =
   | "stairs"
   | "door"
   | "glass-door"
+  | "store-furniture"
   | "ladder"
   | "chair"
   | "table"
@@ -23,7 +24,8 @@ export interface CatalogItem {
   size: Vec3;
   shape: Shape;
   woodCost: number;
-  fixedMaterial?: "glass";
+  fixedMaterial?: "glass" | "furniture";
+  dimensionsEstimated?: boolean;
   /** Full hardware envelope; size remains the reference panel dimensions. */
   boundsSize?: Vec3;
 }
@@ -35,6 +37,7 @@ export const CATEGORIES = [
   "Glass",
   "Wedges",
   "Furniture",
+  "Store furniture",
   "Other",
 ];
 export const CATALOG: CatalogItem[] = [];
@@ -139,6 +142,15 @@ add("Ladder", "Other", [4, 4, 1], "ladder", 6);
 for(const [name,side] of [["Tiny Glass Pane",1],["Small Glass Pane",2],["Glass Pane",4],["Large Glass Pane",8]] as const)
   CATALOG.push({id:name.toLowerCase().replaceAll(" ","-"),name,category:"Glass",size:[side,side,.2],shape:"box",woodCost:0,fixedMaterial:"glass"});
 CATALOG.push({id:"glass-door",name:"Glass Door",category:"Glass",size:[4,8,.2],boundsSize:[4,8,.7],shape:"glass-door",woodCost:0,fixedMaterial:"glass"});
+// Furniture dimensions are reconstruction estimates; see docs/reference/store-furniture.md.
+for (const [name,size] of [
+  ["Armchair",[4,4,4]], ["Loveseat",[6,4,4]], ["Couch",[8,4,4]],
+  ["Single Bed",[4,3,8]], ["Twin Bed",[6,3,8]], ["Toilet",[2.6,3.5,4]],
+  ["Refrigerator",[4,6,4]], ["Stove",[4,2.8,4]], ["Dishwasher",[4,2.4,4]],
+] as [string,Vec3][]) {
+  CATALOG.push({id:name.toLowerCase().replaceAll(' ','-'),name,category:"Store furniture",
+    size,shape:"store-furniture",woodCost:0,fixedMaterial:"furniture",dimensionsEstimated:true});
+}
 export const ITEMS = new Map(CATALOG.map((x) => [x.id, x]));
 export interface Wood {
   id: string;

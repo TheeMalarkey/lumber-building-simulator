@@ -105,7 +105,7 @@ export function renderCatalog(
     ? items
         .map(
           (c) =>
-            `<button class="catalog-card ${c.id === selected ? "selected" : ""}" data-item="${c.id}" title="${c.name} · ${c.size.join(" × ")} studs"><div class="card-image"><img loading="lazy" src="${thumbnails.get(c.id)}" alt=""><span class="card-add">+</span></div><span class="card-name">${c.name}</span><span class="card-size">${c.size.join(" × ")}</span></button>`,
+            `<button class="catalog-card ${c.id === selected ? "selected" : ""}" data-item="${c.id}" title="${c.name} · ${c.dimensionsEstimated ? 'Estimated dimensions: ' : ''}${c.size.join(" × ")} studs"><div class="card-image"><img loading="lazy" src="${thumbnails.get(c.id)}" alt=""><span class="card-add">+</span></div><span class="card-name">${c.name}</span><span class="card-size">${c.dimensionsEstimated ? '≈ ' : ''}${c.size.join(" × ")}</span></button>`,
         )
         .join("")
     : '<div class="empty-results">No pieces found.<br>Try a different name.</div>';

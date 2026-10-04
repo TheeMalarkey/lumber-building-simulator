@@ -2,7 +2,7 @@ import * as T from "three";
 import { World, CHUNK, chunkKey, type Piece } from "./world";
 import { ITEMS, type Vec3, CATALOG } from "./catalog";
 import { geometryFor } from "./geometry";
-import { makeMaterials, makeBlueprintHardwareMaterials, makeGlassMaterial } from "./materials";
+import { makeMaterials, makeBlueprintHardwareMaterials, makeGlassMaterial, makeFurnitureMaterials } from "./materials";
 import { quaternionRotation, STUD_STEP } from "./placement";
 import { CameraController } from "./camera";
 import { Terrain } from "./terrain";
@@ -24,6 +24,7 @@ export class Viewport {
   materials = makeMaterials();
   hardwareMaterials = makeBlueprintHardwareMaterials();
   glassMaterial = makeGlassMaterial();
+  furnitureMaterials = makeFurnitureMaterials();
   private glassDoorMaterials = [this.glassMaterial,this.hardwareMaterials[0]];
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
   loaded = new Map<string, T.Group>();
@@ -174,6 +175,7 @@ export class Viewport {
     this.resize();
   }
   materialFor(item: string, wood: string): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(ITEMS.get(item)!.fixedMaterial === "furniture") return this.furnitureMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "glass") return item === "glass-door" ? this.glassDoorMaterials : this.glassMaterial;
     const shape = ITEMS.get(item)!.shape;
     return shape === "door" || shape === "sink" ? this.blueprintMaterials.get(wood)! : this.materials.get(wood)!;

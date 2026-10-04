@@ -10,6 +10,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { type CatalogItem, ITEMS, stairTreadCount } from "./catalog";
 import { applyPhysicalUVs, TEXTURE_TILE_STUDS } from "./texture-uv";
 import { solidFromGeometry, type Solid } from "./solid";
+import { furnitureParts } from "./furniture-geometry";
 const cache = new Map<string, BufferGeometry>();
 const collisionCache = new Map<string, Solid[]>();
 export function collisionPartsFor(id: string) {
@@ -90,6 +91,9 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       panel(.16, h - .4, px, h / 2);
   };
   switch (item.shape) {
+    case "store-furniture":
+      parts.push(...furnitureParts(item));
+      break;
     case "box":
       box(w, h, d);
       break;

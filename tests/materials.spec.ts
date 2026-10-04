@@ -1,5 +1,58 @@
 import { expect, test } from "@playwright/test";
 
+test('all nine furnishings save with fixed finishes and seating supports group copy and rotation',async({page})=>{
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+  await page.locator('#build-tool').click();await page.locator('[data-category="Store furniture"]').click();
+  await expect(page.locator('.catalog-card')).toHaveCount(9);
+  await expect(page.locator('[data-category="Store furniture"]')).toHaveClass(/active/);
+  await expect(page.locator('[data-item="armchair"] .card-size')).toContainText('≈');
+  await page.locator('[data-item="couch"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
+  const result=await page.evaluate(()=>{
+    const e=(window as any).timber.editor,v=e.view;
+    e.world.load(Array.from({length:20},(_,i)=>({id:String(i),item:'couch',wood:i%2?'pine':'oak',position:[4+(i%3)*9,2,4+Math.floor(i/3)*5],rotation:[0,0,0]})),null);
+    v.sync(true);
+    const meshes=[...v.loaded.values()].flatMap((g:any)=>g.children) as any[];
+    return {shared:v.materialFor('couch','oak')===v.materialFor('couch','pine'),plain:v.furnitureMaterials.every((m:any)=>!m.map&&!m.transparent),
+      instances:meshes.reduce((n,m)=>n+m.count,0),meshes:meshes.length};
+  });
+  expect(result).toEqual({shared:true,plain:true,instances:20,meshes:1});
+  await page.evaluate(()=>{
+    const e=(window as any).timber.editor;
+    const specs=[['armchair',-10,2,-10],['loveseat',-3,2,-10],['couch',6,2,-10],
+      ['single-bed',-10,1.5,0],['twin-bed',-3,1.5,0],['toilet',6,1.75,0],
+      ['refrigerator',-10,3,10],['stove',-3,1.4,10],['dishwasher',6,1.2,10]];
+    e.world.load(specs.map(([item,x,y,z],i)=>({id:'f'+i,item,wood:'oak',position:[x,y,z],rotation:[0,0,0]})),[12]);
+    e.pickSelections(['f0','f1']);e.changeWood('pine');e.view.sync(true);
+  });
+  await expect(page.locator('#wood-picker')).toBeHidden();
+  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].every((p:any)=>p.wood==='oak'))).toBe(true);
+  await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();
+  await page.locator('#step-buttons-details').evaluate((el:HTMLDetailsElement)=>el.open=true);
+  for(let i=0;i<5;i++) await page.locator('[data-nudge="up"]').click();
+  await page.locator('#commit-preview').click();await expect(page.locator('#piece-count')).toHaveText('11 pieces');
+  await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await page.locator('#undo').click();await page.locator('#redo').click();
+  await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+  await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
+  expect(await page.evaluate(()=>(window as any).timber.editor.world.pieces.size)).toBe(11);
+  await page.evaluate(()=>{
+    const e=(window as any).timber.editor;
+    e.world.load([...e.world.pieces.values()].filter((p:any)=>p.id.startsWith('f')),[12]);
+    e.view.sync(true);e.view.camera.camera.position.set(27,23,32);e.view.camera.controls.target.set(-2,1,0);e.view.camera.controls.update();
+  });
+  await page.locator('#build-tool').click();await page.locator('[data-category="Store furniture"]').click();
+  await expect(page.locator('.catalog-card')).toHaveCount(9);
+  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await page.screenshot({path:'artifacts/store-furniture.png'});
+  await page.locator('#build-tool').click();
+  await page.screenshot({path:'artifacts/store-furniture-scene.png'});
+  await page.locator('#build-tool').click();
+  await page.setViewportSize({width:390,height:844});await expect(page.locator('[data-category="Store furniture"]')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test('glass shares a fixed translucent finish and keeps opaque door hardware',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);

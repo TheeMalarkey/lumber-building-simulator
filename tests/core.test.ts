@@ -16,8 +16,8 @@ const piece = (id = "a"): Piece => ({
 describe("catalog", () => {
   it("covers the 69 individually listed obtainable blueprints without duplicate ids", () => {
     expect(CATALOG.filter(p=>!p.fixedMaterial)).toHaveLength(69);
-    expect(CATALOG).toHaveLength(74);
-    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(74);
+    expect(CATALOG).toHaveLength(83);
+    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(83);
   });
   it("preserves thin tile dimensions", () =>
     expect(CATALOG.find((x) => x.id === "tiny-tile")?.size).toEqual([
