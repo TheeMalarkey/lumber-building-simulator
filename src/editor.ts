@@ -43,6 +43,7 @@ export class Editor {
   moving: string | null = null;
   ghost: Piece | null = null;
   held = false;
+  copyWithArrows = false;
   orbit = false;
   pointer: [number, number] | null = null;
   dirty = false;
@@ -181,7 +182,13 @@ export class Editor {
     $("hold-position").textContent = this.held ? "Release position (L)" : "Hold position (L)";
     $("hold-position").setAttribute("aria-pressed", String(this.held));
     $("commit-preview").hidden = !this.held;
-    $("nudge-label").textContent = this.placing ? "Adjust preview · 1 stud" : "Move selection · 1 stud";
+    $("nudge-label").textContent = this.placing ? "Adjust preview · 1 stud" : this.copyWithArrows ? "Copy with arrows · 1 stud" : "Move selection · 1 stud";
+    $("axis-copy-row").hidden=this.placing || !p;
+    $<HTMLInputElement>("axis-copy-toggle").checked=this.copyWithArrows;
+    $("axis-hint").innerHTML=this.copyWithArrows && !this.placing
+      ? "Drag an X, Y or Z arrow to copy your selection.<br>Release to place; Esc cancels."
+      : "Drag the X, Y or Z arrow on your selection.<br>Hold a placement with L to adjust it in the air.";
+    $("step-buttons-details").querySelector("summary")!.textContent=this.copyWithArrows && !this.placing ? "Move step buttons" : "Step buttons";
     const displayedWood=multi ? finishPieces[0]?.wood ?? this.wood : this.wood;
     $("wood-color").style.background = mixedWood
       ? "linear-gradient(135deg, #d7c59a 50%, #694028 50%)" : WOOD_MAP.get(displayedWood)!.color;
@@ -812,6 +819,7 @@ export class Editor {
       }
       this.inspect();
     };
+    $("axis-copy-toggle").onchange=e=>{this.copyWithArrows=(e.target as HTMLInputElement).checked;this.inspect();};
     $("elevation").oninput = () => this.updateGhost();
     $("elevation").onchange = () => {
       const input = $<HTMLInputElement>("elevation");
@@ -858,7 +866,21 @@ export class Editor {
     let down: [number, number] | null = null;
     let selectionClicks: string[] = [];
     let gesture: { pointerId: number; start: [number, number]; dragged: boolean } | null = null;
-    let moveDrag: { pointerId:number; math:AxisDrag; source:Piece[]; preview:Piece[]; placing:boolean } | null = null;
+    type ArrowDrag = {
+      pointerId:number; math:AxisDrag; source:Piece[]; preview:Piece[]; placing:boolean; copy:boolean;
+      ignore:ReadonlySet<string>; internalOverlap:boolean|null; delta:Vec3|null; revision:number; allowOverlaps:boolean;
+    };
+    let moveDrag: ArrowDrag | null = null;
+    const arrowIssue=(drag:ArrowDrag)=>{
+      for(const piece of drag.preview) {
+        const issue=this.world.placementIssue(piece,drag.copy ? undefined : drag.ignore);if(issue) return issue;
+      }
+      if(drag.copy && !this.world.allowOverlaps) {
+        drag.internalOverlap ??= this.world.hasInternalOverlaps(drag.source);
+        if(drag.internalOverlap) return "overlap";
+      }
+      return null;
+    };
     const endMove = (commit=false) => {
       const drag=moveDrag;if (!drag) return;
       moveDrag=null;down=null;selectionClicks=[];
@@ -871,11 +893,17 @@ export class Editor {
         this.updateGhost();
       } else {
         this.view.showGroupGhosts([]);
-        const ignore=new Set(drag.source.map(p=>p.id));
-        const issue=drag.preview.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
-        if (commit && issue) this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot move here: the selection would overlap another blueprint.");
-        else if (commit && drag.preview.some((p,i)=>p.position.some((v,j)=>v!==drag.source[i].position[j])))
-          this.world.execute(drag.preview.map((p,i)=>({before:drag.source[i],after:p})));
+        if(commit && drag.preview.some((p,i)=>p.position.some((v,j)=>v!==drag.source[i].position[j]))) {
+          // Recheck the full final batch before assigning copy IDs and committing.
+          const issue=drag.copy ? this.world.placementBatchIssue(drag.preview) : arrowIssue(drag);
+          if(issue) this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE
+            : `Cannot ${drag.copy ? "copy" : "move"} here: the selection would overlap another blueprint.`);
+          else {
+            const changes=drag.preview.map((p,i)=>({before:drag.copy ? null : drag.source[i],after:drag.copy ? {...p,id:crypto.randomUUID()} : p}));
+            this.world.execute(changes);
+            if(drag.copy) this.pickSelections(changes.map(c=>c.after.id));
+          }
+        }
       }
       this.view.camera.selecting=false;
       this.view.camera.controls.enabled=!this.view.camera.walking && !this.view.camera.flying;
@@ -899,14 +927,15 @@ export class Editor {
         e.preventDefault();e.stopImmediatePropagation();
         const delta=this.view.gizmo.delta(moveDrag.math,e.clientX,e.clientY,this.view.camera.camera,canvas.getBoundingClientRect());
         if (!delta) return;
+        if(moveDrag.delta?.every((v,i)=>v===delta[i]) && moveDrag.revision===this.world.revision && moveDrag.allowOverlaps===this.world.allowOverlaps) return;
+        moveDrag.delta=delta;moveDrag.revision=this.world.revision;moveDrag.allowOverlaps=this.world.allowOverlaps;
         moveDrag.preview=translateSelection(moveDrag.source,delta);
         if (moveDrag.placing) {
           if (this.groupPlacement) this.groupPreview=moveDrag.preview;
           else this.ghost=moveDrag.preview[0];
           this.updateGhost();
         } else {
-          const ignore=new Set(moveDrag.source.map(p=>p.id));
-          this.view.showGroupGhosts(moveDrag.preview,moveDrag.preview.every(p=>this.world.canPlace(p,ignore)));
+          this.view.showGroupGhosts(moveDrag.preview,!arrowIssue(moveDrag));
           this.view.gizmo.setPieces(moveDrag.preview);
         }
         return;
@@ -942,7 +971,8 @@ export class Editor {
           const source=structuredClone(this.placing ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : this.selectedPieces);
           if (source.length) {
             e.preventDefault();e.stopImmediatePropagation();down=null;selectionClicks=[];
-            moveDrag={pointerId:e.pointerId,math,source,preview:source,placing:this.placing};
+            moveDrag={pointerId:e.pointerId,math,source,preview:source,placing:this.placing,copy:!this.placing && this.copyWithArrows,
+              ignore:new Set(source.map(p=>p.id)),internalOverlap:null,delta:null,revision:this.world.revision,allowOverlaps:this.world.allowOverlaps};
             this.view.camera.selecting=true;this.view.camera.controls.enabled=false;this.view.camera.keys.clear();
             canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing";
             return;

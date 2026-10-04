@@ -1,6 +1,6 @@
 import { Plane, Raycaster, Vector2, Vector3 } from "three";
 import type { Vec3 } from "./catalog";
-import { buildPath, type BuildMode } from "./build-path";
+import { buildPath, snapPathOnSurface, type BuildMode } from "./build-path";
 import { snapBlueprintOnSurface } from "./collision";
 import { snapMovement } from "./placement";
 import { PathOverlay } from "./path-overlay";
@@ -16,7 +16,9 @@ export class PathBuilder {
   anchors:Vec3[]=[];
   preview:Piece[]=[];
   issue:ReturnType<Editor["world"]["placementIssue"]>=null;
-  private planeY=0;
+  private dragPlane=new Plane(new Vector3(0,1,0));
+  private surfaceNormal:Vec3=[0,1,0];
+  private elevation=0;
   private gesture:number|null=null;
   private pending:[number,number]|null=null;
   private overlay=new PathOverlay();
@@ -60,7 +62,7 @@ export class PathBuilder {
     const key=JSON.stringify([this.anchors,this.fill,this.host.item,this.host.wood,this.host.rotation,this.host.world.revision,this.host.world.allowOverlaps]);
     if(key===this.signature) return;
     this.signature=key;
-    const result=buildPath(this.template(),this.anchors,{fill:this.fill});
+    const result=buildPath(this.template(),this.anchors,{fill:this.fill,surfaceNormal:this.surfaceNormal});
     this.preview=result.pieces;this.issue=this.host.world.placementBatchIssue(this.preview);
     this.host.view.showGhost(null);this.host.view.showGroupGhosts(this.preview,!this.issue);
     this.overlay.set(result.guide);this.syncGizmo();this.syncUI();
@@ -87,16 +89,24 @@ export class PathBuilder {
   private pointOnPlane(x:number,y:number) {
     const {view}=this.host,r=view.renderer.domElement.getBoundingClientRect();
     this.ray.setFromCamera(new Vector2((x-r.left)/r.width*2-1,1-(y-r.top)/r.height*2),view.camera.camera);
-    const hit=this.ray.ray.intersectPlane(new Plane(new Vector3(0,1,0),-this.planeY),new Vector3());
+    const hit=this.ray.ray.intersectPlane(this.dragPlane,new Vector3());
     if(!hit || hit.distanceTo(view.camera.camera.position)>view.renderDistance) return null;
-    const origin=this.anchors[0];return [snapMovement(hit.x,origin[0]),origin[1],snapMovement(hit.z,origin[2])] as Vec3;
+    hit.y+=this.elevation;
+    return snapPathOnSurface(hit.toArray() as Vec3,this.anchors[0],this.surfaceNormal);
   }
   private seed(x:number,y:number) {
-    if(this.host.held && this.host.ghost) {this.planeY=this.host.ghost.position[1];return [...this.host.ghost.position] as Vec3;}
+    if(this.host.held && this.host.ghost) {
+      this.elevation=0;
+      this.surfaceNormal=[0,1,0];
+      this.dragPlane.setFromNormalAndCoplanarPoint(new Vector3(...this.surfaceNormal),new Vector3(...this.host.ghost.position));
+      return [...this.host.ghost.position] as Vec3;
+    }
     const hit=this.host.view.pick(x,y);if(!hit) return null;
     const point=snapBlueprintOnSurface(hit.point,hit.normal,this.host.item,this.host.rotation);
-    point[1]+=snapMovement(Number($<HTMLInputElement>("elevation").value)||0);
-    this.planeY=hit.point[1];return point;
+    this.elevation=snapMovement(Number($<HTMLInputElement>("elevation").value)||0);
+    point[1]+=this.elevation;
+    this.surfaceNormal=[...hit.normal];
+    this.dragPlane.setFromNormalAndCoplanarPoint(new Vector3(...hit.normal),new Vector3(...hit.point));return point;
   }
   private capture(e:PointerEvent) {
     this.gesture=e.pointerId;this.pending=null;

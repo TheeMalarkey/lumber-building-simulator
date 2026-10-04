@@ -31,9 +31,21 @@ describe("straight blueprint runs", () => {
     expect(run.pieces.every(p=>p.wood==="pine" && p.rotation.join()==="0,1,0")).toBe(true);
     expect(new World().placementBatchIssue(run.pieces)).toBe(null);
   });
+  it("keeps each repeated blueprint flush with a sloping starting face", () => {
+    const run=buildPath(template({item:"tiny-tile"}),[[.5,1.1,1.5],[.5,1.6,-.5]],{fill:true,surfaceNormal:[0,4,1]});
+    expect(run.pieces.map(p=>p.position)).toEqual([[.5,1.1,1.5],[.5,1.35,.5],[.5,1.6,-.5]]);
+    expect(run.pieces.every(p=>p.rotation.join()==="0,0,0")).toBe(true);
+  });
 });
 
 describe("atomic drag validation", () => {
+  it("detects internal overlaps independently of the group's ground and plot positions", () => {
+    const world=new World();world.plots=[12];
+    const a=template({id:"a",position:[100,-4,100]});
+    expect(world.hasInternalOverlaps([a,template({id:"b",position:[102,-4,100]})])).toBe(false);
+    expect(world.hasInternalOverlaps([a,template({id:"b",position:[101,-4,100]})])).toBe(true);
+    expect(world.pieces.size).toBe(0);expect(world.canUndo).toBe(false);
+  });
   it("checks internal and existing collisions without committing candidates", () => {
     const world = new World(); world.load([template({id:"existing",position:[8,.5,0]})],[12]);
     const touching = [template({id:"one"}),template({id:"two",position:[2,.5,0]})];

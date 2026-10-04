@@ -204,6 +204,15 @@ export class World {
   canPlace(piece: Piece, ignoreId?: string | ReadonlySet<string> | null) {
     return this.placementIssue(piece, ignoreId) === null;
   }
+  /** Internal intersections are unchanged by a shared translation of the group. */
+  hasInternalOverlaps(pieces: readonly Piece[]) {
+    const batch=new World();
+    for(const piece of pieces) {
+      if(batch.overlaps(piece)) return true;
+      batch.put(piece,piece.id);
+    }
+    return false;
+  }
   /** Validate a new run against existing pieces and itself without touching world/history. */
   placementBatchIssue(pieces: readonly Piece[], ignoreIds?: ReadonlySet<string>) {
     const batch = new World();
@@ -212,8 +221,7 @@ export class World {
       const issue = this.placementIssue(piece,ignoreIds);
       if (issue) return issue;
       if (!this.allowOverlaps) {
-        const internal = batch.placementIssue(piece);
-        if (internal) return internal;
+        if (batch.overlaps(piece)) return "overlap";
         batch.put(piece,piece.id);
       }
     }
@@ -228,6 +236,9 @@ export class World {
     if (candidate.min[1] < -1e-8) return "below-ground";
     if (this.plots && !coveredByPlots(candidate, this.plots)) return "outside-plots";
     if (this.allowOverlaps) return null;
+    return this.overlaps(piece,ignoreId,candidate) ? "overlap" : null;
+  }
+  private overlaps(piece: Piece, ignoreId?: string | ReadonlySet<string> | null, candidate=pieceBounds(piece)) {
     const visited = new Set<string>();
     // Use cells touched by the proposed bounds, independent of item size.
     for (const key of keys(piece)) {
@@ -242,10 +253,10 @@ export class World {
               candidate.max[axis] > other.min[axis] + 0.0001,
           ) && solidOverlap(piece, this.pieces.get(id)!)
         )
-          return "overlap";
+          return true;
       }
     }
-    return null;
+    return false;
   }
   // Grid traversal and cached bounds keep exact mesh tests off unrelated pieces.
   // Direction is a normalized world-space vector; distances are in studs.

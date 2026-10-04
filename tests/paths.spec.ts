@@ -26,6 +26,71 @@ async function dragPath(page:Page,from:number[],to:number[],ctrl=false,finish=tr
 async function clickPoint(page:Page,point:number[]) {const p=await screen(page,point);await page.mouse.click(p[0],p[1]);}
 const pieces=(page:Page)=>page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()]);
 
+test("drag building repeats pieces across the top of an existing blueprint",async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"platform",item:"large-floor",wood:"oak",position:[0,.5,0],rotation:[0,0,0]}],[12]);
+  });
+  await dragPath(page,[-2,1,-1],[2,1,-1],true);
+  expect((await pieces(page)).filter((p:any)=>p.id!=="platform").map((p:any)=>p.position)).toEqual([[-2,1.5,-1],[0,1.5,-1],[2,1.5,-1]]);
+  await page.locator("#undo").click();expect(await pieces(page)).toHaveLength(1);
+});
+
+test("dragging up a blueprint side builds a vertical run beyond its top",async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"wall",item:"smooth-wall",wood:"oak",position:[0,4,0],rotation:[0,0,0]}],[12]);
+    const c=e.view.camera;c.camera.position.set(12,10,24);c.controls.target.set(0,4,0);c.controls.update();c.camera.updateMatrixWorld();
+  });
+  // Use cell interiors so floating-point ray hits do not straddle a snap boundary.
+  await dragPath(page,[0,1.2,.5],[0,10.2,.5],true);
+  const run=(await pieces(page)).filter((p:any)=>p.id!=="wall");
+  expect(run.map((p:any)=>p.position)).toEqual(Array.from({length:10},(_,i)=>[0,1.5+i,1.5]));
+  await page.locator("#undo").click();expect(await pieces(page)).toHaveLength(1);
+});
+
+test("side drags reject the whole run when it crosses below ground",async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"wall",item:"smooth-wall",wood:"oak",position:[0,4,0],rotation:[0,0,0]}],[12]);
+    const c=e.view.camera;c.camera.position.set(12,10,24);c.controls.target.set(0,4,0);c.controls.update();c.camera.updateMatrixWorld();
+  });
+  await dragPath(page,[0,4,.5],[0,-2,.5],true);
+  expect(await pieces(page)).toHaveLength(1);await expect(page.locator("#path-status")).toContainText("below ground");
+  await page.locator("#path-cancel").click();expect(await pieces(page)).toHaveLength(1);
+});
+
+test("side drags preserve elevation for a stationary click and the full run",async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"wall",item:"smooth-wall",wood:"oak",position:[0,4,0],rotation:[0,0,0]}],[12]);
+    const c=e.view.camera;c.camera.position.set(12,10,24);c.controls.target.set(0,4,0);c.controls.update();c.camera.updateMatrixWorld();
+  });
+  await page.locator("#elevation").fill("2");
+  await dragPath(page,[0,1.2,.5],[0,1.2,.5],true);
+  expect((await pieces(page)).filter((p:any)=>p.id!=="wall").map((p:any)=>p.position)).toEqual([[0,3.5,1.5]]);
+  await page.locator("#undo").click();
+  await page.evaluate(()=>(window as any).timber.editor.choose("small-floor"));
+  await page.locator("#elevation").fill("2");
+  await dragPath(page,[0,1.2,.5],[0,3.2,.5],true);
+  expect((await pieces(page)).filter((p:any)=>p.id!=="wall").map((p:any)=>p.position)).toEqual([[0,3.5,1.5],[0,4.5,1.5],[0,5.5,1.5]]);
+});
+
+test("surface drags follow a rotated wall side",async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"wall",item:"smooth-wall",wood:"oak",position:[0,4,0],rotation:[0,1,0]}],[12]);
+    const c=e.view.camera;c.camera.position.set(12,10,24);c.controls.target.set(0,4,0);c.controls.update();c.camera.updateMatrixWorld();
+  });
+  await dragPath(page,[.5,1.2,.2],[.5,3.2,.2],true);
+  expect((await pieces(page)).filter((p:any)=>p.id!=="wall").map((p:any)=>p.position)).toEqual([[1.5,1.5,0],[1.5,2.5,0],[1.5,3.5,0]]);
+});
+
+test("surface drags keep thin pieces flush with a wedge slope",async({page})=>{
+  await setup(page,"tiny-tile");await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:"wedge",item:"1-4-wedge",wood:"oak",position:[0,.5,0],rotation:[0,0,0]}],[12]);
+    const c=e.view.camera;c.camera.position.set(12,10,24);c.controls.target.set(0,1,0);c.controls.update();c.camera.updateMatrixWorld();
+  });
+  await page.locator("#path-fill").check();
+  await dragPath(page,[.2,.2,1.2],[.2,.7,-.8],true);
+  expect((await pieces(page)).filter((p:any)=>p.id!=="wedge").map((p:any)=>p.position)).toEqual([[.5,.35,1.5],[.5,.6,.5],[.5,.85,-.5]]);
+});
+
 test("Ctrl drag builds a straight stud run and undo removes the whole run",async({page})=>{
   await setup(page);const camera=await page.evaluate(()=>(window as any).timber.editor.view.camera.camera.position.toArray());
   await dragPath(page,[-10,0,-6],[2,0,-6],true);

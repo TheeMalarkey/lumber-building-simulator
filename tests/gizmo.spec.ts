@@ -27,7 +27,96 @@ async function drag(page: Page, axis: number, distance: number, finish = true) {
   await page.mouse.move(points[0][0],points[0][1]); await page.mouse.down();
   await page.mouse.move(points[1][0],points[1][1],{steps:8});
   if (finish) await page.mouse.up();
+  return points;
 }
+
+test('copy with arrows keeps a single original and selects the new copy',async({page})=>{
+  await setup(page);await page.locator('#axis-copy-toggle').check({timeout:1000});
+  const original=await page.evaluate(()=>(window as any).timber.editor.world.pieces.get('a'));
+  await drag(page,1,1.3);
+  const after=await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()]);
+  expect(after).toHaveLength(3);expect(after.find((p:any)=>p.id==='a')).toEqual(original);
+  const copy=after.find((p:any)=>!['a','b'].includes(p.id));
+  expect(copy).toMatchObject({item:original.item,wood:original.wood,position:[-3,1.1,0],rotation:original.rotation});
+  expect(await page.evaluate(()=>(window as any).timber.editor.selected)).toBe(copy.id);
+  await page.locator('#undo').click();expect(await state(page)).toEqual([[-3,.1,0],[3,.1,0]]);
+  await page.locator('#redo').click();expect(await state(page)).toHaveLength(3);
+});
+
+test('copy with arrows duplicates a whole group and cancellation leaves originals unchanged',async({page})=>{
+  await setup(page,true);await page.locator('#axis-copy-toggle').check({timeout:1000});
+  const originals=await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()]);
+  await drag(page,1,2,false);await page.keyboard.press('Escape');await page.mouse.up();
+  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()])).toEqual(originals);
+  await drag(page,1,2,false);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();
+  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()])).toEqual(originals);
+  await drag(page,1,2);
+  const after=await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()]);
+  expect(after.filter((p:any)=>['a','b'].includes(p.id))).toEqual(originals);
+  expect(after.filter((p:any)=>!['a','b'].includes(p.id)).map((p:any)=>({item:p.item,wood:p.wood,position:p.position,rotation:p.rotation})))
+    .toEqual(originals.map((p:any)=>({item:p.item,wood:p.wood,position:[p.position[0],p.position[1]+2,p.position[2]],rotation:p.rotation})));
+  expect(await page.evaluate(()=>(window as any).timber.editor.selection.size)).toBe(2);
+  await page.locator('#undo').click();expect(await state(page)).toEqual([[-3,.1,0],[3,.1,0]]);
+});
+
+test('axis copies check originals as obstacles and always keep ground and land limits',async({page})=>{
+  await setup(page);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([{id:'a',item:'small-floor',wood:'oak',position:[0,.5,0],rotation:[0,0,0]}],[12]);e.pickSelection('a');
+  });
+  await page.locator('#axis-copy-toggle').check({timeout:1000});
+  await drag(page,0,1);expect(await state(page)).toEqual([[0,.5,0]]);await expect(page.locator('#toast')).toContainText('overlap');
+  await page.locator('#overlap-toggle').check();
+  await drag(page,1,-1);expect(await state(page)).toEqual([[0,.5,0]]);await expect(page.locator('#toast')).toContainText('below ground');
+  await drag(page,0,22);expect(await state(page)).toEqual([[0,.5,0]]);await expect(page.locator('#toast')).toContainText('active plots');
+  await drag(page,0,1);expect(await state(page)).toHaveLength(2);
+  await page.locator('#undo').click();await page.evaluate(()=>(window as any).timber.editor.pickSelection('a'));
+  await page.locator('#axis-copy-toggle').uncheck();await page.locator('#overlap-toggle').uncheck();
+  await drag(page,0,1);expect(await state(page)).toEqual([[1,.5,0]]);
+});
+
+test('successive group arrow copies follow the new selection and fit a compact screen',async({page})=>{
+  await setup(page,true);await page.locator('#axis-copy-toggle').check();
+  await drag(page,1,0);expect(await state(page)).toHaveLength(2);
+  expect(await page.evaluate(()=>(window as any).timber.editor.world.canUndo)).toBe(false);
+  await drag(page,1,2);await drag(page,2,1);
+  expect(await state(page)).toHaveLength(6);
+  expect(await page.evaluate(()=>(window as any).timber.editor.selectedPieces.map((p:any)=>p.position))).toEqual([[-3,2.1,1],[3,2.1,1]]);
+  await page.setViewportSize({width:390,height:844});await expect(page.locator('#axis-copy-toggle')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('#undo').click();expect(await state(page)).toHaveLength(4);
+  await page.locator('#undo').click();expect(await state(page)).toEqual([[-3,.1,0],[3,.1,0]]);
+});
+
+test('unchanged snapped copy previews skip repeated validation and redraw',async({page})=>{
+  await setup(page,true);await page.locator('#axis-copy-toggle').check();
+  await page.evaluate(()=>{
+    const e=(window as any).timber.editor,check=e.world.placementIssue.bind(e.world),draw=e.view.showGroupGhosts.bind(e.view);
+    (window as any).copyWork={checks:0,draws:0};
+    e.world.placementIssue=(...args:any[])=>{(window as any).copyWork.checks++;return check(...args);};
+    e.view.showGroupGhosts=(...args:any[])=>{(window as any).copyWork.draws++;return draw(...args);};
+  });
+  const points=await drag(page,1,2,false);
+  const before=await page.evaluate(()=>(window as any).copyWork);
+  await page.evaluate(([x,y])=>{
+    const canvas=(window as any).timber.editor.view.renderer.domElement;
+    for(let i=0;i<8;i++) canvas.dispatchEvent(new PointerEvent('pointermove',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+  },points[1]);
+  expect(await page.evaluate(()=>(window as any).copyWork)).toEqual(before);
+  await page.mouse.up();expect(await state(page)).toHaveLength(4);
+});
+
+test('copying a group preserves internal overlap rules when the originals overlap',async({page})=>{
+  await setup(page,true);await page.evaluate(()=>{
+    const e=(window as any).timber.editor;e.world.load([
+      {id:'a',item:'small-floor',wood:'oak',position:[0,.5,0],rotation:[0,0,0]},
+      {id:'b',item:'small-floor',wood:'birch',position:[1,.5,0],rotation:[0,0,0]},
+    ],[12]);e.pickSelections(['a','b']);
+  });
+  await page.locator('#axis-copy-toggle').check();await drag(page,1,2);
+  expect(await state(page)).toEqual([[0,.5,0],[1,.5,0]]);
+  await expect(page.locator('#toast')).toContainText('overlap');
+  await page.locator('#overlap-toggle').check();await drag(page,1,2);expect(await state(page)).toHaveLength(4);
+});
 
 test('axis arrows snap every axis to studs and undo a group in one action',async({page}) => {
   await setup(page,true);
