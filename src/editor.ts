@@ -64,6 +64,7 @@ export class Editor {
     this.view = new Viewport($("viewport"), this.world);
     this.paths = new PathBuilder(this);
     this.logicTools=new LogicTools(this);
+    this.world.onReject=message=>this.toast(message);
     this.thumbnails = this.view.thumbnails();
     this.catalog();
     this.inspect();
@@ -445,7 +446,7 @@ export class Editor {
         before: copy ? null : this.world.pieces.get(p.id)!,
         after: { ...structuredClone(p), id: copy ? crypto.randomUUID() : p.id },
       }));
-      this.world.execute(changes,copy?[...this.world.wires,...this.world.copyWires(this.groupPlacement.source.map(p=>this.world.pieces.get(p.id)!),changes.map(c=>c.after))]:undefined);
+      if(!this.world.execute(changes,copy?[...this.world.wires,...this.world.copyWires(this.groupPlacement.source.map(p=>this.world.pieces.get(p.id)!),changes.map(c=>c.after))]:undefined))return;
       this.pickSelections(changes.map(c => c.after.id));
       return;
     }
@@ -464,9 +465,9 @@ export class Editor {
       id: this.moving ?? crypto.randomUUID(),
     };
     if (this.moving) {
-      this.world.execute([
+      if(!this.world.execute([
         { before: this.world.pieces.get(this.moving)!, after: p },
-      ]);
+      ]))return;
       this.pickSelection(p.id);
     } else {
       this.world.execute([{ before: null, after: p }]);
@@ -533,7 +534,7 @@ export class Editor {
   move(copy = false) {
     if (this.groupPlacement) return;
     const pieces = this.selectedPieces;
-    if (pieces.length > 1) {
+    if (pieces.length > 1 || (copy&&pieces.length===1&&this.world.wires.some(w=>[w.from,w.to].some(e=>'piece' in e&&e.piece===pieces[0].id)))) {
       this.groupPlacement = { source: structuredClone(pieces), copy,
         ignore: new Set(copy ? [] : pieces.map(p => p.id)) };
       this.ghost = null;
@@ -624,7 +625,7 @@ export class Editor {
   }
   async replace(p: Project) {
     if (
-      this.world.pieces.size &&
+      (this.world.pieces.size || this.world.wires.length) &&
       !(await this.confirm(
         "Replace this project?",
         "Export the current project first if you want to keep a separate copy. The new project will become your local autosave.",
@@ -889,7 +890,7 @@ export class Editor {
           this.inspect();
           return;
         }
-        this.world.execute([{ before: p, after: q }]);
+        if(!this.world.execute([{ before: p, after: q }]))this.inspect();
       };
     const canvas = this.view.renderer.domElement;
     let down: [number, number] | null = null;
@@ -929,8 +930,8 @@ export class Editor {
             : `Cannot ${drag.copy ? "copy" : "move"} here: the selection would overlap another blueprint.`);
           else {
             const changes=drag.preview.map((p,i)=>({before:drag.copy ? null : drag.source[i],after:drag.copy ? {...p,id:crypto.randomUUID()} : p}));
-            this.world.execute(changes,drag.copy?[...this.world.wires,...this.world.copyWires(drag.source,changes.map(c=>c.after))]:undefined);
-            if(drag.copy) this.pickSelections(changes.map(c=>c.after.id));
+            const applied=this.world.execute(changes,drag.copy?[...this.world.wires,...this.world.copyWires(drag.source,changes.map(c=>c.after))]:undefined);
+            if(applied&&drag.copy) this.pickSelections(changes.map(c=>c.after.id));
           }
         }
       }

@@ -4,21 +4,22 @@ import {portsFor,portPosition,wirePath,logicAppearance} from './logic-ports';
 import {ITEMS,type Vec3} from './catalog';
 import {chunkKey,type World} from './world';
 import {quaternionRotation} from './placement';
+import {WireView} from './wire-view';
 
 /** Shared meshes for wire segments and socket indicators. */
 export class LogicView {
  root=new T.Group();circuit=new Circuit();showSockets=false;lightChanged=false;
  private displays=new Map<string,string>();
  private revision=-1;private version=-1;private generation=-1;private previous=0;
- private wireMesh?:T.InstancedMesh;private sockets?:T.InstancedMesh;private lightingSockets?:T.InstancedMesh;
- private wireGeometry=new T.CylinderGeometry(.045,.045,1,6);
+ wires=new WireView();
+ private sockets?:T.InstancedMesh;private lightingSockets?:T.InstancedMesh;
  private socketGeometry=new T.CircleGeometry(.149,24);
  private socketMarkerGeometry=new T.SphereGeometry(.16,10,6);
  private material=new T.MeshBasicMaterial({color:0xffffff});
  private socketMaterial=new T.MeshBasicMaterial({color:0xffffff,depthWrite:false});
  private topology='';
  wireIds:string[]=[];
- constructor(private world:World){this.root.name='Logic wires and signals';}
+ constructor(private world:World){this.root.name='Logic wires and signals';this.root.add(this.wires.root);}
  tick(now:number,feet?:T.Vector3){
   this.lightChanged=false;
   if(this.generation!==this.world.generation){this.generation=this.world.generation;this.circuit=new Circuit();this.displays.clear();this.previous=0;this.version=-1;}
@@ -56,15 +57,11 @@ export class LogicView {
  private paint(){
   const m=new T.Matrix4(),q=new T.Quaternion(),color=new T.Color();
   const topology=this.world.generation+':'+this.circuit.topologyBuilds;
-  if(topology!==this.topology||!this.wireMesh){
-   this.topology=topology;const lines:{a:Vec3;b:Vec3;id:string}[]=[];
-   for(const w of this.world.wires){const path=wirePath(w,this.world.pieces);for(let i=1;i<path.length;i++)lines.push({a:path[i-1],b:path[i],id:w.id});}
-   this.wireMesh=this.mesh(this.wireMesh,this.wireGeometry,lines.length);this.wireIds=lines.map(l=>l.id);
-   lines.forEach((l,i)=>{const a=new T.Vector3(...l.a),b=new T.Vector3(...l.b),delta=b.clone().sub(a),length=delta.length();
-    q.setFromUnitVectors(new T.Vector3(0,1,0),length?delta.clone().normalize():new T.Vector3(0,1,0));m.compose(a.add(b).multiplyScalar(.5),q,new T.Vector3(1,length,1));this.wireMesh!.setMatrixAt(i,m);});
-   this.wireMesh.instanceMatrix.needsUpdate=true;this.wireMesh.computeBoundingSphere();
+  if(topology!==this.topology){
+   this.topology=topology;this.wires.rebuild(this.world.wires,this.world.pieces);
+   this.wireIds=this.world.wires.flatMap(w=>wirePath(w,this.world.pieces).slice(1).map(()=>w.id));
   }
-  this.wireIds.forEach((id,i)=>this.wireMesh!.setColorAt(i,color.setHex(this.circuit.wireOn(id)?0x46bef4:0x252c30)));
+  this.wires.paint(id=>this.circuit.wireOn(id));
   const ports:{p:Vec3;normal:T.Vector3;color:number;lighting:boolean;radius:number}[]=[];
   for(const id of this.world.logicIds){const piece=this.world.pieces.get(id)!;
    for(const port of portsFor(piece.item)){
@@ -89,7 +86,7 @@ export class LogicView {
   // Fixture sockets have different face orientations. Preserve their existing
   // round indicators; only the reconstructed logic enclosures use flat faces.
   this.lightingSockets=paintPorts(this.lightingSockets,ports.filter(p=>!this.showSockets&&p.lighting),false);
-  for(const mesh of [this.wireMesh!,this.sockets,this.lightingSockets])if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+  for(const mesh of [this.sockets,this.lightingSockets])if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- dispose(){this.wireMesh?.dispose();this.sockets?.dispose();this.lightingSockets?.dispose();this.wireGeometry.dispose();this.socketGeometry.dispose();this.socketMarkerGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
+ dispose(){this.wires.dispose();this.sockets?.dispose();this.lightingSockets?.dispose();this.socketGeometry.dispose();this.socketMarkerGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
 }

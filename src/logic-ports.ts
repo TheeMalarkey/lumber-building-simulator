@@ -2,9 +2,10 @@ import {Vector3} from 'three';
 import {ITEMS,type Vec3} from './catalog';
 import {quaternionRotation} from './placement';
 import type {Piece} from './world';
+import {NEON_COLORS,wireRadius,wireCollarRadius,type WireStyle} from './wire-design';
 
 export type Endpoint={piece:string;port:string}|{point:Vec3};
-export interface Wire {id:string;from:Endpoint;to:Endpoint;points:Vec3[]}
+export interface Wire extends WireStyle {id:string;from:Endpoint;to:Endpoint;points:Vec3[]}
 export interface Port {id:string;label:string;output:boolean;position:Vec3;normal:Vec3}
 export const isLogic=(p:Piece)=>ITEMS.get(p.item)?.fixedMaterial==='logic';
 export const portKey=(id:string,port:string)=>id+':'+port;
@@ -49,12 +50,18 @@ export function validateWires(raw:unknown,pieces:Piece[]):Wire[]{
  };
  return raw.map(w=>{
   if(!w||typeof w.id!=='string'||!w.id||w.id.length>100||ids.has(w.id)||!Array.isArray(w.points)||w.points.length>1024||!w.points.every(vec))throw new Error('Invalid or duplicate wire.');
-  ids.add(w.id);return {id:w.id,from:endpoint(w.from),to:endpoint(w.to),points:w.points.map((p:Vec3)=>[...p] as Vec3)};
+  if(w.kind!==undefined&&w.kind!=='wire'&&w.kind!=='neon')throw new Error('Unknown wire type.');
+  if(w.kind==='neon'?(typeof w.color!=='string'||!Object.hasOwn(NEON_COLORS,w.color)):w.color!==undefined)throw new Error('Invalid neon wire color.');
+  ids.add(w.id);return {id:w.id,from:endpoint(w.from),to:endpoint(w.to),points:w.points.map((p:Vec3)=>[...p] as Vec3),
+   ...(w.kind?{kind:w.kind}:{}),...(w.kind==='neon'?{color:w.color}:{})};
  });
 }
 
 export interface WireContact {from:number;endpoint:'from'|'to';to:number;segment:number;point:Vec3}
 export function wireGroups(wires:Wire[],pieces:Map<string,Piece>,onContact?:(contact:WireContact)=>void):number[][]{
+  // New wires make contact with the visible tube, even when different radii
+  // require slightly different mounting heights. Keep legacy contact behavior.
+  const tolerance=(from:number,to:number)=>wires[from].kind||wires[to].kind?wireCollarRadius(wires[from])+wireRadius(wires[to])+.005:.025;
   const parent=wires.map((_,i)=>i),root=(i:number):number=>{let r=i;while(parent[r]!==r)r=parent[r];while(parent[i]!==i){const next=parent[i];parent[i]=r;i=next;}return r;};
   const join=(a:number,b:number)=>{parent[root(a)]=root(b);};
   const socket=new Map<string,number>();
@@ -65,14 +72,14 @@ export function wireGroups(wires:Wire[],pieces:Map<string,Piece>,onContact?:(con
   paths.forEach((path,i)=>path.slice(1).forEach((b,j)=>{
    const a=path[j];
    const cells=a.reduce((n,v,k)=>n*(Math.ceil(Math.abs(v-b[k])/8)+2),1);
-   if(cells>4096){paths.forEach((other,k)=>{if(k===i)return;[other[0],other.at(-1)!].forEach((p,e)=>{if(pointOnSegment(p,a,b)){join(i,k);onContact?.({from:k,endpoint:e?'to':'from',to:i,segment:j,point:p});}});});return;}
-   for(let x=Math.floor((Math.min(a[0],b[0])-.025)/8);x<=Math.floor((Math.max(a[0],b[0])+.025)/8);x++)
-    for(let y=Math.floor((Math.min(a[1],b[1])-.025)/8);y<=Math.floor((Math.max(a[1],b[1])+.025)/8);y++)
-     for(let z=Math.floor((Math.min(a[2],b[2])-.025)/8);z<=Math.floor((Math.max(a[2],b[2])+.025)/8);z++){
+   if(cells>4096){paths.forEach((other,k)=>{if(k===i)return;[other[0],other.at(-1)!].forEach((p,e)=>{if(pointOnSegment(p,a,b,tolerance(k,i))){join(i,k);onContact?.({from:k,endpoint:e?'to':'from',to:i,segment:j,point:p});}});});return;}
+   for(let x=Math.floor((Math.min(a[0],b[0])-.28)/8);x<=Math.floor((Math.max(a[0],b[0])+.28)/8);x++)
+    for(let y=Math.floor((Math.min(a[1],b[1])-.28)/8);y<=Math.floor((Math.max(a[1],b[1])+.28)/8);y++)
+     for(let z=Math.floor((Math.min(a[2],b[2])-.28)/8);z<=Math.floor((Math.max(a[2],b[2])+.28)/8);z++){
       const k=`${x},${y},${z}`;if(!buckets.has(k))buckets.set(k,[]);buckets.get(k)!.push({i,j,a,b});
      }
   }));
-  paths.forEach((path,i)=>{[path[0],path.at(-1)!].forEach((p,e)=>{for(const s of buckets.get(p.map(v=>Math.floor(v/8)).join(','))??[])if(i!==s.i&&pointOnSegment(p,s.a,s.b)){join(i,s.i);onContact?.({from:i,endpoint:e?'to':'from',to:s.i,segment:s.j,point:p});}});});
+  paths.forEach((path,i)=>{[path[0],path.at(-1)!].forEach((p,e)=>{for(const s of buckets.get(p.map(v=>Math.floor(v/8)).join(','))??[])if(i!==s.i&&pointOnSegment(p,s.a,s.b,tolerance(i,s.i))){join(i,s.i);onContact?.({from:i,endpoint:e?'to':'from',to:s.i,segment:s.j,point:p});}});});
   const groups=new Map<number,number[]>();wires.forEach((_,i)=>{const k=root(i);if(!groups.has(k))groups.set(k,[]);groups.get(k)!.push(i);});return [...groups.values()];
 }
 

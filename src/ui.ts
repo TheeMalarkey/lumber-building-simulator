@@ -86,7 +86,12 @@ export function shell() {
 <div id="selection-actions"><button id="place-selected" class="primary-btn">${icon("plus")} Place blueprint</button>${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div>
 </aside>
 <nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}<i></i>${tool("wire-tool","wire","Wire")}${tool("land-tool","grid","Land")}${tool("walk-tool","walk","Walk","C")}<i></i>${button("undo","undo","Undo (Ctrl+Z)")}${button("redo","redo","Redo (Ctrl+Shift+Z)")}</nav>
-<aside id="wiring-panel" class="hud-panel" hidden><strong id="wire-status"></strong><p>Click a surface to bend the wire. Backspace removes a bend. Esc cancels.</p><p id="wire-count"></p><button id="wire-remove" hidden>Delete selected wire</button><button id="wire-done">Done wiring</button></aside>
+<aside id="wiring-panel" class="hud-panel" hidden aria-label="Wire placement">
+<div class="wire-types" role="group" aria-label="Wire type"><button data-wire-kind="wire" aria-pressed="true">Wire <small>20 studs</small></button><button data-wire-kind="neon" aria-pressed="false">Neon <small>16 studs</small></button></div>
+<div id="wire-colors" role="group" aria-label="Neon color" hidden></div>
+<strong id="wire-status"></strong><div class="wire-meter"><span id="wire-length">0 / 20 studs</span><progress id="wire-budget" max="20" value="0" aria-label="Wire length used"></progress></div>
+<p id="wire-feedback" aria-live="polite"></p><p>Click a surface to start or add a bend. Click a socket or wire to connect. <b>Enter</b> finishes at the last point. <b>Backspace</b> undoes a point · <b>Esc</b> cancels.</p>
+<div class="wire-actions"><button id="wire-finish" disabled>Finish wire</button><button id="wire-done">Done</button><button id="wire-remove" hidden>Delete selected wire</button></div><p id="wire-count"></p></aside>
 <div class="hud-status"><span id="selection-count" hidden aria-live="polite"></span><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
 <div id="welcome-note" hidden><button id="blank-start">Start a new build</button><button id="dismiss-welcome">Dismiss</button></div>
 </main>

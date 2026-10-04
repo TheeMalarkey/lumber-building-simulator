@@ -5,6 +5,7 @@ import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize } from "./placement";
 import { connectedPlots, coveredByPlots, touchesPlot, validatePlots } from "./plots";
 import { placementSolids, solidOverlap } from "./collision";
+import {wireLength,wireLimit,wireSpaceIssue,wireTouchesPlot} from './wire-design';
 export interface Piece {
   id: string;
   item: string;
@@ -82,6 +83,7 @@ export class World {
   revision = 0;
   generation = 0;
   onChange = () => {};
+  onReject = (_message:string) => {};
   get canUndo() {
     return this.past.length > 0;
   }
@@ -142,9 +144,23 @@ export class World {
     this.revision++;
   }
   execute(changes: Change[], wires?: Wire[]) {
-    if (!changes.length && wires===undefined) return;
+    if (!changes.length && wires===undefined) return false;
     const deleted=new Set(changes.filter(c=>!c.after).map(c=>c.before!.id));
     const nextWires=wires??(deleted.size?this.wires.filter(w=>[w.from,w.to].every(e=>!("piece" in e)||!deleted.has(e.piece))):this.moveWireRoutes(changes));
+    // New typed wires cannot be stretched by moving a single connected device.
+    // Legacy routes remain editable; an imported oversized typed route may be
+    // shortened or moved rigidly, but cannot be stretched farther.
+    const existingIds=new Set(this.wires.map(w=>w.id));
+    if(nextWires.some(w=>w.kind&&!existingIds.has(w.id))||changes.some(c=>c.before&&c.after&&(c.before.position.some((v,i)=>v!==c.after!.position[i])||c.before.rotation.some((v,i)=>v!==c.after!.rotation[i])))){
+      const next=new Map(this.pieces),old=new Map(this.wires.map(w=>[w.id,w]));
+      for(const c of changes)if(c.after)next.set(c.after.id,c.after);else if(c.before)next.delete(c.before.id);
+      for(const w of nextWires)if(w.kind){
+        const previous=old.get(w.id),limit=Math.max(wireLimit(w),previous?wireLength(wirePath(previous,this.pieces)):0);
+        if(wireLength(wirePath(w,next))>limit+1e-6){this.onReject(`Cannot move: ${w.kind==='neon'?'neon wire':'wire'} exceeds its ${wireLimit(w)}-stud limit. Reroute or disconnect it first.`);return false;}
+        const issue=wireSpaceIssue(wirePath(w,next),w,this.plots);
+        if(issue&&(!previous||!wireSpaceIssue(wirePath(previous,this.pieces),previous,this.plots))){this.onReject(issue);return false;}
+      }
+    }
     const entry:HistoryEntry=nextWires!==this.wires ? {changes,beforeWires:this.wires,afterWires:nextWires} : changes;
     const saved=structuredClone(entry);this.apply(entry);
     this.past.push(saved);
@@ -159,6 +175,7 @@ export class World {
       }
     }
     this.onChange();
+    return true;
   }
   undo() {
     const c = this.past.pop();
@@ -184,6 +201,7 @@ export class World {
     const next = removing ? current.filter(p => p !== id) : [...current, id];
     if (!connectedPlots(next)) return "disconnected";
     if (removing && [...this.bounds.values()].some(b => touchesPlot(b, id))) return "occupied";
+    if(removing&&this.wires.some(w=>w.kind&&wireTouchesPlot(wirePath(w,this.pieces),w,id)))return 'occupied';
     return null;
   }
   togglePlot(id: number) {
@@ -221,7 +239,7 @@ export class World {
     const q0=new Quaternion().setFromEuler(quaternionRotation(a.rotation)).invert();
     const q1=new Quaternion().setFromEuler(quaternionRotation(b.rotation));
     const move=(p:Vec3)=>new Vector3(...p).sub(new Vector3(...a.position)).applyQuaternion(q0).applyQuaternion(q1).add(new Vector3(...b.position)).toArray() as Vec3;
-    return wiresWithinSelection(this.wires,this.pieces,new Set(ids.keys())).map(w=>({id:crypto.randomUUID(),
+    return wiresWithinSelection(this.wires,this.pieces,new Set(ids.keys())).map(w=>({...w,id:crypto.randomUUID(),
       from:'piece' in w.from?{piece:ids.get(w.from.piece)!,port:w.from.port}:{point:move(w.from.point)},
       to:'piece' in w.to?{piece:ids.get(w.to.piece)!,port:w.to.port}:{point:move(w.to.point)},points:w.points.map(move)}));
   }

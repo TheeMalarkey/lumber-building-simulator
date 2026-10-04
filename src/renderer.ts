@@ -461,6 +461,7 @@ export class Viewport {
     if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
     const camera = this.camera.camera;
+    this.logic.wires.updateLights(camera.position,now,this.quality);
     this.gizmo.update(camera, this.element.clientHeight);
     this.terrain.followCamera(camera.position.x, camera.position.z);
     this.origin.set(
