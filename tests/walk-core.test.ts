@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Vector3 } from "three";
-import { WalkPhysics, WALK_HEIGHT, WALK_RADIUS } from "../src/walk";
+import { Group, Mesh, Vector3 } from "three";
+import { WalkController, WalkPhysics, WALK_HEIGHT, WALK_RADIUS } from "../src/walk";
 import { World, type Piece } from "../src/world";
 
 const still = new Vector3();
@@ -12,6 +12,45 @@ function setup(pieces: Piece[] = []) {
 function run(walker: WalkPhysics, seconds: number, direction = still, fast = false) {
   for (let i = 0; i < Math.round(seconds * 120); i++) walker.update(1 / 120, direction, fast);
 }
+
+describe("jump animation", () => {
+  it.each([
+    { turn: 0, forward: [0, 0, -1] },
+    { turn: 1, forward: [-1, 0, 0] },
+    { turn: 2, forward: [0, 0, 1] },
+    { turn: 3, forward: [1, 0, 0] },
+  ])("raises hands forward and trails feet behind when facing quarter-turn $turn", ({ turn, forward }) => {
+    const walker = new WalkController(new World());
+    walker.spawn(new Vector3());
+    walker.avatar.rotation.y = turn * Math.PI / 2;
+    const limbs = walker.avatar.children.filter((part): part is Group => part instanceof Group);
+    const facing = new Vector3(...forward);
+    walker.update(.1, still, false, true);
+    for (const phase of ["rising", "falling"]) {
+      if (phase === "falling") run(walker, .25);
+      expect(walker.grounded).toBe(false);
+      expect(Math.sign(walker.velocity.y)).toBe(phase === "rising" ? 1 : -1);
+      walker.animate(.1, still);
+      walker.avatar.updateMatrixWorld(true);
+      for (const limb of limbs) {
+        const mesh = limb.children[0] as Mesh;
+        mesh.geometry.computeBoundingBox();
+        const end = mesh.localToWorld(new Vector3(0, mesh.geometry.boundingBox!.min.y, 0));
+        const offset = end.sub(limb.getWorldPosition(new Vector3()));
+        if (limb.position.y > 3) {
+          expect.soft(offset.dot(facing), `${phase} hand faces forward`).toBeGreaterThan(.5);
+          expect.soft(offset.y, `${phase} hand rises above shoulder`).toBeGreaterThan(0);
+        } else {
+          expect.soft(offset.dot(facing), `${phase} foot trails behind`).toBeLessThan(-.1);
+        }
+      }
+    }
+    run(walker, 1);
+    walker.animate(.1, still);
+    expect(walker.grounded).toBe(true);
+    for (const limb of limbs) expect(limb.rotation.x).toBeCloseTo(0);
+  });
+});
 
 describe("walk physics", () => {
   it("does not step onto raised land when a ceiling leaves no standing clearance", () => {

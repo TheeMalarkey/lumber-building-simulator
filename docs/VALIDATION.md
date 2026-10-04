@@ -9,7 +9,7 @@
 - Valid imports, malformed imports, recovery from a corrupted latest save, and storage failure with the live scene retained for export were tested in isolated browser contexts.
 - Source test assertions cover thin geometry, rotated extents, oblique support planes, stable IDs, history notification timing, ray candidates across negative chunk boundaries, and project validation.
 
-The automated suite contains 71 passing core tests and 31 passing browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
+The automated suite contains 75 passing core tests and 31 browser scenarios. `npm run build` also passed. Run `npm test`, `npm run test:browser`, and `npm run build` to reproduce. Desktop screenshots are in `artifacts/editor-desktop.png`.
 
 Rotate and Tilt compose world-axis quarter turns, so turning before tilting can tip a blueprint sideways. Tests prove all 24 distinct right-angle orientations are reachable and four turns restore the original pose. Browser coverage includes preview keyboard controls, placed-piece toolbar edits, undo/redo, and saved orientation reload. Existing Euler-based files remain compatible.
 
@@ -104,3 +104,7 @@ Ctrl-click toggles individual pieces, and Ctrl-left-drag adds intersecting bluep
 Six browser scenarios and five core cases cover additive/reversed rectangles, toggle selection without accidental pickup, orbit isolation, group move/copy/delete, retained offsets/rotations/finishes, collision rejection, full-group ground and plot validation, cancellation, one-step history, and saved group copies. A 200-piece rendering check verifies one combined outline buffer and two preview instance batches for two blueprint types. This checks batching, not a new large-scene FPS benchmark. Rectangle queries run only on release, and unchanged outline geometry is reused.
 
 Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Rotation, tilt, finish, and numeric coordinate editing remain single-piece actions. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.
+
+## Jump pose correction — 2026-10-04
+
+The airborne limb angles now respect the avatar's local forward direction: hands rise in front of the shoulders and feet trail behind. Four regressions check actual limb endpoints during ascent and descent at each cardinal heading, plus return to idle after landing. All 75 core tests, both walk browser scenarios, and the production build passed. A Space-key jump was also inspected in the rendered browser scene. Jump speed, gravity, collisions, and the walking cycle are unchanged.

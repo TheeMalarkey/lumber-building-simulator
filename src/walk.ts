@@ -224,7 +224,8 @@ export class WalkController extends WalkPhysics {
       this.phase += dt * (this.velocity.length() > 20 ? 14 : 10);
     }
     this.limbs.forEach((limb, index) => {
-      const target = !this.grounded ? (index < 2 ? -1.7 : 0.25) : moving ? Math.sin(this.phase) * 0.6 * (index % 2 ? 1 : -1) * (index < 2 ? -1 : 1) : 0;
+      // The avatar faces local -Z: positive X swings hands forward, negative X trails feet.
+      const target = !this.grounded ? (index < 2 ? 1.7 : -0.25) : moving ? Math.sin(this.phase) * 0.6 * (index % 2 ? 1 : -1) * (index < 2 ? -1 : 1) : 0;
       limb.rotation.x += (target - limb.rotation.x) * Math.min(1, dt * 18);
     });
   }
