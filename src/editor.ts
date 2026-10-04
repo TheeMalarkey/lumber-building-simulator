@@ -1,3 +1,4 @@
+import {LogicTools} from "./logic-tools";
 import { Vector3 } from "three";
 import { CATALOG, ITEMS, WOOD_MAP, type Vec3 } from "./catalog";
 import { World, type Piece } from "./world";
@@ -25,6 +26,8 @@ export class Editor {
   world = new World();
   view: Viewport;
   paths: PathBuilder;
+  logicTools:LogicTools;
+  logicConfig:{logicOn?:boolean;timing?:number}={};
   thumbnails: Map<string, string>;
   item = "smooth-wall";
   wood = "oak";
@@ -60,6 +63,7 @@ export class Editor {
     $("app").innerHTML = shell();
     this.view = new Viewport($("viewport"), this.world);
     this.paths = new PathBuilder(this);
+    this.logicTools=new LogicTools(this);
     this.thumbnails = this.view.thumbnails();
     this.catalog();
     this.inspect();
@@ -80,7 +84,7 @@ export class Editor {
       $("draw-calls").textContent = `${this.view.stats.drawCalls} draw calls`;
     };
     this.view.onFrame = () => {
-      this.paths.tick();
+      this.paths.tick();this.logicTools.tick();
       if (this.placing && this.pointer && !this.view.camera.flying) {
         const key =
           this.pointer.join(",") +
@@ -100,7 +104,7 @@ export class Editor {
     try {
       const saved = await loadProject();
       if (saved.project) {
-        this.world.load(saved.project.pieces, saved.project.plots ?? [12]);
+        this.world.load(saved.project.pieces, saved.project.plots ?? [12],saved.project.wires??[]);
         $("project-name").setAttribute("value", saved.project.name);
         $("welcome-note").hidden = true;
         if (saved.recovered)
@@ -133,6 +137,7 @@ export class Editor {
         "Untitled build",
       pieces: [...this.world.pieces.values()],
       plots: [...(this.world.plots ?? [12])],
+      ...(this.world.wires.length?{wires:this.world.wires}:{}),
     };
   }
   toast(message: string) {
@@ -207,9 +212,7 @@ export class Editor {
     $("wood-picker").hidden = fixedFinish;
     const lights=pieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting');
     $("light-controls").hidden=this.placing || !lights.length;
-    const lightToggle=$<HTMLInputElement>('light-toggle');
-    lightToggle.checked=lights.length>0 && lights.every(p=>p.lightOn!==false);
-    lightToggle.indeterminate=lights.some(p=>p.lightOn===false)&&lights.some(p=>p.lightOn!==false);
+    this.logicTools.inspect();
     if(fixedFinish) this.panel("woods",false);
     $("rotate-controls").hidden = false;
     $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
@@ -250,6 +253,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
+    if(this.logicTools?.wiring)this.logicTools.toggle(false);
     this.paths.cancel();
     this.held = false;
     this.placing = placing;
@@ -301,6 +305,7 @@ export class Editor {
     );
   }
   choose(id: string) {
+    this.logicConfig={};this.logicTools.toggle(false);
     this.setMode(false);
     this.panel("build-panel", false);
     this.item = id;
@@ -369,6 +374,7 @@ export class Editor {
       id: this.moving ?? "ghost",
       item: this.item,
       wood: this.wood,
+      ...this.logicConfig,
       ...(ITEMS.get(this.item)!.fixedMaterial === "lighting" ? {lightOn:this.lightOn} : {}),
       position: pos,
       rotation: [...this.rotation],
@@ -437,7 +443,7 @@ export class Editor {
         before: copy ? null : this.world.pieces.get(p.id)!,
         after: { ...structuredClone(p), id: copy ? crypto.randomUUID() : p.id },
       }));
-      this.world.execute(changes);
+      this.world.execute(changes,copy?[...this.world.wires,...this.world.copyWires(this.groupPlacement.source.map(p=>this.world.pieces.get(p.id)!),changes.map(c=>c.after))]:undefined);
       this.pickSelections(changes.map(c => c.after.id));
       return;
     }
@@ -544,6 +550,7 @@ export class Editor {
     this.wood = p.wood;
     this.rotation = [...p.rotation];
     this.lightOn = p.lightOn !== false;
+    this.logicConfig={...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),...(p.timing===undefined?{}:{timing:p.timing})};
     this.moving = copy ? null : p.id;
     this.setMode(true);
     this.moving = copy ? null : p.id;
@@ -625,7 +632,7 @@ export class Editor {
       return;
     this.generation++;
     this.pickSelection(null);
-    this.world.load(p.pieces, p.plots ?? inferPlots(p.pieces.map(pieceBounds)));
+    this.world.load(p.pieces, p.plots ?? inferPlots(p.pieces.map(pieceBounds)),p.wires??[]);
     $<HTMLInputElement>("project-name").value = p.name;
     $("welcome-note").hidden = true;
     this.view.camera.home();
@@ -661,7 +668,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 wood blueprints, five glass pieces, nine store furnishings, and five working light fixtures are available. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>100 items include wood blueprints, glass, store furniture, lighting and 12 logic components. Use Wire to join sockets; click surfaces for bends, Backspace removes a bend, and Escape cancels. Select a logic component to operate it or change its timing. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -795,7 +802,7 @@ export class Editor {
         this.updateWorldUI();
         this.updateGhost();
       },
-      "build-tool": () => this.panel("build-panel", !!$("build-panel").hidden),
+      "build-tool": () => {if(this.logicTools.wiring)this.logicTools.toggle(false);this.panel("build-panel", !!$("build-panel").hidden);},
       "menu-tool": () => this.panel("project-menu", !!$("project-menu").hidden),
       "wood-toggle": () => this.panel("woods", !!$("woods").hidden),
       "close-edit": () => this.pickSelection(null),
@@ -826,7 +833,7 @@ export class Editor {
     };
     $('light-toggle').onchange=e=>{
       const lightOn=(e.target as HTMLInputElement).checked;
-      this.world.execute(this.selectedPieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting').map(p=>({before:p,after:{...p,lightOn}})));
+      this.world.execute(this.selectedPieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting'&&!this.view.logic.circuit.connected(p.id)).map(p=>({before:p,after:{...p,lightOn}})));
       this.inspect();
     };
     $("overlap-toggle").onchange = e => {
@@ -920,7 +927,7 @@ export class Editor {
             : `Cannot ${drag.copy ? "copy" : "move"} here: the selection would overlap another blueprint.`);
           else {
             const changes=drag.preview.map((p,i)=>({before:drag.copy ? null : drag.source[i],after:drag.copy ? {...p,id:crypto.randomUUID()} : p}));
-            this.world.execute(changes);
+            this.world.execute(changes,drag.copy?[...this.world.wires,...this.world.copyWires(drag.source,changes.map(c=>c.after))]:undefined);
             if(drag.copy) this.pickSelections(changes.map(c=>c.after.id));
           }
         }

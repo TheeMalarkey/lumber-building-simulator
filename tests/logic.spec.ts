@@ -1,0 +1,50 @@
+import {test,expect} from '@playwright/test';
+import {CATALOG} from '../src/catalog';
+test('builds a visible wired lever circuit, operates lights and persists edits',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'||/GL_INVALID/.test(m.text()))errors.push(m.text());});
+ await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+ await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('.catalog-card')).toHaveCount(12);
+ await page.locator('[data-item="lever"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
+  {id:'lever',item:'lever',position:[-6,1,0],rotation:[0,0,0],wood:'oak'},
+  {id:'gate',item:'signal-inverter',position:[0,.5,0],rotation:[0,0,0],wood:'oak'},
+  {id:'light',item:'worklight',position:[6,1.5,0],rotation:[0,0,0],wood:'oak',lightOn:false}
+ ],[12]);e.view.sync(true);e.pickSelection('lever');e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+ const socket=async(id:string,port:string)=>page.evaluate(async({id,port})=>{const {Vector3}=await import('/node_modules/three/build/three.module.js');const {portPosition}=await import('/src/logic-ports.ts');const e=(window as any).timber.editor,rect=e.view.renderer.domElement.getBoundingClientRect(),v=new Vector3(...portPosition(e.world.pieces.get(id),port)).project(e.view.camera.camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];},{id,port});
+ await page.locator('[data-port="out"]').click();let xy=await socket('gate','in');await page.mouse.click(xy[0],xy[1]);
+ xy=await socket('gate','out');await page.mouse.click(xy[0],xy[1]);xy=await socket('light','in');await page.mouse.click(xy[0],xy[1]);await page.locator('#wire-done').click();
+ await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
+ await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.lightStates.get('light'))).toBe(true);
+ await page.evaluate(()=>(window as any).timber.editor.pickSelection('lever'));await page.locator('#logic-action').click();
+ await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.lightStates.get('light'))).toBe(false);
+ await page.locator('#logic-action').click();await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
+ expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelections(['lever','gate','light']);});
+ await page.locator('#delete-tool').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(0);await page.locator('#undo').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+ await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-circuit.png'});
+ await page.setViewportSize({width:390,height:844});await page.locator('#wire-tool').click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
+ await page.locator('#wire-tool').click();await page.locator('#build-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
+ expect(errors).toEqual([]);
+});
+test('walks onto a pressure plate to power a light, then walks off',async({page})=>{
+ await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
+  {id:'plate',item:'pressure-plate',position:[0,.15,0],rotation:[0,0,0],wood:'oak'},
+  {id:'lamp',item:'lamp',position:[8,1.5,0],rotation:[0,0,0],wood:'oak',lightOn:false}], [12],
+  [{id:'w',from:{piece:'plate',port:'out'},to:{piece:'lamp',port:'in'},points:[[3,.06,3],[7,.06,3]]}]);e.pickSelection(null);e.view.sync(true);e.view.camera.setWalking(true);e.view.camera.yaw=0;e.view.camera.walker.position.set(-4,0,0);e.view.camera.walker.velocity.set(0,0,0);e.view.camera.walker.grounded=true;});
+ await page.keyboard.down('d');await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.lightStates.get('lamp'))).toBe(true);await page.keyboard.up('d');
+ await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.view.camera.walker.position.y)).toBeCloseTo(.3,2);
+ await page.keyboard.down('a');await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.lightStates.get('lamp'))).toBe(false);await page.keyboard.up('a');
+ await page.evaluate(()=>(window as any).timber.editor.pickSelection('lamp'));await expect(page.locator('#light-toggle')).toBeDisabled();await expect(page.locator('#logic-status')).toContainText('Controlled by wire');
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.execute([],[]);});await expect(page.locator('#light-toggle')).toBeEnabled();await expect(page.locator('#light-toggle')).not.toBeChecked();
+});
+test('renders all twelve logic models and the distinct timer faces',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'||/GL_INVALID/.test(m.text()))errors.push(m.text());});
+ await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
+ await page.evaluate(items=>{const e=(window as any).timber.editor;e.world.load(items.map((p,i)=>({id:p.id,item:p.id,wood:'oak',position:[(i%4-1.5)*6,p.size[1]/2,(Math.floor(i/4)-1)*6],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.pickSelection(null);e.view.camera.camera.position.set(16,19,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();},CATALOG.filter(p=>p.category==='Logic'));
+ await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-gallery.png'});
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load(['signal-delay','signal-sustain'].map((item,i)=>({id:item,item,wood:'oak',position:[i*3-1.5,1.25,0],rotation:[0,0,0],timing:7})),[12]);e.view.sync(true);e.view.camera.camera.position.set(4.2,3.8,7.6);e.view.camera.controls.target.set(0,1,0);e.view.camera.controls.update();e.view.grid.visible=false;});
+ await page.waitForTimeout(600);await page.screenshot({path:'artifacts/logic-timers.png'});expect(errors).toEqual([]);
+});

@@ -1,3 +1,5 @@
+import {logicParts} from "./logic-geometry";
+import {logicAppearance} from "./logic-ports";
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -27,7 +29,11 @@ export function geometryFor(id: string): BufferGeometry {
   cache.set(id, g);
   return g;
 }
-export function buildGeometry(item: CatalogItem): BufferGeometry {
+const logicVisuals=new Map<string,BufferGeometry>();
+export function logicGeometryFor(id:string,active:boolean,timing:number){
+ const state=logicAppearance(id,active,timing),key=id+'|'+state.active+'|'+state.timing;if(!logicVisuals.has(key)){const g=buildGeometry(ITEMS.get(id)!,state);g.computeBoundingBox();g.computeBoundingSphere();logicVisuals.set(key,g);}return logicVisuals.get(key)!;
+}
+export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timing:number}): BufferGeometry {
   const [w, h, d] = item.size,
     parts: BufferGeometry[] = [];
   // Recipe coordinates use the bottom as y=0, then center for reusable transforms.
@@ -92,6 +98,8 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       panel(.16, h - .4, px, h / 2);
   };
   switch (item.shape) {
+    case "logic":
+      parts.push(...logicParts(item,logicState));break;
     case "light-fixture":
       parts.push(...lightFixtureParts(item));
       break;
@@ -257,7 +265,7 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
 
   // Consolidate components by surface: one instanced draw per surface per
   // item/wood/chunk, never a separate mesh or material per placed component.
-  collisionCache.set(item.id, parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
+  if(!logicState)collisionCache.set(item.id, parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
   const surfaces = [...new Set(parts.map(g => g.userData.surface ?? 0))].sort();
   const ordered = surfaces.flatMap(surface => parts.filter(g => (g.userData.surface ?? 0) === surface));
   const flat = ordered.map(g => g.index ? g.toNonIndexed() : g);

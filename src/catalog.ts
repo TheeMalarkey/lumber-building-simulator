@@ -12,6 +12,7 @@ export type Shape =
   | "glass-door"
   | "store-furniture"
   | "light-fixture"
+  | "logic"
   | "ladder"
   | "chair"
   | "table"
@@ -25,7 +26,7 @@ export interface CatalogItem {
   size: Vec3;
   shape: Shape;
   woodCost: number;
-  fixedMaterial?: "glass" | "furniture" | "lighting";
+  fixedMaterial?: "glass" | "furniture" | "lighting" | "logic";
   dimensionsEstimated?: boolean;
   /** Full hardware envelope; size remains the reference panel dimensions. */
   boundsSize?: Vec3;
@@ -40,6 +41,7 @@ export const CATEGORIES = [
   "Furniture",
   "Store furniture",
   "Lighting",
+  "Logic",
   "Other",
 ];
 export const CATALOG: CatalogItem[] = [];
@@ -158,6 +160,13 @@ for (const [name,size] of [
   ["Floor Lamp",[2.4,6,2.4]], ["Worklight",[3,3,2.4]],
 ] as [string,Vec3][]) CATALOG.push({id:name.toLowerCase().replaceAll(' ','-'),name,size,
   category:"Lighting",shape:"light-fixture",woodCost:0,fixedMaterial:"lighting",dimensionsEstimated:true});
+// Footprints reconstructed from unboxed references; exact game dimensions pending.
+for(const [id,name,size] of [
+ ['lever','Lever',[2,2,1.5]],['button','Button',[2,.5,1.5]],['pressure-plate','Pressure Plate',[4,.3,4]],
+ ['and-gate','AND Gate',[2,1,2]],['or-gate','OR Gate',[2,1,2]],['xor-gate','XOR Gate',[2,1,2]],
+ ['nand-gate','NAND Gate',[2,1,2]],['nor-gate','NOR Gate',[2,1,2]],['xnor-gate','XNOR Gate',[2,1,2]],
+ ['signal-inverter','Signal Inverter',[2,1,2]],['signal-delay','Signal Delay',[2,2.5,2]],['signal-sustain','Signal Sustain',[2,2.5,2]],
+] as [string,string,Vec3][]) CATALOG.push({id,name,size,category:'Logic',shape:'logic',woodCost:0,fixedMaterial:'logic',dimensionsEstimated:true});
 export const ITEMS = new Map(CATALOG.map((x) => [x.id, x]));
 export interface Wood {
   id: string;

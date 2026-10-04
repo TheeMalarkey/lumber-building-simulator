@@ -1,6 +1,6 @@
 # Timber Studio
 
-A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures, 20 wood finishes, free and walking cameras, surface/grid placement, editing, undo/redo, and local project files.
+A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 100 placeable items: 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures and 12 logic components. Build wired circuits, use 20 wood finishes, explore with free and walking cameras, and save editable local projects.
 
 **[Open Timber Studio in your browser](https://theemalarkey.github.io/lumber-building-simulator/)** — no installation required.
 
@@ -47,6 +47,10 @@ The **Glass** category contains Tiny, Small, regular and Large Glass Panes plus 
 
 **Build → Lighting** contains Lamp, Floor Lamp, Wall Light, Floodlight and Worklight. Select placed lights to toggle **Light on**, including mixed selections. **TIMBER → Settings → Night preview** makes their illumination easier to see. On/off states save with the project; night preview lasts for the session. Nearby lights receive illumination priority within a fixed rendering budget. Shapes, estimated dimensions and rendering limits are documented in [the lighting reference](docs/reference/lighting.md).
 
+**Build → Logic** contains Lever, Button, Pressure Plate, AND/OR/XOR/NAND/NOR/XNOR Gates, Signal Inverter, Signal Delay and Signal Sustain. Their chamfered housings, symbols, sockets, orange controls, wooden plate and timer faces follow inspected game references. Select a placed component to operate it or set its timing; walking onto a plate activates it. In walk mode, **E** operates a selected lever or button.
+
+Click **Wire**, then a socket, optional surface bends, and another socket or wire to connect. The inspector's socket buttons also start wires. Powered connections glow blue. Crossing wire interiors stay separate; shared sockets and deliberate endpoint junctions connect. **Backspace** removes the last bend; **Escape** cancels a wire, then exits wiring. To remove a wire, click it in Wire mode and choose **Delete selected wire**. Wired lights follow their signal and restore their manual setting when disconnected. Wires and settings save with the build and support group copying, moving, rotation, deletion and undo. Runtime pulses reset when a project loads. Timings follow [Circuit Workbench](https://github.com/TheeMalarkey/circuit-workbench); estimated dimensions, fidelity limits and exact behavior are documented in [the logic reference](docs/reference/logic.md).
+
 ## Keep your work
 
 The browser autosaves to IndexedDB on the current origin and preserves the preceding snapshot. **Export project** downloads a `.timber` file; **Import project** validates it before asking to replace the current project. Export important builds as backups and to move between browsers or hosts. Browser storage is not cloud storage.
@@ -74,7 +78,7 @@ Wood grain, granite, ice, and foil use original pre-2022 maps published in [Robl
 
 Walk mode is a local Roblox-style reconstruction with an animated R6-proportioned avatar and a 70-degree follow camera. The body uses 2×2×1-stud torso and 1×2×1-stud limbs, with the classic head mesh and corrected shoulder/eye heights. Sources and dimensions are in `docs/reference/walk-avatar.md`. Movement uses 16 studs/second walking, 24 running, and a 50-stud/second jump impulse. Walking and follow-camera collision use the rendered component shapes: wedge slopes, individual stair treads, table legs and cabinet openings. The player still uses a simple body volume. There is no ladder climbing, multiplayer, or dynamic-object physics.
 
-The first release covers blueprint construction and blueprint furniture. Machinery, conveyors, active doors, logic, vehicles, harvesting, and Roblox save import/export are outside its scope. This is an independent fan tool.
+Construction, glass, store furniture, lighting and basic wired logic are available. Machinery, conveyors, active doors, advanced logic boards/displays/sensors, vehicles, harvesting and Roblox save import/export remain outside the current scope. This is an independent fan tool.
 
 ## Performance
 
@@ -101,6 +105,8 @@ Browser tests use installed Google Chrome and start the dev server if needed. Be
 - `src/world.ts`, `placement.ts`, `selection.ts`, `collision.ts`, `solid.ts`: authoritative data, history, bounds and placement.
 - `src/renderer.ts`, `camera.ts`, `move-gizmo.ts`: instancing, streaming, picking and navigation.
 - `src/build-path.ts`, `path-builder.ts`, `path-overlay.ts`: straight run generation, drag gestures and preview guide.
+- `src/logic.ts`, `logic-graph.ts`, `logic-ports.ts`: event-time simulation, dependency ordering, sockets and wire topology.
+- `src/logic-geometry.ts`, `logic-view.ts`, `logic-tools.ts`: reconstructed models, instanced wiring and circuit controls.
 - `src/editor.ts`, `ui.ts`, `style.css`, `hud.css`: interaction and interface.
 - `src/project.ts`, `storage.ts`: file validation and atomic local saves.
 

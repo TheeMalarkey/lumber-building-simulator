@@ -10,7 +10,7 @@ Five fixtures extend the catalog to 88 pieces. Inspected the unboxed images on t
 | [Floodlight](https://lumber-tycoon-2.fandom.com/wiki/Floodlight) | 3.4 / 2.8 / 2.6 | Paired downward/outward cylindrical heads and rear mount |
 | [Worklight](https://lumber-tycoon-2.fandom.com/wiki/Worklight) | 3 / 3 / 2.4 | Yellow tubular U stand with curved elbows, side pivots, tilted black bezel, recessed white reflector, separate horizontal tube and sockets, top grip |
 
-All dimensions carry the approximate marker in the UI. Shade weave is an authored repeating texture. Colors, switch details, light intensity/range and reflector geometry are estimates. The Wall Light page describes a reversed indicator convention; that detail is not live-verified, and this simulator consistently uses green for enabled and red for disabled fixtures. The Worklight remains an anchored editable object rather than a loose physics object. Logic wiring is not implemented.
+All dimensions carry the approximate marker in the UI. Shade weave is an authored repeating texture. Colors, switch details, light intensity/range and reflector geometry are estimates. The Wall Light page describes a reversed indicator convention; that detail is not live-verified, and this simulator consistently uses green for enabled and red for disabled fixtures. The Worklight remains an anchored editable object rather than a loose physics object. The later [logic milestone](logic.md) adds a wire socket to every fixture: connected lights follow the input continuously and restore their saved manual state when disconnected.
 
 ## Editing and illumination
 

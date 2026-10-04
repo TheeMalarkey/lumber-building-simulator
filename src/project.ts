@@ -1,3 +1,4 @@
+import {validateWires,type Wire} from "./logic-ports";
 import { ITEMS, WOOD_MAP } from "./catalog";
 import { pieceBounds, type Piece } from "./world";
 import { coveredByPlots, inferPlots, validatePlots } from "./plots";
@@ -6,6 +7,7 @@ export interface Project {
   name: string;
   pieces: Piece[];
   plots?: number[];
+  wires?: Wire[];
 }
 export function parseProject(text: string): Project {
   let value: unknown;
@@ -37,6 +39,8 @@ export function parseProject(text: string): Project {
     )
       throw new Error("Invalid, duplicate, or unknown piece in project.");
     if(p.lightOn !== undefined && typeof p.lightOn !== 'boolean') throw new Error('Invalid light state.');
+    if(p.logicOn!==undefined && typeof p.logicOn!=='boolean')throw new Error('Invalid switch state.');
+    if(p.timing!==undefined && (!Number.isInteger(p.timing)||p.timing<1||p.timing>12))throw new Error('Invalid timer setting.');
     ids.add(p.id);
     if (
       !Array.isArray(p.position) ||
@@ -63,12 +67,15 @@ export function parseProject(text: string): Project {
     version: 1,
     name: v.name,
     plots,
+    ...(v.wires===undefined?{}:{wires:validateWires(v.wires,v.pieces)}),
     pieces: v.pieces.map((p) => ({
       id: p.id,
       item: p.item,
       wood: p.wood,
       position: [...p.position],
       rotation: [...p.rotation],
+      ...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),
+      ...(p.timing===undefined?{}:{timing:p.timing}),
       ...(p.lightOn === undefined ? {} : {lightOn:p.lightOn}),
     })),
   };

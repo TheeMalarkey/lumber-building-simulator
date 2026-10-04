@@ -32,7 +32,7 @@ export class FixtureLighting {
     const cx=Math.floor(camera.x/CHUNK),cy=Math.floor(camera.y/CHUNK),cz=Math.floor(camera.z/CHUNK);
     for(let x=cx-1;x<=cx+1;x++)for(let y=cy-1;y<=cy+1;y++)for(let z=cz-1;z<=cz+1;z++)
       for(const id of world.lightChunks.get(`${x},${y},${z}`)??[]){
-        const p=world.pieces.get(id)!;if(p.lightOn===false)continue;
+        const p=world.pieces.get(id)!;if(!world.lightEnabled(p))continue;
         const rotation=quaternionRotation(p.rotation);
         emittersFor(p.item).forEach((e,i)=>{
           const position=new Vector3(...e.offset).applyEuler(rotation).add(new Vector3(...p.position));

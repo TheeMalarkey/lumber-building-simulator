@@ -1459,3 +1459,5 @@ dialog .stats-grid strong {
     transition: none !important;
   }
 }
+
+.logic-ports{display:flex;gap:6px;margin:6px 0 12px}.logic-ports button{flex:1;padding:7px;border:1px solid var(--line,#d4d7c8);border-radius:4px}#logic-action{width:100%;margin-bottom:8px}#wiring-panel{position:absolute;left:16px;bottom:94px;width:min(340px,calc(100vw - 32px));padding:16px;z-index:12}#wiring-panel p{font-size:12px;line-height:1.5;margin:8px 0;color:#c2c8b8}#wiring-panel button{padding:8px;margin:4px 5px 0 0}#wire-status{font-size:13px}#logic-status{margin-bottom:8px}

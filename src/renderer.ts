@@ -1,9 +1,12 @@
+import {makeLogicMaterials} from "./logic-geometry";
+import {LogicView} from "./logic-view";
+import {logicAppearance} from "./logic-ports";
 import * as T from "three";
 import {makeLightMaterials} from "./light-fixtures";
 import {FixtureLighting} from "./fixture-lighting";
 import { World, CHUNK, chunkKey, type Piece } from "./world";
 import { ITEMS, type Vec3, CATALOG } from "./catalog";
-import { geometryFor } from "./geometry";
+import { geometryFor,logicGeometryFor } from "./geometry";
 import { makeMaterials, makeBlueprintHardwareMaterials, makeGlassMaterial, makeFurnitureMaterials } from "./materials";
 import { quaternionRotation, STUD_STEP } from "./placement";
 import { CameraController } from "./camera";
@@ -24,6 +27,8 @@ export class Viewport {
   worldRoot = new T.Group();
   gizmo = new MoveGizmo();
   materials = makeMaterials();
+  logicMaterials=makeLogicMaterials(this.materials.get("walnut")??this.materials.values().next().value!);
+  logic:LogicView;
   hardwareMaterials = makeBlueprintHardwareMaterials();
   glassMaterial = makeGlassMaterial();
   lightMaterials = makeLightMaterials();
@@ -75,6 +80,7 @@ export class Viewport {
     public element: HTMLElement,
     public world: World,
   ) {
+    this.logic=new LogicView(world);this.worldRoot.add(this.logic.root);
     this.renderer = new T.WebGLRenderer({
       antialias: true,
       powerPreference: "high-performance",
@@ -188,6 +194,7 @@ export class Viewport {
     this.resize();
   }
   materialFor(item: string, wood: string, lightOn=true): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(ITEMS.get(item)!.fixedMaterial === "logic")return this.logicMaterials.get(item)!;
     if(ITEMS.get(item)!.fixedMaterial === "lighting") return lightOn ? this.lightMaterials : this.lightOffMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "furniture") return this.furnitureMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "glass") return item === "glass-door" ? this.glassDoorMaterials : this.glassMaterial;
@@ -207,7 +214,8 @@ export class Viewport {
     const batches = new Map<string, Piece[]>();
     for (const id of this.world.chunks.get(key) ?? []) {
       const p = this.world.pieces.get(id)!;
-      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(p.lightOn!==false) : "");
+      const visual=logicAppearance(p.item,this.logic.circuit.output(p.id),p.timing??1);
+      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(this.world.lightEnabled(p)) : ITEMS.get(p.item)!.fixedMaterial === "logic" ? "|"+visual.active+"|"+visual.timing : "");
       if (!batches.has(k)) batches.set(k, []);
       batches.get(k)!.push(p);
     }
@@ -225,8 +233,8 @@ export class Viewport {
       if (!mesh) {
         const first = pieces[0];
         mesh = new T.InstancedMesh(
-          geometryFor(first.item),
-          this.materialFor(first.item, first.wood, first.lightOn!==false),
+          ITEMS.get(first.item)!.fixedMaterial==="logic"?logicGeometryFor(first.item,this.logic.circuit.output(first.id),first.timing??1):geometryFor(first.item),
+          this.materialFor(first.item, first.wood, this.world.lightEnabled(first)),
           Math.max(8, 2 ** Math.ceil(Math.log2(pieces.length))),
         );
         mesh.name = k;
@@ -435,6 +443,8 @@ export class Viewport {
     if (this.frames.length > 240) this.frames.shift();
     this.camera.update(Math.min(ms / 1000, 0.05));
     this.onFrame();
+    this.logic.tick(now,this.camera.walking?this.camera.walker.position:undefined);
+    if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
     const camera = this.camera.camera;
     this.gizmo.update(camera, this.element.clientHeight);

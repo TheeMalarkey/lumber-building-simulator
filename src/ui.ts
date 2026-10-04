@@ -1,6 +1,7 @@
 import { CATALOG, CATEGORIES, WOODS } from "./catalog";
 export function icon(name: string) {
   const paths: Record<string, string> = {
+    wire: '<circle cx="4" cy="6" r="2"/><circle cx="20" cy="18" r="2"/><path d="M6 6h6v12h6"/>',
     cube: '<path d="m12 3 9 5v8l-9 5-9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8M7.5 5.5l9 5"/>',
     arrow: '<path d="m5 3 15 9-7 2-3 7Z"/>',
     move: '<path d="M12 3v18M3 12h18m-12-6 3-3 3 3m-6 12 3 3 3-3M6 9l-3 3 3 3m12-6 3 3-3 3"/>',
@@ -68,7 +69,8 @@ export function shell() {
 <p id="selection-hint" hidden>Ctrl-click toggles pieces · Ctrl-drag adds a group</p>
 <div class="wood-picker" id="wood-picker"><button id="wood-toggle" aria-expanded="false" aria-controls="woods"><i id="wood-color"></i><span id="wood-name">Oak</span><span class="wood-caption">Wood</span>${icon("chevron")}</button><div id="woods" class="wood-swatches" aria-label="Wood finishes" hidden>${WOODS.map((w,i)=>`<button data-wood="${w.id}" class="wood-swatch ${i===0?"active":""}" style="--wood:${w.color}" title="${w.name}" aria-label="${w.name} wood finish">${icon("check")}</button>`).join("")}</div></div>
 <div class="rotate-buttons" id="rotate-controls"><button id="rotate">${icon("rotate")} Rotate <kbd>R</kbd></button><button id="tilt">${icon("tilt")} Tilt <kbd>T</kbd></button></div>
-<label id="light-controls" class="setting-row" hidden><span>Light on</span><input id="light-toggle" type="checkbox" aria-label="Selected lights on"></label>
+<section id="logic-controls" hidden><p id="logic-status" class="nudge-hint" role="status"></p><button id="logic-action" class="primary-btn">Switch on</button><label id="logic-timer-row" class="setting-row"><span>Timing</span><select id="logic-timing" aria-label="Timer setting">${Array.from({length:12},(_,i)=>`<option value="${i+1}">Setting ${i+1}</option>`).join('')}</select></label><span class="nudge-hint">Wire from socket</span><div id="logic-ports" class="logic-ports"></div></section>
+<label id="light-controls" class="setting-row" hidden><span id="light-label">Light on</span><input id="light-toggle" type="checkbox" aria-label="Selected lights on"></label>
 <label class="setting-row overlap-option" title="Allow blueprints to intersect while keeping ground and active-land boundaries"><span>Allow overlaps</span><input id="overlap-toggle" type="checkbox" aria-label="Allow blueprint overlaps"></label>
 <label class="setting-row axis-copy-option" id="axis-copy-row" hidden title="Create a copy when you release an X, Y or Z arrow drag"><span>Copy with arrows</span><input id="axis-copy-toggle" type="checkbox" aria-label="Copy selection with axis arrows"></label>
 <section id="path-controls" hidden>
@@ -82,7 +84,8 @@ export function shell() {
 <section id="transform-section" hidden><span id="nudge-label">Move selection · 1 stud</span><p class="nudge-hint" id="axis-hint">Drag the X, Y or Z arrow on your selection.<br>Hold a placement with L to adjust it in the air.</p><details id="step-buttons-details"><summary>Step buttons</summary><div id="nudge-buttons" class="nudge-buttons" role="group" aria-label="Move by one stud">${["left","up","forward","right","down","back"].map(d=>`<button data-nudge="${d}" title="Move ${d} one stud">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div><p class="nudge-hint">Directions follow your view, along the grid.</p></details><details id="coordinates-details"><summary>Coordinates</summary><div class="coordinates">${["X","Y","Z"].map((a,i)=>`<label>${a}<input id="pos-${i}" type="number" step="1" aria-label="Position ${a}"></label>`).join("")}</div></details></section>
 <div id="selection-actions"><button id="place-selected" class="primary-btn">${icon("plus")} Place blueprint</button>${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div>
 </aside>
-<nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}<i></i>${tool("land-tool","grid","Land")}${tool("walk-tool","walk","Walk","C")}<i></i>${button("undo","undo","Undo (Ctrl+Z)")}${button("redo","redo","Redo (Ctrl+Shift+Z)")}</nav>
+<nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}<i></i>${tool("wire-tool","wire","Wire")}${tool("land-tool","grid","Land")}${tool("walk-tool","walk","Walk","C")}<i></i>${button("undo","undo","Undo (Ctrl+Z)")}${button("redo","redo","Redo (Ctrl+Shift+Z)")}</nav>
+<aside id="wiring-panel" class="hud-panel" hidden><strong id="wire-status"></strong><p>Click a surface to bend the wire. Backspace removes a bend. Esc cancels.</p><p id="wire-count"></p><button id="wire-remove" hidden>Delete selected wire</button><button id="wire-done">Done wiring</button></aside>
 <div class="hud-status"><span id="selection-count" hidden aria-live="polite"></span><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
 <div id="welcome-note" hidden><button id="blank-start">Start a new build</button><button id="dismiss-welcome">Dismiss</button></div>
 </main>
