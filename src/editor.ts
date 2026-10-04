@@ -28,6 +28,7 @@ export class Editor {
   thumbnails: Map<string, string>;
   item = "smooth-wall";
   wood = "oak";
+  lightOn = true;
   rotation: Vec3 = [0, 0, 0];
   category = "All pieces";
   search = "";
@@ -204,6 +205,11 @@ export class Editor {
     $("piece-preview").hidden = multi;
     const fixedFinish=multi ? !woodPieces.length : !!item.fixedMaterial;
     $("wood-picker").hidden = fixedFinish;
+    const lights=pieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting');
+    $("light-controls").hidden=this.placing || !lights.length;
+    const lightToggle=$<HTMLInputElement>('light-toggle');
+    lightToggle.checked=lights.length>0 && lights.every(p=>p.lightOn!==false);
+    lightToggle.indeterminate=lights.some(p=>p.lightOn===false)&&lights.some(p=>p.lightOn!==false);
     if(fixedFinish) this.panel("woods",false);
     $("rotate-controls").hidden = false;
     $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
@@ -298,6 +304,7 @@ export class Editor {
     this.setMode(false);
     this.panel("build-panel", false);
     this.item = id;
+    this.lightOn = true;
     this.selected = null;
     this.moving = null;
     this.rotation = [0, 0, 0];
@@ -362,6 +369,7 @@ export class Editor {
       id: this.moving ?? "ghost",
       item: this.item,
       wood: this.wood,
+      ...(ITEMS.get(this.item)!.fixedMaterial === "lighting" ? {lightOn:this.lightOn} : {}),
       position: pos,
       rotation: [...this.rotation],
     };
@@ -535,6 +543,7 @@ export class Editor {
     this.item = p.item;
     this.wood = p.wood;
     this.rotation = [...p.rotation];
+    this.lightOn = p.lightOn !== false;
     this.moving = copy ? null : p.id;
     this.setMode(true);
     this.moving = copy ? null : p.id;
@@ -652,7 +661,7 @@ export class Editor {
     this.setMode(false);
     const modal = $<HTMLDialogElement>("modal");
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 wood blueprints, five glass pieces, and nine store furnishings are available. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter studio is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>69 wood blueprints, five glass pieces, nine store furnishings, and five working light fixtures are available. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -660,7 +669,9 @@ export class Editor {
     const modal = $<HTMLDialogElement>("modal");
     const stats = this.view.stats;
     $("modal-content").innerHTML =
-      `<h2>Your view, your pace.</h2><label class="setting-row"><span>Visual quality</span><select id="quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select></label><label class="setting-row"><span>Adaptive resolution</span><input type="checkbox" id="adaptive" ${this.view.adaptive ? "checked" : ""}></label><label class="setting-row"><span>View distance</span><select id="distance"><option value="192">192 studs</option><option value="384">384 studs</option><option value="640">640 studs</option><option value="896">896 studs</option></select></label><div class="stats-grid"><div>Rendering<strong>${stats.backend}</strong></div><div>Draw calls<strong>${stats.drawCalls}</strong></div><div>Resident chunks<strong>${stats.visibleChunks}</strong></div><div>Triangles<strong>${stats.triangles.toLocaleString()}</strong></div></div><p style="margin-top:16px">Lower view distance and quality keep large builds responsive. Distant pieces stay in your project.</p><div class="dialog-actions"><button id="load-demo">Load example studio</button><button class="confirm" id="close-modal">Done</button></div>`;
+      `<h2>Your view, your pace.</h2><label class="setting-row"><span>Night preview</span><input id="night-preview" type="checkbox"></label><label class="setting-row"><span>Visual quality</span><select id="quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select></label><label class="setting-row"><span>Adaptive resolution</span><input type="checkbox" id="adaptive" ${this.view.adaptive ? "checked" : ""}></label><label class="setting-row"><span>View distance</span><select id="distance"><option value="192">192 studs</option><option value="384">384 studs</option><option value="640">640 studs</option><option value="896">896 studs</option></select></label><div class="stats-grid"><div>Rendering<strong>${stats.backend}</strong></div><div>Draw calls<strong>${stats.drawCalls}</strong></div><div>Resident chunks<strong>${stats.visibleChunks}</strong></div><div>Triangles<strong>${stats.triangles.toLocaleString()}</strong></div></div><p style="margin-top:16px">Lower view distance and quality keep large builds responsive. Distant pieces stay in your project.</p><div class="dialog-actions"><button id="load-demo">Load example studio</button><button class="confirm" id="close-modal">Done</button></div>`;
+    $<HTMLInputElement>('night-preview').checked=this.view.night;
+    $('night-preview').onchange=e=>this.view.setNight((e.target as HTMLInputElement).checked);
     $<HTMLSelectElement>("quality").value = this.view.quality;
     $<HTMLSelectElement>("distance").value = String(this.view.renderDistance);
     $("quality").onchange = (e) =>
@@ -812,6 +823,11 @@ export class Editor {
     $("nudge-buttons").onclick = e => {
       const b=(e.target as HTMLElement).closest<HTMLElement>("[data-nudge]");
       if (b) this.nudge(b.dataset.nudge!);
+    };
+    $('light-toggle').onchange=e=>{
+      const lightOn=(e.target as HTMLInputElement).checked;
+      this.world.execute(this.selectedPieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting').map(p=>({before:p,after:{...p,lightOn}})));
+      this.inspect();
     };
     $("overlap-toggle").onchange = e => {
       this.world.allowOverlaps=(e.target as HTMLInputElement).checked;

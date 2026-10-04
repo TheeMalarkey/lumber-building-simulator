@@ -1,4 +1,6 @@
 import * as T from "three";
+import {makeLightMaterials} from "./light-fixtures";
+import {FixtureLighting} from "./fixture-lighting";
 import { World, CHUNK, chunkKey, type Piece } from "./world";
 import { ITEMS, type Vec3, CATALOG } from "./catalog";
 import { geometryFor } from "./geometry";
@@ -24,6 +26,11 @@ export class Viewport {
   materials = makeMaterials();
   hardwareMaterials = makeBlueprintHardwareMaterials();
   glassMaterial = makeGlassMaterial();
+  lightMaterials = makeLightMaterials();
+  lightOffMaterials = makeLightMaterials(false);
+  fixtureLighting = new FixtureLighting();
+  night = false;
+  ambient = new T.HemisphereLight(0xe8f0ff,0x8d9478,2.3);
   furnitureMaterials = makeFurnitureMaterials();
   private glassDoorMaterials = [this.glassMaterial,this.hardwareMaterials[0]];
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
@@ -89,7 +96,7 @@ export class Viewport {
     this.scene.fog = new T.FogExp2(0xd8dbce, 0.0038);
     this.scene.add(
       this.worldRoot,
-      new T.HemisphereLight(0xe8f0ff, 0x8d9478, 2.3),
+      this.ambient, this.fixtureLighting.root,
     );
     this.sun.position.set(35, 55, 22);
     this.sun.castShadow = true;
@@ -162,6 +169,12 @@ export class Viewport {
     const mask = (this.grid.material as T.ShaderMaterial).uniforms.uPlots.value as number[];
     for (let i = 0; i < 25; i++) mask[i] = Number(ids.includes(i));
   }
+  setNight(value:boolean) {
+    this.night=value;this.sun.intensity=value ? .2 : 3;this.ambient.intensity=value ? .35 : 2.3;
+    const color=value?0x101a2b:0xd8dbce;
+    (this.scene.background as T.Color).setHex(color);
+    (this.scene.fog as T.FogExp2).color.setHex(color);
+  }
   setQuality(value: string) {
     this.quality = value;
     this.renderer.shadowMap.enabled = value !== "performance";
@@ -174,13 +187,15 @@ export class Viewport {
     this.renderer.setPixelRatio(this.pixelScale);
     this.resize();
   }
-  materialFor(item: string, wood: string): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+  materialFor(item: string, wood: string, lightOn=true): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(ITEMS.get(item)!.fixedMaterial === "lighting") return lightOn ? this.lightMaterials : this.lightOffMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "furniture") return this.furnitureMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "glass") return item === "glass-door" ? this.glassDoorMaterials : this.glassMaterial;
     const shape = ITEMS.get(item)!.shape;
     return shape === "door" || shape === "sink" ? this.blueprintMaterials.get(wood)! : this.materials.get(wood)!;
   }
   private buildChunk(key: string) {
+    this.fixtureLighting.invalidate();
     let group = this.loaded.get(key);
     if (!group) {
       group = new T.Group();
@@ -192,7 +207,7 @@ export class Viewport {
     const batches = new Map<string, Piece[]>();
     for (const id of this.world.chunks.get(key) ?? []) {
       const p = this.world.pieces.get(id)!;
-      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood);
+      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(p.lightOn!==false) : "");
       if (!batches.has(k)) batches.set(k, []);
       batches.get(k)!.push(p);
     }
@@ -211,7 +226,7 @@ export class Viewport {
         const first = pieces[0];
         mesh = new T.InstancedMesh(
           geometryFor(first.item),
-          this.materialFor(first.item, first.wood),
+          this.materialFor(first.item, first.wood, first.lightOn!==false),
           Math.max(8, 2 ** Math.ceil(Math.log2(pieces.length))),
         );
         mesh.name = k;
@@ -275,6 +290,7 @@ export class Viewport {
           this.worldRoot.remove(g);
           for (const m of g.children) (m as T.InstancedMesh).dispose();
           this.loaded.delete(k);
+          this.fixtureLighting.invalidate();
         }
       }
       this.queue = [...this.desired].filter((k) => !this.loaded.has(k));
@@ -428,6 +444,7 @@ export class Viewport {
       Math.floor(camera.position.y / CHUNK) * CHUNK,
       Math.floor(camera.position.z / CHUNK) * CHUNK,
     );
+    this.fixtureLighting.update(this.world,camera.position,this.origin,now,this.quality);
     this.worldRoot.position.copy(this.origin).negate();
     const saved = camera.position.clone();
     camera.position.sub(this.origin);

@@ -1,5 +1,5 @@
 import { Plane, Raycaster, Vector2, Vector3 } from "three";
-import type { Vec3 } from "./catalog";
+import { ITEMS, type Vec3 } from "./catalog";
 import { buildPath, snapPathOnSurface, type BuildMode } from "./build-path";
 import { snapBlueprintOnSurface } from "./collision";
 import { snapMovement } from "./placement";
@@ -30,7 +30,7 @@ export class PathBuilder {
   }
   get eligible() {return this.host.placing && !this.host.moving && !this.host.groupPlacement && !this.host.orbit;}
   get hasDraft() {return this.anchors.length>0;}
-  private template():Piece {return {id:"path",item:this.host.item,wood:this.host.wood,position:[0,0,0],rotation:[...this.host.rotation]};}
+  private template():Piece {return {id:"path",item:this.host.item,wood:this.host.wood,position:[0,0,0],rotation:[...this.host.rotation],...(ITEMS.get(this.host.item)!.fixedMaterial==='lighting'?{lightOn:this.host.lightOn}:{})};}
   syncUI() {
     $("path-controls").hidden=!this.eligible;
     $<HTMLSelectElement>("build-mode").value=this.mode;

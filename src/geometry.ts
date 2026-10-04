@@ -10,6 +10,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { type CatalogItem, ITEMS, stairTreadCount } from "./catalog";
 import { applyPhysicalUVs, TEXTURE_TILE_STUDS } from "./texture-uv";
 import { solidFromGeometry, type Solid } from "./solid";
+import { lightFixtureParts } from "./light-fixtures";
 import { furnitureParts } from "./furniture-geometry";
 const cache = new Map<string, BufferGeometry>();
 const collisionCache = new Map<string, Solid[]>();
@@ -91,6 +92,9 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
       panel(.16, h - .4, px, h / 2);
   };
   switch (item.shape) {
+    case "light-fixture":
+      parts.push(...lightFixtureParts(item));
+      break;
     case "store-furniture":
       parts.push(...furnitureParts(item));
       break;
@@ -253,7 +257,7 @@ export function buildGeometry(item: CatalogItem): BufferGeometry {
 
   // Consolidate components by surface: one instanced draw per surface per
   // item/wood/chunk, never a separate mesh or material per placed component.
-  collisionCache.set(item.id, parts.flatMap(solidFromGeometry));
+  collisionCache.set(item.id, parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
   const surfaces = [...new Set(parts.map(g => g.userData.surface ?? 0))].sort();
   const ordered = surfaces.flatMap(surface => parts.filter(g => (g.userData.surface ?? 0) === surface));
   const flat = ordered.map(g => g.index ? g.toNonIndexed() : g);

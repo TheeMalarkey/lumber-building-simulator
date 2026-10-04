@@ -8,6 +8,7 @@ export interface Piece {
   wood: string;
   position: Vec3;
   rotation: Vec3;
+  lightOn?: boolean;
 }
 export interface Change {
   before: Piece | null;
@@ -56,6 +57,7 @@ function keys(p: Piece) {
 }
 export class World {
   pieces = new Map<string, Piece>();
+  lightChunks = new Map<string, Set<string>>();
   chunks = new Map<string, Set<string>>();
   spatial = new Map<string, Set<string>>();
   bounds = new Map<string, ReturnType<typeof pieceBounds>>();
@@ -78,6 +80,8 @@ export class World {
     if (old) {
       const k = chunkKey(old.position);
       this.chunks.get(k)?.delete(id);
+      this.lightChunks.get(k)?.delete(id);
+      if (!this.lightChunks.get(k)?.size) this.lightChunks.delete(k);
       if (!this.chunks.get(k)?.size) this.chunks.delete(k);
       this.dirty.add(k);
       for (const key of keys(old)) {
@@ -94,6 +98,10 @@ export class World {
       const k = chunkKey(copy.position);
       if (!this.chunks.has(k)) this.chunks.set(k, new Set());
       this.chunks.get(k)!.add(id);
+      if(ITEMS.get(copy.item)!.fixedMaterial==='lighting') {
+        if(!this.lightChunks.has(k)) this.lightChunks.set(k,new Set());
+        this.lightChunks.get(k)!.add(id);
+      }
       this.dirty.add(k);
       for (const key of keys(copy)) {
         if (!this.spatial.has(key)) this.spatial.set(key, new Set());
@@ -169,6 +177,7 @@ export class World {
     for (const key of this.chunks.keys()) this.dirty.add(key);
     this.pieces.clear();
     this.chunks.clear();
+    this.lightChunks.clear();
     this.spatial.clear();
     this.bounds.clear();
     this.past = [];

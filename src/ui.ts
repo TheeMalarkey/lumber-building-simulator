@@ -68,6 +68,7 @@ export function shell() {
 <p id="selection-hint" hidden>Ctrl-click toggles pieces · Ctrl-drag adds a group</p>
 <div class="wood-picker" id="wood-picker"><button id="wood-toggle" aria-expanded="false" aria-controls="woods"><i id="wood-color"></i><span id="wood-name">Oak</span><span class="wood-caption">Wood</span>${icon("chevron")}</button><div id="woods" class="wood-swatches" aria-label="Wood finishes" hidden>${WOODS.map((w,i)=>`<button data-wood="${w.id}" class="wood-swatch ${i===0?"active":""}" style="--wood:${w.color}" title="${w.name}" aria-label="${w.name} wood finish">${icon("check")}</button>`).join("")}</div></div>
 <div class="rotate-buttons" id="rotate-controls"><button id="rotate">${icon("rotate")} Rotate <kbd>R</kbd></button><button id="tilt">${icon("tilt")} Tilt <kbd>T</kbd></button></div>
+<label id="light-controls" class="setting-row" hidden><span>Light on</span><input id="light-toggle" type="checkbox" aria-label="Selected lights on"></label>
 <label class="setting-row overlap-option" title="Allow blueprints to intersect while keeping ground and active-land boundaries"><span>Allow overlaps</span><input id="overlap-toggle" type="checkbox" aria-label="Allow blueprint overlaps"></label>
 <label class="setting-row axis-copy-option" id="axis-copy-row" hidden title="Create a copy when you release an X, Y or Z arrow drag"><span>Copy with arrows</span><input id="axis-copy-toggle" type="checkbox" aria-label="Copy selection with axis arrows"></label>
 <section id="path-controls" hidden>

@@ -36,6 +36,7 @@ export function parseProject(text: string): Project {
       !WOOD_MAP.has(p.wood)
     )
       throw new Error("Invalid, duplicate, or unknown piece in project.");
+    if(p.lightOn !== undefined && typeof p.lightOn !== 'boolean') throw new Error('Invalid light state.');
     ids.add(p.id);
     if (
       !Array.isArray(p.position) ||
@@ -68,6 +69,7 @@ export function parseProject(text: string): Project {
       wood: p.wood,
       position: [...p.position],
       rotation: [...p.rotation],
+      ...(p.lightOn === undefined ? {} : {lightOn:p.lightOn}),
     })),
   };
 }
