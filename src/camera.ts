@@ -7,7 +7,8 @@ export class CameraController {
   controls: OrbitControls;
   keys = new Set<string>();
   flying = false;
-  speed = 24;
+  speedLevel = 3;
+  get speed() { return this.speedLevel * 8; }
   walking = false;
   selecting = false;
   walker: WalkController;
@@ -18,8 +19,17 @@ export class CameraController {
   private yaw = 0;
   private pitch = 0;
   private element: HTMLElement;
+  private dragPointer:number|null=null;
+  private dragPosition:[number,number]=[0,0];
+  private lookChanged=false;
+  private panDelta=new Vector3();
+  private panUp=new Vector3();
   constructor(element: HTMLElement, world = new World()) {
     this.element = element;
+    try {
+      const saved=Number(localStorage.getItem('timber-camera-speed'));
+      if(Number.isInteger(saved)&&saved>=1&&saved<=5)this.speedLevel=saved;
+    } catch { /* Camera controls still work when browser storage is unavailable. */ }
     this.walker = new WalkController(world);
     this.camera.position.set(40, 30, 44);
     this.controls = new OrbitControls(this.camera, element);
@@ -40,6 +50,7 @@ export class CameraController {
       element.focus({ preventScroll: true });
       if (this.selecting) return;
       if (e.button !== 2) return;
+      this.dragPointer=e.pointerId;this.dragPosition=[e.clientX,e.clientY];this.lookChanged=false;
       this.flying = true;
       this.controls.enabled = false;
       if (!this.walking) {
@@ -50,7 +61,19 @@ export class CameraController {
       element.setPointerCapture(e.pointerId);
     });
     element.addEventListener("pointermove", (e) => {
-      if (!this.flying) return;
+      if (!this.flying||e.pointerId!==this.dragPointer) return;
+      const dx=e.clientX-this.dragPosition[0],dy=e.clientY-this.dragPosition[1];
+      this.dragPosition=[e.clientX,e.clientY];
+      if(e.shiftKey&&!this.walking){
+        this.camera.updateMatrixWorld();
+        const scale=2*Math.max(2,this.camera.position.distanceTo(this.controls.target))*Math.tan(this.camera.fov*Math.PI/360)
+          /Math.max(1,element.clientHeight)*this.speedLevel/3;
+        this.panDelta.setFromMatrixColumn(this.camera.matrixWorld,0).multiplyScalar(-dx*scale);
+        this.panUp.setFromMatrixColumn(this.camera.matrixWorld,1).multiplyScalar(dy*scale);
+        this.panDelta.add(this.panUp);this.camera.position.add(this.panDelta);this.controls.target.add(this.panDelta);
+        return;
+      }
+      this.lookChanged=true;
       this.yaw -= e.movementX * 0.003;
       this.pitch = Math.max(
         -1.5,
@@ -59,12 +82,14 @@ export class CameraController {
       if (!this.walking) this.camera.quaternion.setFromEuler(new Euler(this.pitch, this.yaw, 0, "YXZ"));
     });
     const releaseLook = () => {
-      if (this.flying && !this.walking) {
+      if (this.flying && !this.walking && this.lookChanged) {
         const v = new Vector3();
         this.camera.getWorldDirection(v);
         this.controls.target.copy(this.camera.position).addScaledVector(v, 30);
       }
       this.flying = false;
+      const pointer=this.dragPointer;this.dragPointer=null;
+      if(pointer!==null&&element.hasPointerCapture(pointer))element.releasePointerCapture(pointer);
       this.controls.enabled = !this.walking;
     };
     const release = () => {
@@ -76,6 +101,7 @@ export class CameraController {
       if (e.button === 2) releaseLook();
     });
     element.addEventListener("lostpointercapture", releaseLook);
+    element.addEventListener("pointercancel", release);
     window.addEventListener("blur", release);
     document.addEventListener("focusin", () => {
       if (this.keyboardBlocked()) { this.keys.clear(); this.jumpPending = false; }
@@ -107,14 +133,16 @@ export class CameraController {
           this.walkDistance = Math.max(0, Math.min(40, this.walkDistance + delta * 0.02));
         } else if (this.flying) {
           e.preventDefault();
-          this.speed = Math.max(
-            2,
-            Math.min(400, this.speed * Math.exp(-e.deltaY * 0.002)),
-          );
+          this.setSpeedLevel(this.speedLevel-Math.sign(e.deltaY));
         }
       },
       { passive: false },
     );
+  }
+  setSpeedLevel(level:number) {
+    if(!Number.isFinite(level))return;
+    this.speedLevel=Math.max(1,Math.min(5,Math.round(level)));
+    try { localStorage.setItem('timber-camera-speed',String(this.speedLevel)); } catch { /* Session setting remains usable. */ }
   }
   private keyboardBlocked() {
     return (

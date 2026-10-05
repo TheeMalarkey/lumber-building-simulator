@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "tests",
   testMatch: [
     "browser.spec.ts",
+    "camera.spec.ts",
     "hud.spec.ts",
     "persistence.spec.ts",
     "materials.spec.ts",

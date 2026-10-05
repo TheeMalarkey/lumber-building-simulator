@@ -1467,3 +1467,4 @@ dialog .stats-grid strong {
 #logic-hover-click{color:#bfc5b7}
 .viewport>canvas.logic-hovering{cursor:pointer}
 #wire-selection-panel{position:absolute;left:16px;bottom:94px;width:min(320px,calc(100vw - 32px));padding:16px;z-index:12}#wire-selection-panel p{font-size:12px;line-height:1.5;color:#c2c8b8;margin:8px 0}#wire-selection-panel button{padding:8px}
+.camera-speed-control{display:flex;align-items:center;gap:10px;min-width:0}.camera-speed-control input{width:120px;max-width:30vw;accent-color:#546b45}.camera-speed-control output{min-width:34px;font-variant-numeric:tabular-nums;white-space:nowrap}
