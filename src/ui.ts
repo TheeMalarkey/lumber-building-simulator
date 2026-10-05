@@ -55,7 +55,7 @@ export function shell() {
 <div class="hud-corner"><button id="menu-tool" aria-label="Project menu" class="hud-tool" aria-expanded="false" aria-controls="project-menu">${icon("cube")}<strong>TIMBER</strong>${icon("chevron")}</button><span id="save-state" class="save-state">Local workspace</span></div>
 <aside id="project-menu" class="hud-panel project-menu" aria-label="Project menu" hidden>
 <label class="project-label" for="project-name">PROJECT</label><input id="project-name" aria-label="Project name" maxlength="120" value="Woodland studio">
-<div class="menu-actions">${tool("save","save","Save project")}${tool("export","download","Export project")}${tool("import","upload","Import project")}${tool("new","plus","New project")}</div>
+<div class="menu-actions">${tool("save","save","Save project")}${tool("export","download","Export project")}${tool("import","upload","Import project")}${tool("new","plus","New project")}${tool("example","home","Workshop example")}</div>
 <div class="menu-actions">${tool("settings","settings","View settings")}${tool("help","help","Controls & about","H")}</div>
 <div class="menu-stats"><span id="mode-label">Select mode</span><span id="draw-calls">— draw calls</span><span id="scene-label">Creative workspace</span></div>
 </aside>
