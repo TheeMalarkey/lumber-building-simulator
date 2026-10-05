@@ -4,6 +4,7 @@ export default defineConfig({
   testMatch: [
     "browser.spec.ts",
     "camera.spec.ts",
+    "wire-selection.spec.ts",
     "hud.spec.ts",
     "persistence.spec.ts",
     "materials.spec.ts",

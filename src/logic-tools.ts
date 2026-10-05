@@ -5,6 +5,8 @@ import {NEON_COLORS,wireCollarRadius,wireColor,wireLength,wireLimit,wireRouteIss
 import type {Editor} from './editor';
 import {LogicInteraction} from './logic-interaction';
 import type {WireSurface} from './wire-shape';
+import {WireView} from './wire-view';
+import type {Piece} from './world';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
@@ -16,6 +18,7 @@ export class LogicTools {
  private startSurface?:WireSurface;
  private previewPath:Vec3[]=[];
  private interaction:LogicInteraction;
+ private previewView?:WireView;private previewWires?:Wire[];private previewValid?:boolean;private previewRevision=-1;
  constructor(private e:Editor){
   this.interaction=new LogicInteraction(e,()=>!this.wiring,id=>this.activate(id));
   e.view.worldRoot.add(this.guide);this.guide.visible=false;
@@ -24,8 +27,11 @@ export class LogicTools {
   document.querySelectorAll<HTMLButtonElement>('[data-wire-kind]').forEach(b=>b.onclick=()=>{if(this.start)return;this.style=b.dataset.wireKind==='neon'?{kind:'neon',color:this.style.color??'white'}:{kind:'wire'};this.status();});
   $('wire-colors').replaceChildren(...Object.entries(NEON_COLORS).map(([id,c])=>{const b=document.createElement('button');b.dataset.wireColor=id;b.title=c.label+(id==='pink'?' · Bright Gift':'')+' neon';b.setAttribute('aria-label',b.title);b.style.setProperty('--wire-color','#'+c.hex.toString(16).padStart(6,'0'));b.onclick=()=>{if(this.start)return;this.style={kind:'neon',color:id as NeonColor};this.status();};return b;}));
   $('wire-remove').onclick=()=>this.removeSelected();
-  $('delete-wire').onclick=()=>this.removeSelected();
-  $('close-wire-selection').onclick=()=>this.clearSelection();
+  $('delete-wire').onclick=()=>e.remove();
+  $('close-wire-selection').onclick=()=>e.pickSelection(null);
+  $('copy-wires').onclick=()=>e.move(true);$('move-wires').onclick=()=>e.move();
+  $('rotate-wires').onclick=()=>e.rotate(1);$('tilt-wires').onclick=()=>e.rotate(0);
+  $('wire-axis-copy-toggle').onchange=event=>{e.copyWithArrows=(event.target as HTMLInputElement).checked;e.inspect();};
   $('logic-action').onclick=()=>this.activate();
   $('logic-timing').onchange=()=>{const p=e.selectedPieces[0];if(!p)return;e.world.execute([{before:p,after:{...p,timing:Number(($('logic-timing') as HTMLSelectElement).value)}}]);this.inspect();};
   $('logic-ports').onclick=event=>{const port=(event.target as HTMLElement).closest<HTMLButtonElement>('[data-port]')?.dataset.port;if(port&&e.selected)this.begin({piece:e.selected,port});};
@@ -42,10 +48,6 @@ export class LogicTools {
   });
   window.addEventListener('keydown',event=>{
    if((event.target as HTMLElement).matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
-   if(!this.wiring&&this.selectedWire&&['Delete','Backspace','Escape'].includes(event.code)){
-    event.preventDefault();event.stopImmediatePropagation();
-    if(event.code==='Escape')this.clearSelection();else this.removeSelected();return;
-   }
    if(this.wiring&&['Escape','Backspace','Delete','Enter'].includes(event.code)){
     event.preventDefault();event.stopImmediatePropagation();
     if(event.code==='Escape'){if(this.start)this.cancel();else this.toggle(false);}
@@ -56,19 +58,35 @@ export class LogicTools {
   },true);
  }
  private surfacePoint(point:Vec3,normal:Vec3):Vec3{return point.map((v,i)=>v+normal[i]*(wireCollarRadius(this.style)+.005)) as Vec3;}
- clearSelection(){this.selectedWire=null;this.e.view.logic.wires.select(null);$('wire-selection-panel').hidden=true;}
- selectAt(x:number,y:number){
+ clearSelection(){this.selectedWire=null;this.e.wireSelection.clear();this.e.view.logic.wires.select(null);$('wire-selection-panel').hidden=true;}
+ pickWireAt(x:number,y:number){
   const hit=this.e.view.pick(x,y),wire=this.e.view.logic.wires.pick(this.e.view.raycaster);
   // An actual visible surface wins over the screen-space placement snap radius.
   const id=wire ? !hit||wire.distance<=new Vector3(...hit.point).distanceTo(this.e.view.camera.camera.position)+.001 ? wire.id : null
     : hit?.id ? null : this.hitWire(x,y)?.id;
-  if(!id)return false;
-  const selected=this.e.world.wires.find(w=>w.id===id);if(!selected)return false;
-  this.e.pickSelection(null);this.e.panel('build-panel',false);
-  this.selectedWire=id;this.e.view.logic.wires.select(id);
-  $('wire-selection-name').textContent=(selected.kind==='neon'?NEON_COLORS[selected.color??'white'].label+' neon':'Wire')+' selected';
-  $('wire-selection-length').textContent=`${wireLength(wirePath(selected,this.e.world.pieces)).toFixed(2)} studs · Delete / Backspace to remove`;
-  $('wire-selection-panel').hidden=false;return true;
+  return id&&this.e.world.wires.some(w=>w.id===id)?id:null;
+ }
+ selectAt(x:number,y:number){
+  const id=this.pickWireAt(x,y);if(!id)return false;
+  this.e.pickSelections([],[id]);this.e.panel('build-panel',false);return true;
+ }
+ showPreview(wires:Wire[],pieces:Map<string,Piece>,valid=true){
+  if(!wires.length){if(this.previewView)this.previewView.root.visible=false;this.previewWires=undefined;return;}
+  if(!this.previewView){this.previewView=new WireView();this.previewView.root.remove(...this.previewView.lights);this.e.view.worldRoot.add(this.previewView.root);}
+  this.previewView.root.visible=true;
+  if(this.previewWires===wires&&this.previewValid===valid&&this.previewRevision===this.e.world.revision)return;
+  this.previewWires=wires;this.previewValid=valid;this.previewRevision=this.e.world.revision;
+  this.previewView.rebuild(wires,pieces);this.previewView.preview(valid);
+ }
+ private selectionUI(){
+  const wires=this.e.selectedWires;this.e.view.logic.wires.selectMany(this.e.placing?[]:this.e.wireSelection);
+  $('wire-selection-panel').hidden=this.wiring||!wires.length||!!this.e.selectedPieces.length||this.e.placing;
+  if(!wires.length)return;
+  $('wire-selection-name').textContent=wires.length>1?`${wires.length} wires selected`:(wires[0].kind==='neon'?NEON_COLORS[wires[0].color??'white'].label+' neon':'Wire')+' selected';
+  const length=wires.reduce((sum,w)=>sum+wireLength(wirePath(w,this.e.world.pieces)),0);
+  $('wire-selection-length').textContent=`${length.toFixed(2)} studs · Ctrl-click or Ctrl-drag to select more`;
+  $('delete-wire').textContent=wires.length>1?'Delete wires':'Delete wire';
+  ($('wire-axis-copy-toggle') as HTMLInputElement).checked=this.e.copyWithArrows;
  }
  private removeSelected(){
   if(!this.selectedWire)return;
@@ -170,6 +188,7 @@ export class LogicTools {
   this.inspect();
  }
  inspect(){
+  this.selectionUI();
   const pieces=this.e.selectedPieces,p=pieces.length===1?pieces[0]:undefined,ports=p?portsFor(p.item):[];
   $('logic-controls').hidden=!ports.length||this.e.placing;
   if(!p||!ports.length)return;

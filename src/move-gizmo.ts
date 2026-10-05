@@ -36,9 +36,9 @@ export class MoveGizmo {
     this.root.visible=false;
   }
   setPieces(pieces: readonly Piece[]) {
-    this.root.visible=pieces.length>0;
-    if (pieces.length) this.root.position.fromArray(selectionBounds(pieces).center);
+    this.setCenter(pieces.length?selectionBounds(pieces).center:null);
   }
+  setCenter(center:Vec3|null){this.root.visible=!!center;if(center)this.root.position.fromArray(center);}
   update(camera: PerspectiveCamera, height: number) {
     if (!this.root.visible) return;
     const center=this.root.position.clone().applyMatrix4(camera.matrixWorldInverse);

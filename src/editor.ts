@@ -18,10 +18,13 @@ import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateS
 import { snapBlueprintOnSurface } from "./collision";
 import type { AxisDrag } from "./move-gizmo";
 import { PathBuilder } from "./path-builder";
+import {selectedAssembly,assemblyAnchors,assemblyBounds,transformAssembly,rotateAssembly,placeAssemblyOnSurface,copyAssembly,assemblyIssue,selectWiresInRectangle,type Assembly} from './assembly';
+import type {Wire} from './logic-ports';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
 const OUTSIDE_PLOTS_MESSAGE = "The entire blueprint must stay inside active plots. Expand your land first.";
+const selectionLabel=(pieces:number,wires:number)=>[pieces?`${pieces} blueprint${pieces===1?'':'s'}`:'',wires?`${wires} wire${wires===1?'':'s'}`:''].filter(Boolean).join(' · ');
 export class Editor {
   world = new World();
   view: Viewport;
@@ -36,13 +39,17 @@ export class Editor {
   category = "All pieces";
   search = "";
   selection = new Set<string>();
+  wireSelection=new Set<string>();
+  get selectedWires(){return this.world.wires.filter(w=>this.wireSelection.has(w.id));}
+  get hasSelection(){return !!(this.selection.size||this.wireSelection.size);}
   get selected(): string | null { return this.selection.values().next().value ?? null; }
-  set selected(id: string | null) { this.selection.clear(); if (id) this.selection.add(id); }
+  set selected(id: string | null) { this.selection.clear();this.wireSelection.clear(); if (id) this.selection.add(id); }
   get selectedPieces(): Piece[] {
     return [...this.selection].map(id => this.world.pieces.get(id)).filter((p): p is Piece => !!p);
   }
-  groupPlacement: { source: Piece[]; copy: boolean; ignore: Set<string> } | null = null;
+  groupPlacement: { source: Piece[]; wires:Wire[]; copy: boolean; ignore: Set<string> } | null = null;
   groupPreview: Piece[] = [];
+  groupWirePreview:Wire[]=[];
   placing = false;
   moving: string | null = null;
   ghost: Piece | null = null;
@@ -174,7 +181,8 @@ export class Editor {
   }
   inspect() {
     const pieces = this.selectedPieces;
-    const multi = pieces.length > 1;
+    const wireCount=this.wireSelection.size;
+    const multi = pieces.length+wireCount > 1;
     const finishPieces=this.groupPlacement
       ? this.groupPreview.length ? this.groupPreview : this.groupPlacement.source : pieces;
     const woodPieces=finishPieces.filter(p=>!ITEMS.get(p.item)!.fixedMaterial);
@@ -207,11 +215,11 @@ export class Editor {
     ($("piece-preview") as HTMLImageElement).src = this.thumbnails.get(
       item.id,
     )!;
-    $("piece-name").textContent = multi ? `${pieces.length} blueprints selected` : item.name;
-    $("piece-size").textContent = multi ? "Rotate, tilt, move or finish together" : (item.dimensionsEstimated ? "≈ " : "") + item.size.join(" × ") + " studs";
+    $("piece-name").textContent = wireCount||this.groupPlacement?.wires.length ? selectionLabel(pieces.length,wireCount||this.groupPlacement?.wires.length||0) : multi ? `${pieces.length} blueprints selected` : item.name;
+    $("piece-size").textContent = multi||wireCount ? "Rotate, tilt, move or copy together" : (item.dimensionsEstimated ? "≈ " : "") + item.size.join(" × ") + " studs";
     $("piece-category").textContent = multi ? "GROUP SELECTION" : item.category.toUpperCase();
-    $("piece-preview").hidden = multi;
-    const fixedFinish=multi ? !woodPieces.length : !!item.fixedMaterial;
+    $("piece-preview").hidden = multi||!!wireCount||!!this.groupPlacement?.wires.length;
+    const fixedFinish=wireCount||this.groupPlacement?.wires.length ? !woodPieces.length : multi ? !woodPieces.length : !!item.fixedMaterial;
     $("wood-picker").hidden = fixedFinish;
     const lights=pieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting');
     $("light-controls").hidden=this.placing || !lights.length;
@@ -221,8 +229,8 @@ export class Editor {
     $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
     $("place-selected").hidden = multi;
     $("selection-hint").hidden = !multi;
-    $("selection-count").hidden = !pieces.length;
-    $("selection-count").textContent = `${pieces.length} selected`;
+    $("selection-count").hidden = !this.hasSelection;
+    $("selection-count").textContent = wireCount?`${selectionLabel(pieces.length,wireCount)} selected`:`${pieces.length} selected`;
     $("wood-name").textContent = mixedWood ? "Mixed woods" : WOOD_MAP.get(displayedWood)!.name;
     document
       .querySelectorAll<HTMLElement>("[data-wood]")
@@ -247,16 +255,16 @@ export class Editor {
     this.view.setPlots(this.world.plots ?? [12]);
     $("plot-status").textContent = `${this.world.plots?.length ?? 1} / 25 plots`;
     for (const id of this.selection) if (!this.world.pieces.has(id)) this.selection.delete(id);
+    const wireIds=new Set(this.world.wires.map(w=>w.id));for(const id of this.wireSelection)if(!wireIds.has(id))this.wireSelection.delete(id);
     $("piece-count").textContent =
       `${this.world.pieces.size.toLocaleString()} pieces`;
     ($("undo") as HTMLButtonElement).disabled = !this.world.canUndo;
     ($("redo") as HTMLButtonElement).disabled = !this.world.canRedo;
     for (const id of ["move-tool", "duplicate-tool", "delete-tool"])
-      $<HTMLButtonElement>(id).disabled = !this.selected;
+      $<HTMLButtonElement>(id).disabled = !this.hasSelection;
     this.inspect();
   }
   setMode(placing: boolean) {
-    this.logicTools?.clearSelection();
     if(this.logicTools?.wiring)this.logicTools.toggle(false);
     this.paths.cancel();
     this.held = false;
@@ -271,7 +279,7 @@ export class Editor {
       (placing ? "Place mode" : "Select mode");
     if (placing) {
       $("placing-name").textContent = this.groupPlacement
-        ? `${this.groupPlacement.copy ? "Copy" : "Move"} ${this.groupPlacement.source.length} blueprints`
+        ? `${this.groupPlacement.copy ? "Copy" : "Move"} ${selectionLabel(this.groupPlacement.source.length,this.groupPlacement.wires.length)}`
         : ITEMS.get(this.item)!.name;
       $("welcome-note").hidden = true;
     } else {
@@ -280,6 +288,7 @@ export class Editor {
       this.view.showGroupGhosts([]);
       this.groupPlacement = null;
       this.groupPreview = [];
+      this.groupWirePreview=[];this.logicTools.showPreview([],new Map());
       this.moving = null;
     }
     this.lastPointer = "";
@@ -326,9 +335,10 @@ export class Editor {
   pickSelection(id: string | null) {
     this.pickSelections(id ? [id] : []);
   }
-  pickSelections(ids: Iterable<string>) {
+  pickSelections(ids: Iterable<string>,wireIds:Iterable<string>=[]) {
     this.setMode(false);
     this.selection = new Set([...ids].filter(id => this.world.pieces.has(id)));
+    const currentWires=new Set(this.world.wires.map(w=>w.id));this.wireSelection=new Set([...wireIds].filter(id=>currentWires.has(id)));
     const id = this.selected;
     const p = id ? this.world.pieces.get(id) : null;
     if (p) {
@@ -345,7 +355,10 @@ export class Editor {
     if (!this.placing) return;
     if (this.paths.hasDraft) {this.paths.refresh();return;}
     if (this.held) {
-      if (this.groupPlacement) this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
+      if (this.groupPlacement) {
+        const valid=!this.groupIssue();this.view.showGroupGhosts(this.groupPreview,valid);
+        this.logicTools.showPreview(this.groupWirePreview,assemblyAnchors({pieces:this.groupPreview,wires:this.groupWirePreview},this.world.pieces),valid);
+      }
       else if (this.ghost) {
         this.ghost = {...this.ghost,wood:this.wood,rotation:[...this.rotation]};
         this.view.showGhost(this.ghost,this.valid(this.ghost));
@@ -356,10 +369,14 @@ export class Editor {
     if (this.groupPlacement) {
       if (this.pointer) {
         const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
-        this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
+        if(this.groupPlacement.wires.length){
+          const preview=hit?placeAssemblyOnSurface({pieces:this.groupPlacement.source,wires:this.groupPlacement.wires},hit.point,hit.normal,this.world.pieces,snapMovement(Number($<HTMLInputElement>('elevation').value)||0)):{pieces:[],wires:[]};
+          this.groupPreview=preview.pieces;this.groupWirePreview=preview.wires;
+        }else this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
           snapMovement(Number($<HTMLInputElement>("elevation").value) || 0)) : [];
       }
-      this.view.showGroupGhosts(this.groupPreview, !this.groupIssue());
+      const valid=!this.groupIssue();this.view.showGroupGhosts(this.groupPreview,valid);
+      this.logicTools.showPreview(this.groupWirePreview,assemblyAnchors({pieces:this.groupPreview,wires:this.groupWirePreview},this.world.pieces),valid);
       return;
     }
     if (!this.pointer) return;
@@ -390,6 +407,8 @@ export class Editor {
   }
   syncGizmo() {
     if (this.paths.syncGizmo()) return;
+    const assembly=this.placing?this.held&&this.groupPlacement?{pieces:this.groupPreview,wires:this.groupWirePreview}:null:{pieces:this.selectedPieces,wires:this.selectedWires};
+    if(!this.orbit&&assembly?.wires.length){this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);return;}
     this.view.gizmo.setPieces(this.orbit ? [] : this.placing
       ? this.held ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : []
       : this.selectedPieces);
@@ -397,9 +416,9 @@ export class Editor {
   holdPosition() {
     if (!this.placing) return;
     if (this.held) { this.held=false;this.lastPointer="";this.inspect();this.updateGhost();return; }
-    if (this.groupPlacement && !this.groupPreview.length) this.groupPreview=structuredClone(this.groupPlacement.source);
+    if (this.groupPlacement && !this.groupPreview.length&&!this.groupWirePreview.length){this.groupPreview=structuredClone(this.groupPlacement.source);this.groupWirePreview=structuredClone(this.groupPlacement.wires);}
     if (!this.groupPlacement && !this.ghost && this.selectedPieces[0]) this.ghost=structuredClone(this.selectedPieces[0]);
-    if (this.groupPlacement ? !this.groupPreview.length : !this.ghost) {
+    if (this.groupPlacement ? !this.groupPreview.length&&!this.groupWirePreview.length : !this.ghost) {
       this.toast("Point at a starting position first, then hold it to build in the air.");return;
     }
     this.held=true;this.inspect();this.updateGhost();
@@ -414,10 +433,13 @@ export class Editor {
     if (this.placing) {
       if (!this.held) this.holdPosition();
       if (!this.held) return;
-      if (this.groupPlacement) this.groupPreview=translateSelection(this.groupPreview,delta);
+      if (this.groupPlacement) {
+        const after=transformAssembly({pieces:this.groupPreview,wires:this.groupWirePreview},delta);this.groupPreview=after.pieces;this.groupWirePreview=after.wires;
+      }
       else this.ghost=translateSelection([this.ghost!],delta)[0];
       this.updateGhost();return;
     }
+    if(this.wireSelection.size){const a=selectedAssembly(this.world,this.selectedPieces,this.wireSelection);this.commitAssembly(transformAssembly(a,delta),false);return;}
     const before=this.selectedPieces, after=translateSelection(before,delta), ignore=new Set(this.selection);
     if (!before.length) return;
     const issue=after.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
@@ -427,6 +449,7 @@ export class Editor {
     this.world.execute(after.map((p,i)=>({before:before[i],after:p})));
   }
   groupIssue() {
+    if(this.groupPlacement?.wires.length)return assemblyIssue(this.world,{pieces:this.groupPreview,wires:this.groupWirePreview},this.groupPlacement.copy);
     for (const p of this.groupPreview) {
       const issue = this.world.placementIssue(p, this.groupPlacement!.ignore);
       if (issue) return issue;
@@ -435,7 +458,8 @@ export class Editor {
   }
   place() {
     if (this.groupPlacement) {
-      if (!this.groupPreview.length) return;
+      if (!this.groupPreview.length&&!this.groupWirePreview.length) return;
+      if(this.groupPlacement.wires.length){this.commitAssembly({pieces:this.groupPreview,wires:this.groupWirePreview},this.groupPlacement.copy);return;}
       const issue = this.groupIssue();
       if (issue) {
         this.toast(issue === "below-ground" ? BELOW_GROUND_MESSAGE : issue === "outside-plots"
@@ -476,14 +500,32 @@ export class Editor {
       if (this.held) this.updateGhost();
     }
   }
+  commitAssembly(after:Assembly,copy:boolean){
+    const explicitlySelected=new Set(this.wireSelection);
+    const issue=assemblyIssue(this.world,after,copy);
+    if(issue){this.toast(issue==='below-ground'?BELOW_GROUND_MESSAGE:issue==='outside-plots'?OUTSIDE_PLOTS_MESSAGE:issue==='overlap'?'This selection would overlap another blueprint.':issue);return false;}
+    const result=copy?copyAssembly(after):after;
+    const changes=result.pieces.map(p=>({before:copy?null:this.world.pieces.get(p.id)!,after:p}));
+    const replacements=new Map(result.wires.map(w=>[w.id,w]));
+    const routes=copy?[...this.world.wires,...result.wires]:this.world.moveWireRoutes(changes).map(w=>replacements.get(w.id)??w);
+    if(!this.world.execute(changes,routes))return false;
+    this.pickSelections(result.pieces.map(p=>p.id),result.wires.filter(w=>copy||explicitlySelected.has(w.id)).map(w=>w.id));return true;
+  }
   rotate(axis: number) {
     if (this.groupPlacement) {
+      if(this.groupPlacement.wires.length){
+        const source=rotateAssembly({pieces:this.groupPlacement.source,wires:this.groupPlacement.wires},axis,this.world.pieces);
+        const preview=rotateAssembly({pieces:this.groupPreview,wires:this.groupWirePreview},axis,this.world.pieces);
+        this.groupPlacement.source=source.pieces;this.groupPlacement.wires=source.wires;this.groupPreview=preview.pieces;this.groupWirePreview=preview.wires;
+        this.lastPointer='';this.updateGhost();this.inspect();return;
+      }
       this.groupPlacement.source=rotateSelection(this.groupPlacement.source,axis);
       this.groupPreview=rotateSelection(this.groupPreview,axis);
       this.lastPointer="";
       this.updateGhost();this.inspect();
       return;
     }
+    if(this.wireSelection.size&&!this.placing){this.commitAssembly(rotateAssembly(selectedAssembly(this.world,this.selectedPieces,this.wireSelection),axis,this.world.pieces),false);return;}
     if (this.selectedPieces.length>1 && !this.placing) {
       const before=this.selectedPieces,after=rotateSelection(before,axis),ignore=new Set(this.selection);
       const issue=after.map(p=>this.world.placementIssue(p,ignore)).find(Boolean);
@@ -535,14 +577,15 @@ export class Editor {
   move(copy = false) {
     if (this.groupPlacement) return;
     const pieces = this.selectedPieces;
-    if (pieces.length > 1 || (copy&&pieces.length===1&&this.world.wires.some(w=>[w.from,w.to].some(e=>'piece' in e&&e.piece===pieces[0].id)))) {
-      this.groupPlacement = { source: structuredClone(pieces), copy,
+    const assembly=selectedAssembly(this.world,pieces,this.wireSelection);
+    if (this.wireSelection.size||pieces.length > 1 || (copy&&assembly.wires.length)) {
+      this.groupPlacement = { source: assembly.pieces,wires:assembly.wires, copy,
         ignore: new Set(copy ? [] : pieces.map(p => p.id)) };
       this.ghost = null;
       this.moving = null;
       this.setMode(true);
       this.updateGhost();
-      this.toast(`Place to ${copy ? "copy" : "move"} ${pieces.length} blueprints. Escape cancels.`);
+      this.toast(`Place to ${copy ? "copy" : "move"} ${selectionLabel(pieces.length,assembly.wires.length)}. Escape cancels.`);
       return;
     }
     const p = this.selected ? this.world.pieces.get(this.selected) : null;
@@ -567,9 +610,9 @@ export class Editor {
   }
   remove() {
     const pieces = this.selectedPieces;
-    if (!pieces.length) return;
+    const wireIds=new Set(this.wireSelection);if (!pieces.length&&!wireIds.size) return;
     this.setMode(false);
-    this.world.execute(pieces.map(p => ({ before: p, after: null })));
+    this.world.execute(pieces.map(p => ({ before: p, after: null })),wireIds.size?this.world.wires.filter(w=>!wireIds.has(w.id)):undefined);
     this.pickSelection(null);
   }
   async save() {
@@ -903,10 +946,12 @@ export class Editor {
     let gesture: { pointerId: number; start: [number, number]; dragged: boolean } | null = null;
     type ArrowDrag = {
       pointerId:number; math:AxisDrag; source:Piece[]; preview:Piece[]; placing:boolean; copy:boolean;
+      sourceWires:Wire[];previewWires:Wire[];
       ignore:ReadonlySet<string>; internalOverlap:boolean|null; delta:Vec3|null; revision:number; allowOverlaps:boolean;
     };
     let moveDrag: ArrowDrag | null = null;
     const arrowIssue=(drag:ArrowDrag)=>{
+      if(drag.sourceWires.length)return assemblyIssue(this.world,{pieces:drag.preview,wires:drag.previewWires},drag.copy);
       for(const piece of drag.preview) {
         const issue=this.world.placementIssue(piece,drag.copy ? undefined : drag.ignore);if(issue) return issue;
       }
@@ -922,13 +967,16 @@ export class Editor {
       this.pointer=null;this.lastPointer="";
       if (drag.placing) {
         if (!commit) {
-          if (this.groupPlacement) this.groupPreview=drag.source;
+          if (this.groupPlacement) {this.groupPreview=drag.source;this.groupWirePreview=drag.sourceWires;}
           else this.ghost=drag.source[0];
         }
         this.updateGhost();
       } else {
         this.view.showGroupGhosts([]);
-        if(commit && drag.preview.some((p,i)=>p.position.some((v,j)=>v!==drag.source[i].position[j]))) {
+        this.logicTools.showPreview([],new Map());
+        if(commit && (drag.delta?.some(v=>v!==0)||drag.preview.some((p,i)=>p.position.some((v,j)=>v!==drag.source[i].position[j])))) {
+          if(drag.sourceWires.length)this.commitAssembly({pieces:drag.preview,wires:drag.previewWires},drag.copy);
+          else {
           // Recheck the full final batch before assigning copy IDs and committing.
           const issue=drag.copy ? this.world.placementBatchIssue(drag.preview) : arrowIssue(drag);
           if(issue) this.toast(issue==="below-ground" ? BELOW_GROUND_MESSAGE : issue==="outside-plots" ? OUTSIDE_PLOTS_MESSAGE
@@ -937,6 +985,7 @@ export class Editor {
             const changes=drag.preview.map((p,i)=>({before:drag.copy ? null : drag.source[i],after:drag.copy ? {...p,id:crypto.randomUUID()} : p}));
             const applied=this.world.execute(changes,drag.copy?[...this.world.wires,...this.world.copyWires(drag.source,changes.map(c=>c.after))]:undefined);
             if(applied&&drag.copy) this.pickSelections(changes.map(c=>c.after.id));
+          }
           }
         }
       }
@@ -964,14 +1013,16 @@ export class Editor {
         if (!delta) return;
         if(moveDrag.delta?.every((v,i)=>v===delta[i]) && moveDrag.revision===this.world.revision && moveDrag.allowOverlaps===this.world.allowOverlaps) return;
         moveDrag.delta=delta;moveDrag.revision=this.world.revision;moveDrag.allowOverlaps=this.world.allowOverlaps;
-        moveDrag.preview=translateSelection(moveDrag.source,delta);
+        const assembly=transformAssembly({pieces:moveDrag.source,wires:moveDrag.sourceWires},delta);
+        moveDrag.preview=assembly.pieces;moveDrag.previewWires=assembly.wires;
         if (moveDrag.placing) {
-          if (this.groupPlacement) this.groupPreview=moveDrag.preview;
+          if (this.groupPlacement) {this.groupPreview=moveDrag.preview;this.groupWirePreview=moveDrag.previewWires;}
           else this.ghost=moveDrag.preview[0];
           this.updateGhost();
         } else {
-          this.view.showGroupGhosts(moveDrag.preview,!arrowIssue(moveDrag));
-          this.view.gizmo.setPieces(moveDrag.preview);
+          const valid=!arrowIssue(moveDrag);this.view.showGroupGhosts(moveDrag.preview,valid);
+          if(moveDrag.previewWires.length){this.logicTools.showPreview(moveDrag.previewWires,assemblyAnchors(assembly,this.world.pieces),valid);this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);}
+          else this.view.gizmo.setPieces(moveDrag.preview);
         }
         return;
       }
@@ -1004,9 +1055,10 @@ export class Editor {
         const math=axis!==null ? gizmo.begin(axis,e.clientX,e.clientY,this.view.camera.camera,rect) : null;
         if (math) {
           const source=structuredClone(this.placing ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : this.selectedPieces);
-          if (source.length) {
+          const sourceWires=this.placing?structuredClone(this.groupWirePreview):selectedAssembly(this.world,source,this.wireSelection).wires;
+          if (source.length||sourceWires.length) {
             e.preventDefault();e.stopImmediatePropagation();down=null;selectionClicks=[];
-            moveDrag={pointerId:e.pointerId,math,source,preview:source,placing:this.placing,copy:!this.placing && this.copyWithArrows,
+            moveDrag={pointerId:e.pointerId,math,source,preview:source,sourceWires,previewWires:sourceWires,placing:this.placing,copy:this.placing?this.groupPlacement?.copy??false:this.copyWithArrows,
               ignore:new Set(source.map(p=>p.id)),internalOverlap:null,delta:null,revision:this.world.revision,allowOverlaps:this.world.allowOverlaps};
             this.view.camera.selecting=true;this.view.camera.controls.enabled=false;this.view.camera.keys.clear();
             canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing";
@@ -1052,14 +1104,17 @@ export class Editor {
       const { start, dragged } = gesture;
       endGesture();
       const ids = new Set(this.selection);
+      const wireIds=new Set(this.wireSelection);
       if (dragged) {
         for (const id of selectInRectangle(this.world, this.view.camera.camera,
           canvas.getBoundingClientRect(), start, [e.clientX, e.clientY], this.view.renderDistance)) ids.add(id);
+        for(const id of selectWiresInRectangle(this.world,this.view.camera.camera,canvas.getBoundingClientRect(),start,[e.clientX,e.clientY],this.view.renderDistance))wireIds.add(id);
       } else {
-        const hit = this.view.pick(e.clientX, e.clientY);
-        if (hit?.id) { if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id); }
+        const wire=this.logicTools.pickWireAt(e.clientX,e.clientY);
+        if(wire){if(wireIds.has(wire))wireIds.delete(wire);else wireIds.add(wire);}
+        else {const hit = this.view.pick(e.clientX, e.clientY);if (hit?.id) { if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id); }}
       }
-      this.pickSelections(ids);
+      this.pickSelections(ids,wireIds);
     }, true);
     canvas.addEventListener("pointerup", (e) => {
       if (e.button !== 0 || !down) return;
@@ -1202,6 +1257,7 @@ export class Editor {
     );
   }
   focus() {
+    if(this.wireSelection.size){const b=assemblyBounds({pieces:this.selectedPieces,wires:this.selectedWires},this.world.pieces);this.view.camera.focus(new Vector3(...b.center),Math.max(8,...b.size)*2);return;}
     if (this.selection.size > 1) {
       const b = selectionBounds(this.selectedPieces);
       this.view.camera.focus(new Vector3(...b.center), Math.max(...b.size) * 2);

@@ -273,7 +273,7 @@ export class World {
       to:'piece' in w.to?{piece:ids.get(w.to.piece)!,port:w.to.port}:{point:move(w.to.point)},points:w.points.map(move)}));
   }
 
-  private moveWireRoutes(changes:Change[]):Wire[]{
+  moveWireRoutes(changes:Change[]):Wire[]{
     if(!this.wires.length)return this.wires;
     const moved=new Map(changes.filter(c=>c.before&&c.after&&[...c.before.position,...c.before.rotation].some((v,i)=>v!==[...c.after!.position,...c.after!.rotation][i])).map(c=>[c.before!.id,c]));
     if(!moved.size)return this.wires;

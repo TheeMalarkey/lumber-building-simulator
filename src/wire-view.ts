@@ -47,7 +47,7 @@ export class WireView {
  private tubeParts:Part[]=[];private jointParts:Part[]=[];private glowParts:Part[]=[];
  private buckets=new Map<string,Segment[]>();private powered=new Set<string>();
  private lastLightTime=-Infinity;
- private selected:string|null=null;
+ private selected=new Set<string>();
  private pickMesh=new T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>(this.tubeGeometry,new T.MeshBasicMaterial());
  private selectionColor=new T.Color(0xffdc79);
  constructor(){
@@ -104,7 +104,7 @@ export class WireView {
   this.powered.clear();const color=new T.Color();
   for(const [mesh,parts] of [[this.tubes,this.tubeParts],[this.joints,this.jointParts]] as const){
    if(!mesh)continue;const power=mesh.geometry.getAttribute('wirePower');
-   parts.forEach((p,i)=>{const on=isOn(p.wire.id);if(on)this.powered.add(p.wire.id);color.setHex(wireColor(p.wire,on));if(p.wire.id===this.selected)color.lerp(this.selectionColor,.8);mesh.setColorAt(i,color);power.setX(i,on&&p.wire.kind==='neon'?1:0);});
+   parts.forEach((p,i)=>{const on=isOn(p.wire.id);if(on)this.powered.add(p.wire.id);color.setHex(wireColor(p.wire,on));if(this.selected.has(p.wire.id))color.lerp(this.selectionColor,.8);mesh.setColorAt(i,color);power.setX(i,on&&p.wire.kind==='neon'?1:0);});
    power.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
   }
   if(this.glow){
@@ -114,8 +114,15 @@ export class WireView {
   this.lastLightTime=-Infinity;
  }
  select(id:string|null){
-  if(this.selected===id)return;this.selected=id;
+  this.selectMany(id?[id]:[]);
+ }
+ selectMany(ids:Iterable<string>){
+  const next=new Set(ids);if(next.size===this.selected.size&&[...next].every(id=>this.selected.has(id)))return;this.selected=next;
   const powered=new Set(this.powered);this.paint(wireId=>powered.has(wireId));
+ }
+ preview(valid:boolean){
+  this.material.transparent=true;this.material.opacity=.55;this.material.depthWrite=false;
+  this.selectionColor.setHex(valid?0x93c46e:0xff6654);this.selectMany(this.tubeParts.map(p=>p.wire.id));this.paint(()=>false);
  }
  /** Test the actual parts in build coordinates, independent of render-origin rebasing. */
  pick(raycaster:T.Raycaster){

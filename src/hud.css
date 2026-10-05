@@ -73,7 +73,7 @@
 .game-hud .setting-row input { width: 65px; padding: 5px; height: 30px; text-align: center; margin-left: auto; }
 .game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
 .game-hud .overlap-option:has(input:checked), .game-hud .axis-copy-option:has(input:checked) { color: #d3eca4; }
-.game-hud #axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
+.game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
 .game-hud #snap { font-size: 10px; }
 .game-hud .inspector section { padding: 0; border: 0; }
 .game-hud .coordinates { display: flex; gap: 6px; }

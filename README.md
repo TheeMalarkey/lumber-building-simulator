@@ -34,7 +34,8 @@ The portable ZIP contains the compiled site and a small Node server. Extract it,
 - Enable **Copy with arrows** in a selected piece or group's panel to duplicate it with an axis drag. Release to create the copies and select them for another drag; the originals keep their positions, wood and rotations. Each copy operation undoes in one step. The option starts off and lasts for the session. Step buttons and coordinate fields still move the selection.
 - While placing or copying, press **L** or **Hold position**, then use the arrows to build in the air. Click **Place here** to commit. Repeatedly move up one stud and across one stud to create stairs or overhangs.
 - **Double-click a placed piece** to start moving it, or select it and press **G**. Click to place; **Escape** cancels. **Ctrl+D** duplicates the selected piece, and **Delete** removes it.
-- Hold **Ctrl** (or **Command** on Mac) and click placed blueprints to add/remove individual pieces. **Ctrl + left drag** adds every blueprint whose bounds touch the rectangle, including pieces behind others within view distance. Plain click selects one piece; click empty ground or press **Escape** to clear.
+- In **Select** mode, hold **Ctrl** (or **Command** on Mac) and click blueprints or wires to add/remove them individually. **Ctrl + left drag** adds blueprint bounds and wire segments touching the rectangle, including objects behind others within view distance. Plain click selects one object; click empty ground or press **Escape** to clear.
+- Wire-only and mixed selections support **G / Move**, **Ctrl+D / Duplicate**, **Delete**, rotation, tilt and the **X/Y/Z arrows**. Copy a circuit group to duplicate its internal wiring with new socket connections; wire routes and neon colors stay intact. Explicitly selected wires leading to an unselected component copy with a free end. **Copy with arrows** also works for wires. Delete removes the selected wires and blueprints in one undo action; unselected leads remain when their component is deleted.
 - With a group selected, **G / Move**, **Ctrl+D / Duplicate**, and **Delete** act on the whole group. Moving/copying keeps relative spacing, rotations, and finishes. Any collision, below-ground piece, or out-of-plot piece blocks the whole placement; **Escape** cancels. Each completed group action undoes in one step. **R / Rotate** and **T / Tilt** turn every member around the group’s shared center, preserving their arrangement. Choose a wood finish to apply it to the whole group; **Mixed woods** indicates differing finishes. These controls also adjust move/copy previews without changing the originals until placement. Numeric coordinates remain single-piece controls.
 - **Ctrl+Z / Ctrl+Shift+Z** undo/redo. The toolbar also has these actions.
 - Choose a wood finish for the selected piece and subsequent placements.
@@ -104,7 +105,7 @@ Browser tests use installed Google Chrome and start the dev server if needed. Be
 ## Source layout
 
 - `src/catalog.ts`, `geometry.ts`, `materials.ts`: reference catalog and reusable assets.
-- `src/world.ts`, `placement.ts`, `selection.ts`, `collision.ts`, `solid.ts`: authoritative data, history, bounds and placement.
+- `src/world.ts`, `placement.ts`, `selection.ts`, `assembly.ts`, `collision.ts`, `solid.ts`: authoritative data, history, blueprint/wire selection, bounds and placement.
 - `src/renderer.ts`, `camera.ts`, `move-gizmo.ts`: instancing, streaming, picking and navigation.
 - `src/build-path.ts`, `path-builder.ts`, `path-overlay.ts`: straight run generation, drag gestures and preview guide.
 - `src/logic.ts`, `logic-graph.ts`, `logic-ports.ts`: event-time simulation, dependency ordering, sockets and wire topology.
