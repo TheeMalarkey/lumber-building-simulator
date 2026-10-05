@@ -1,6 +1,6 @@
 # Timber Studio
 
-A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 100 placeable items: 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures and 12 logic components. Build wired circuits, use 20 wood finishes, explore with free and walking cameras, and save editable local projects.
+A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 100 placeable items: 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures and 12 logic components. Delay and Sustain faces show travelling signal bands and draining power meters reconstructed from in-game footage. Build wired circuits, use 20 wood finishes, explore with free and walking cameras, and save editable local projects.
 
 **[Open Timber Studio in your browser](https://theemalarkey.github.io/lumber-building-simulator/)** — no installation required.
 

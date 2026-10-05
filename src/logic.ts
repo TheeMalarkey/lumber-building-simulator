@@ -7,7 +7,8 @@ export function gateOutput(item:string,a:boolean,b=false){
  switch(item){case 'and-gate':return a&&b;case 'or-gate':return a||b;case 'xor-gate':return a!==b;
  case 'nand-gate':return !(a&&b);case 'nor-gate':return !(a||b);case 'xnor-gate':return a===b;case 'signal-inverter':return !a;default:return false;}
 }
-interface Timer {input:boolean;output:boolean;hold:number;events:{at:number;on:boolean}[];setting:number}
+interface Timer {input:boolean;output:boolean;hold:number;events:{at:number;on:boolean}[];history:{at:number;on:boolean}[];setting:number}
+export interface TimerDisplay {input:boolean;mask:number;level:number;nextChange:number}
 interface Net {ports:{piece:string;port:Port}[];wires:string[]}
 /** Event-time simulation, matching the fundamental Circuit Workbench rules.
  * Rendering frames never act as electrical clock ticks. */
@@ -24,6 +25,24 @@ export class Circuit {
  input(id:string,port='in'){return this.inputs.get(portKey(id,port))??false;}
  connected(id:string,port='in'){return this.attached.has(portKey(id,port));}
  wireOn(id:string){return this.powered.has(id);}
+ /** Runtime face data uses circuit time; reading it never advances a signal. */
+ timerDisplay(id:string):TimerDisplay|null{
+  const t=this.timers.get(id);if(!t)return null;
+  if(this.pieces.get(id)!.item==='signal-sustain'){
+   const remaining=t.input?t.setting*TICK_MS:Math.max(0,t.hold-this.time);
+   return {input:t.input,mask:0,level:remaining/(12*TICK_MS),nextChange:!t.input&&remaining>0?this.time:Infinity};
+  }
+  let mask=0,nextChange=Infinity;
+  for(let i=0;i<12;i++){
+   const sample=this.time-i*TICK_MS;let on=false;
+   for(const edge of t.history){
+    if(edge.at<=sample+1e-7)on=edge.on;
+    const at=edge.at+i*TICK_MS;if(at>this.time+1e-7)nextChange=Math.min(nextChange,at);
+   }
+   if(on)mask|=1<<i;
+  }
+  return {input:t.input,mask,level:0,nextChange};
+ }
  configure(pieces:Piece[],wires:Wire[]){
   const nodes=pieces.filter(p=>portsFor(p.item).length);
   const sameTopology=this.wires===wires&&this.pieces.size===nodes.length&&nodes.every(p=>{const old=this.pieces.get(p.id);return old?.item===p.item&&old.position.every((v,i)=>v===p.position[i])&&old.rotation.every((v,i)=>v===p.rotation[i]);});
@@ -32,7 +51,7 @@ export class Circuit {
   for(const id of this.pulses.keys())if(!this.pieces.has(id))this.pulses.delete(id);
   for(const id of this.plates)if(!this.pieces.has(id))this.plates.delete(id);
   for(const p of this.pieces.values())if(p.item==='signal-delay'||p.item==='signal-sustain'){
-   if(!this.timers.has(p.id))this.timers.set(p.id,{input:false,output:false,hold:0,events:[],setting:p.timing??1});
+   if(!this.timers.has(p.id))this.timers.set(p.id,{input:false,output:false,hold:0,events:[],history:[],setting:p.timing??1});
   }
   if(sameTopology){for(const component of this.components)component.nodes=component.nodes.map(p=>this.pieces.get(p.id)!);this.settle();return;}
   this.wires=wires;this.topologyBuilds++;
@@ -99,7 +118,11 @@ export class Circuit {
   }
   let state=this.signals(out),timingChanged=false;
   for(const [id,t] of this.timers){const input=state.inputs.get(portKey(id,'in'))??false;if(input===t.input||this.unstable.has(id))continue;t.input=input;
-   if(this.pieces.get(id)!.item==='signal-delay')t.events.push({at:this.time+t.setting*TICK_MS,on:input});
+   if(this.pieces.get(id)!.item==='signal-delay'){
+    t.events.push({at:this.time+t.setting*TICK_MS,on:input});
+    if(t.history.at(-1)?.at===this.time)t.history[t.history.length-1].on=input;
+    else t.history.push({at:this.time,on:input});
+   }
    else {t.hold=input?0:this.time+(t.setting===1?0:t.setting*TICK_MS);const next=input||t.hold>this.time;if(out.get(id)!==next){out.set(id,next);timingChanged=true;}}
   }
   this.outputs=out;state=this.signals(out);this.inputs=state.inputs;this.powered=state.powered;this.version++;
@@ -116,6 +139,11 @@ export class Circuit {
    for(const [id,at] of this.pulses)if(at<=this.time)this.pulses.delete(id);
    for(const t of this.timers.values())while(t.events[0]?.at<=this.time)t.output=t.events.shift()!.on;
    this.settle();
+  }
+  // Keep the last baseline edge plus the meter's 2.4-second window.
+  for(const t of this.timers.values()){
+   let remove=0;while(t.history[remove+1]?.at<=this.time-12*TICK_MS)remove++;
+   if(remove)t.history.splice(0,remove);
   }
  }
 }

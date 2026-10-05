@@ -460,6 +460,7 @@ export class Viewport {
     this.logic.tick(now,this.camera.walking?this.camera.walker.position:undefined);
     if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
+    this.logic.updateTimers(this.loaded);
     const camera = this.camera.camera;
     this.logic.wires.updateLights(camera.position,now,this.quality);
     this.gizmo.update(camera, this.element.clientHeight);

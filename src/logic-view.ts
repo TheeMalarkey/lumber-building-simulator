@@ -5,6 +5,7 @@ import {ITEMS,type Vec3} from './catalog';
 import {chunkKey,type World} from './world';
 import {quaternionRotation} from './placement';
 import {WireView} from './wire-view';
+import {TimerFaceView} from './timer-face-view';
 
 /** Shared meshes for wire segments and socket indicators. */
 export class LogicView {
@@ -12,6 +13,8 @@ export class LogicView {
  private displays=new Map<string,string>();
  private revision=-1;private version=-1;private generation=-1;private previous=0;
  wires=new WireView();
+ timerFaces=new TimerFaceView();
+ private timerRevision=-1;private timerGeneration=-1;private timerLoaded=new Set<string>();
  private sockets?:T.InstancedMesh;private lightingSockets?:T.InstancedMesh;
  private socketGeometry=new T.CircleGeometry(.149,24);
  private socketMarkerGeometry=new T.SphereGeometry(.16,10,6);
@@ -19,7 +22,21 @@ export class LogicView {
  private socketMaterial=new T.MeshBasicMaterial({color:0xffffff,depthWrite:false});
  private topology='';
  wireIds:string[]=[];
- constructor(private world:World){this.root.name='Logic wires and signals';this.root.add(this.wires.root);}
+ constructor(private world:World){this.root.name='Logic wires and signals';this.root.add(this.wires.root,this.timerFaces.root);}
+ /** Limit overlays to the timer instances in resident housing batches. */
+ updateTimers(loaded:ReadonlyMap<string,T.Group>){
+  let changed=this.timerRevision!==this.world.revision||this.timerGeneration!==this.world.generation||this.timerLoaded.size!==loaded.size;
+  if(!changed)for(const key of loaded.keys())if(!this.timerLoaded.has(key)){changed=true;break;}
+  if(changed){
+   const pieces=[];
+   for(const group of loaded.values())for(const mesh of group.children){
+    if(!mesh.name.startsWith('signal-delay|')&&!mesh.name.startsWith('signal-sustain|'))continue;
+    for(const id of mesh.userData.ids as string[]){const p=this.world.pieces.get(id);if(p)pieces.push(p);}
+   }
+   this.timerFaces.rebuild(pieces);this.timerRevision=this.world.revision;this.timerGeneration=this.world.generation;this.timerLoaded=new Set(loaded.keys());
+  }
+  this.timerFaces.update(this.circuit);
+ }
  tick(now:number,feet?:T.Vector3){
   this.lightChanged=false;
   if(this.generation!==this.world.generation){this.generation=this.world.generation;this.circuit=new Circuit();this.displays.clear();this.previous=0;this.version=-1;}
@@ -88,5 +105,5 @@ export class LogicView {
   this.lightingSockets=paintPorts(this.lightingSockets,ports.filter(p=>!this.showSockets&&p.lighting),false);
   for(const mesh of [this.sockets,this.lightingSockets])if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
  }
- dispose(){this.wires.dispose();this.sockets?.dispose();this.lightingSockets?.dispose();this.socketGeometry.dispose();this.socketMarkerGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
+ dispose(){this.timerFaces.dispose();this.wires.dispose();this.sockets?.dispose();this.lightingSockets?.dispose();this.socketGeometry.dispose();this.socketMarkerGeometry.dispose();this.material.dispose();this.socketMaterial.dispose();}
 }
