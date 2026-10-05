@@ -33,10 +33,10 @@ it('discloses combinational feedback and does no work on idle frames',()=>{
  const runs=c.solves;c.advance(100);expect(c.solves).toBe(runs);
  c.configure([node('g','signal-inverter')],[]);expect(c.output('g')).toBe(true);expect(c.unstable.size).toBe(0);
 });
-it('preserves wires in projects and deletes/restores connections atomically',()=>{
+it('preserves wires in projects and detaches/restores sockets atomically',()=>{
  const pieces=[node('a','lever'),node('b','lamp')],wires=[wire('1','a','out','b','in')];
  const parsed=parseProject(JSON.stringify({version:1,name:'Logic',plots:[12],pieces,wires}));expect(parsed.wires).toEqual(wires);
- const w=new World();w.load(pieces,[12],wires);w.execute([{before:pieces[0],after:null}]);expect(w.wires).toHaveLength(0);w.undo();expect(w.wires).toEqual(wires);w.redo();expect(w.wires).toHaveLength(0);
+ const w=new World();w.load(pieces,[12],wires);w.execute([{before:pieces[0],after:null}]);expect(w.wires).toEqual([{...wires[0],from:{point:portPosition(pieces[0],'out')}}]);w.undo();expect(w.wires).toEqual(wires);w.redo();expect(w.wires).toHaveLength(1);expect(w.wires[0].from).toHaveProperty('point');
  expect(()=>parseProject(JSON.stringify({...parsed,wires:[wire('1','a','bad-port','b','in')]}))).toThrow();
 });
 it('settles long acyclic chains without reporting false feedback',()=>{

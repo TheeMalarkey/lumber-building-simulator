@@ -47,6 +47,9 @@ export class WireView {
  private tubeParts:Part[]=[];private jointParts:Part[]=[];private glowParts:Part[]=[];
  private buckets=new Map<string,Segment[]>();private powered=new Set<string>();
  private lastLightTime=-Infinity;
+ private selected:string|null=null;
+ private pickMesh=new T.Mesh<T.BufferGeometry,T.MeshBasicMaterial>(this.tubeGeometry,new T.MeshBasicMaterial());
+ private selectionColor=new T.Color(0xffdc79);
  constructor(){
   this.root.name='Placed wires';this.root.add(...this.lights);
   this.material.onBeforeCompile=shader=>{
@@ -101,7 +104,7 @@ export class WireView {
   this.powered.clear();const color=new T.Color();
   for(const [mesh,parts] of [[this.tubes,this.tubeParts],[this.joints,this.jointParts]] as const){
    if(!mesh)continue;const power=mesh.geometry.getAttribute('wirePower');
-   parts.forEach((p,i)=>{const on=isOn(p.wire.id);if(on)this.powered.add(p.wire.id);mesh.setColorAt(i,color.setHex(wireColor(p.wire,on)));power.setX(i,on&&p.wire.kind==='neon'?1:0);});
+   parts.forEach((p,i)=>{const on=isOn(p.wire.id);if(on)this.powered.add(p.wire.id);color.setHex(wireColor(p.wire,on));if(p.wire.id===this.selected)color.lerp(this.selectionColor,.8);mesh.setColorAt(i,color);power.setX(i,on&&p.wire.kind==='neon'?1:0);});
    power.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
   }
   if(this.glow){
@@ -109,6 +112,22 @@ export class WireView {
    this.glow.count=count;this.glow.instanceMatrix.needsUpdate=true;if(this.glow.instanceColor)this.glow.instanceColor.needsUpdate=true;this.glow.computeBoundingSphere();
   }
   this.lastLightTime=-Infinity;
+ }
+ select(id:string|null){
+  if(this.selected===id)return;this.selected=id;
+  const powered=new Set(this.powered);this.paint(wireId=>powered.has(wireId));
+ }
+ /** Test the actual parts in build coordinates, independent of render-origin rebasing. */
+ pick(raycaster:T.Raycaster){
+  let best:{id:string;distance:number}|null=null;
+  for(const [parts,geometry] of [[this.tubeParts,this.tubeGeometry],[this.jointParts,this.jointGeometry]] as const){
+   this.pickMesh.geometry=geometry;
+   for(const part of parts){
+    this.pickMesh.matrixWorld.copy(part.matrix);
+    const hit=raycaster.intersectObject(this.pickMesh,false)[0];
+    if(hit&&(!best||hit.distance<best.distance))best={id:part.wire.id,distance:hit.distance};
+   }
+  }return best;
  }
  updateLights(camera:T.Vector3,now:number,quality:string){
   if(now-this.lastLightTime<250)return;this.lastLightTime=now;
@@ -121,5 +140,5 @@ export class WireView {
   const nearest=[...candidates.values()].sort((a,b)=>a.distance-b.distance||a.wire.id.localeCompare(b.wire.id)).slice(0,2);
   this.lights.forEach((light,i)=>{const c=nearest[i];light.intensity=c?2.5*Math.min(1,(24-Math.sqrt(c.distance))/8):0;if(c){light.position.copy(c.point);light.color.setHex(wireColor(c.wire,true));}});
  }
- dispose(){for(const m of [this.tubes,this.joints,this.glow]){m?.geometry.dispose();m?.dispose();}this.tubeGeometry.dispose();this.jointGeometry.dispose();this.glowGeometry.dispose();this.material.dispose();this.glowMaterial.dispose();}
+ dispose(){for(const m of [this.tubes,this.joints,this.glow]){m?.geometry.dispose();m?.dispose();}this.pickMesh.material.dispose();this.tubeGeometry.dispose();this.jointGeometry.dispose();this.glowGeometry.dispose();this.material.dispose();this.glowMaterial.dispose();}
 }

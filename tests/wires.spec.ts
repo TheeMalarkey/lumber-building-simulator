@@ -9,6 +9,60 @@ async function xy(page:Page,p:number[]){return page.evaluate(async p=>{const {Ve
 async function click(page:Page,p:number[]){const v=await xy(page,p);await page.mouse.click(v[0],v[1]);}
 const count=(page:Page)=>page.evaluate(()=>(window as any).timber.editor.world.wires.length);
 
+test('Select picks individual wires for button or keyboard deletion and undo',async({page})=>{
+ await setup(page);await page.locator('#wire-done').click();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12],[
+  {id:'regular',kind:'wire',from:{point:[-5,.145,-3]},to:{point:[5,.145,-3]},points:[]},
+  {id:'neon',kind:'neon',color:'cyan',from:{point:[-5,.155,3]},to:{point:[5,.155,3]},points:[]},
+ ]);e.view.sync(true);});
+ await click(page,[0,.145,-3]);
+ await expect(page.locator('#wire-selection-panel')).toBeVisible();
+ await expect(page.locator('#wire-selection-name')).toHaveText('Wire selected');
+ await page.locator('#delete-wire').click();
+ expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.map((w:any)=>w.id))).toEqual(['neon']);
+ await expect(page.locator('#wire-selection-panel')).toBeHidden();
+ await page.keyboard.press('Control+z');expect(await count(page)).toBe(2);
+ await click(page,[0,.155,3]);await expect(page.locator('#wire-selection-name')).toHaveText('Cyan neon selected');
+ await page.keyboard.press('Delete');
+ expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.map((w:any)=>w.id))).toEqual(['regular']);
+ await page.keyboard.press('Control+z');expect(await count(page)).toBe(2);
+ await click(page,[0,.155,3]);await page.keyboard.press('Escape');await page.keyboard.press('Delete');expect(await count(page)).toBe(2);
+});
+
+test('Select picks the front wire at a crossing and respects blueprint occlusion',async({page})=>{
+ await setup(page);await page.locator('#wire-done').click();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12],[
+  {id:'lower',kind:'wire',from:{point:[-5,.145,0]},to:{point:[5,.145,0]},points:[]},
+  {id:'upper',kind:'neon',color:'pink',from:{point:[0,.6,-5]},to:{point:[0,.6,5]},points:[]},
+ ]);e.view.sync(true);e.view.camera.camera.position.set(0,25,.001);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+ await click(page,[0,.6,0]);await page.keyboard.press('Backspace');
+ expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.map((w:any)=>w.id))).toEqual(['lower']);
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.execute([{before:null,after:{id:'cover',item:'large-floor',wood:'oak',position:[0,1,0],rotation:[0,0,0]}}]);e.view.sync(true);});
+ await click(page,[0,1.1,0]);await expect(page.locator('#wire-selection-panel')).toBeHidden();
+ expect(await page.evaluate(()=>(window as any).timber.editor.selected)).toBe('cover');
+ expect(await count(page)).toBe(1);
+});
+
+test('wire picking tolerance does not steal a click on a neighboring blueprint',async({page})=>{
+ await setup(page);await page.locator('#wire-done').click();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
+  {id:'gate',item:'signal-inverter',wood:'oak',position:[0,.5,0],rotation:[0,0,0]},
+ ],[12],[{id:'beside',kind:'wire',from:{point:[-4,.145,.65]},to:{point:[4,.145,.65]},points:[]}]);
+ e.view.sync(true);e.view.camera.camera.position.set(0,30,.001);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+ await click(page,[0,1,.47]);
+ expect(await page.evaluate(()=>(window as any).timber.editor.selected)).toBe('gate');
+ await expect(page.locator('#wire-selection-panel')).toBeHidden();
+});
+
+test('a just-deleted wire cannot be selected before the next render frame',async({page})=>{
+ await setup(page);await page.locator('#wire-done').click();
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12],[{id:'wire',kind:'wire',from:{point:[-5,.145,0]},to:{point:[5,.145,0]},points:[]}]);e.view.sync(true);});
+ await click(page,[0,.145,0]);await expect(page.locator('#wire-selection-panel')).toBeVisible();
+ const point=await xy(page,[0,.145,0]);
+ expect(await page.evaluate(([x,y])=>{const e=(window as any).timber.editor;e.world.execute([],[]);return e.logicTools.selectAt(x,y);},point)).toBe(false);
+ await expect(page.locator('#wire-selection-panel')).toBeHidden();
+});
+
 test('surface routing finishes without a second socket and enforces the full 20-stud route',async({page})=>{
  await setup(page);await click(page,[-8,0,-6]);await click(page,[-8,0,6]);await click(page,[1,0,6]);
  await expect(page.locator('#toast')).toContainText('20');expect(await count(page)).toBe(0);

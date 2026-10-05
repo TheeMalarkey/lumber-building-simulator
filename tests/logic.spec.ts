@@ -20,7 +20,10 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.locator('#logic-action').click();await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
  expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelections(['lever','gate','light']);});
- await page.locator('#delete-tool').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(0);await page.locator('#undo').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
+ const connected=await page.evaluate(()=>(window as any).timber.editor.world.wires);
+ await page.locator('#delete-tool').click();
+ expect(await page.evaluate(()=>{const w=(window as any).timber.editor.world;return {pieces:w.pieces.size,wires:w.wires.length,detached:w.wires.every((wire:any)=>wire.from.point&&wire.to.point)};})).toEqual({pieces:0,wires:2,detached:true});
+ await page.locator('#undo').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires)).toEqual(connected);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-circuit.png'});
  await page.setViewportSize({width:390,height:844});await page.locator('#wire-tool').click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

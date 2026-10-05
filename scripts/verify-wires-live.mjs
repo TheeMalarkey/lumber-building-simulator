@@ -37,9 +37,19 @@ try{
  await page.mouse.click(...xy([7,.5,6]));await expect(page.locator('#piece-name')).toHaveText('Lamp');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · On');
  const fixture={version:1,logicModelVersion:3,name:'Neon signal check',plots:[12],pieces:[{id:'l',item:'lever',wood:'oak',position:[-5,.75,0],rotation:[0,0,0],logicOn:false}],wires:[{id:'n',kind:'neon',color:'pink',from:{piece:'l',port:'out'},to:{point:[5,.18,0]},points:[]}]};
  await load(fixture);await page.mouse.click(...xy([-5,.25,0]));await expect(page.locator('#piece-name')).toHaveText('Lever');await page.locator('#logic-action').click();await expect(page.locator('#logic-status')).toHaveText('Output · On');expect((await exported()).pieces[0].logicOn).toBe(true);
+ await page.locator('#delete-tool').click();
+ const detached=await exported();expect(detached.pieces).toHaveLength(0);expect(detached.wires).toHaveLength(1);expect(detached.wires[0].from.point).toHaveLength(3);expect(detached.wires[0].to).toEqual(fixture.wires[0].to);expect(detached.wires[0].color).toBe('pink');
+ await page.keyboard.press('Control+z');expect((await exported()).wires[0].from).toEqual(fixture.wires[0].from);
+ await page.keyboard.press('Control+Shift+z');expect((await exported()).wires).toEqual(detached.wires);
+ await page.mouse.click(...xy([0,.18,0]));await expect(page.locator('#wire-selection-name')).toHaveText('Pink neon selected');
+ await page.setViewportSize({width:390,height:844});await expect(page.locator('#delete-wire')).toBeInViewport();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.setViewportSize({width:1440,height:960});
+ mkdirSync('release/pages-verification',{recursive:true});await page.screenshot({path:'release/pages-verification/wire-selection-live.png'});
+ await page.locator('#delete-wire').click();expect((await exported()).wires??[]).toHaveLength(0);
+ await page.keyboard.press('Control+z');await page.mouse.click(...xy([0,.18,0]));await page.keyboard.press('Delete');expect((await exported()).wires??[]).toHaveLength(0);
+ await page.keyboard.press('Control+z');await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');expect((await exported()).wires).toEqual(detached.wires);
  await page.locator('#wire-tool').click();await page.locator('[data-wire-kind="neon"]').click();await page.locator('[data-wire-color="pink"]').click();
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/wires-live.png'});
  await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-done')).toBeInViewport();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- expect(errors).toEqual([]);writeFileSync('release/pages-verification/wires-live.json',JSON.stringify({target,errors,debugAPI:false,regularLimit:20,neonLimit:16,neonColors:9,surfaceRouting:true,wireCollision:true,overpass:true,bodyContactIsolated:true,endCapsCarryPower:true,saveReload:true,leverSignal:true,compactFits:true},null,2));
- console.log('Production wires: budgets, colors, collision, overpass, body isolation, end-cap power, save/reload, switching, compact layout and WebGL checks passed.');
+ expect(errors).toEqual([]);writeFileSync('release/pages-verification/wires-live.json',JSON.stringify({target,errors,debugAPI:false,regularLimit:20,neonLimit:16,neonColors:9,surfaceRouting:true,wireCollision:true,overpass:true,bodyContactIsolated:true,endCapsCarryPower:true,individualWireDelete:true,componentDeletePreservesWires:true,deleteUndoRedo:true,saveReload:true,leverSignal:true,compactFits:true},null,2));
+ console.log('Production wires: placement, power, individual selection/deletion, preserved disconnected routes, history, save/reload, compact layout and WebGL checks passed.');
 }finally{await browser.close();}

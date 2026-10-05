@@ -256,6 +256,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
+    this.logicTools?.clearSelection();
     if(this.logicTools?.wiring)this.logicTools.toggle(false);
     this.paths.cancel();
     this.held = false;
@@ -1070,6 +1071,7 @@ export class Editor {
         this.updateGhost();
         this.place();
       } else {
+        if(this.logicTools.selectAt(e.clientX,e.clientY)){selectionClicks=[];return;}
         const hit = this.view.pick(e.clientX, e.clientY);
         selectionClicks = hit?.id ? [...selectionClicks.slice(-1), hit.id] : [];
         this.pickSelection(hit?.id ?? null);

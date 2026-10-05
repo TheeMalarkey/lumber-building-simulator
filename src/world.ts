@@ -1,6 +1,6 @@
 import {Quaternion,Vector3} from "three";
 import {quaternionRotation} from "./placement";
-import {type Wire,validateWires,wireGroups,wirePath,wiresWithinSelection} from "./logic-ports";
+import {type Wire,type Endpoint,endpointPosition,validateWires,wireGroups,wirePath,wiresWithinSelection} from "./logic-ports";
 import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize } from "./placement";
 import { connectedPlots, coveredByPlots, touchesPlot, validatePlots } from "./plots";
@@ -159,7 +159,13 @@ export class World {
   execute(changes: Change[], wires?: Wire[]) {
     if (!changes.length && wires===undefined) return false;
     const deleted=new Set(changes.filter(c=>!c.after).map(c=>c.before!.id));
-    const nextWires=wires??(deleted.size?this.wires.filter(w=>[w.from,w.to].every(e=>!("piece" in e)||!deleted.has(e.piece))):this.moveWireRoutes(changes));
+    let nextWires=wires??this.moveWireRoutes(changes);
+    if(deleted.size){
+      // A removed device leaves its leads in place. Resolve the socket before
+      // applying piece changes, so rotated sockets and undo keep the same route.
+      const detach=(end:Endpoint):Endpoint=>'piece' in end&&deleted.has(end.piece)?{point:endpointPosition(end,this.pieces)}:end;
+      nextWires=nextWires.map(w=>{const from=detach(w.from),to=detach(w.to);return from===w.from&&to===w.to?w:{...w,from,to};});
+    }
     // New typed wires cannot be stretched by moving a single connected device.
     // Legacy routes remain editable; an imported oversized typed route may be
     // shortened or moved rigidly, but cannot be stretched farther.

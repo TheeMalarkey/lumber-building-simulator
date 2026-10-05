@@ -1466,3 +1466,4 @@ dialog .stats-grid strong {
 #logic-hover kbd{padding:1px 5px;color:#f2bc72;border:1px solid #ffffff35;border-radius:3px;font:inherit}
 #logic-hover-click{color:#bfc5b7}
 .viewport>canvas.logic-hovering{cursor:pointer}
+#wire-selection-panel{position:absolute;left:16px;bottom:94px;width:min(320px,calc(100vw - 32px));padding:16px;z-index:12}#wire-selection-panel p{font-size:12px;line-height:1.5;color:#c2c8b8;margin:8px 0}#wire-selection-panel button{padding:8px}
