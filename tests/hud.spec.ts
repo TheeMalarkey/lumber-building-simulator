@@ -50,3 +50,72 @@ test("HUD and scrollable catalog fit compact screens", async ({ page }) => {
     await page.keyboard.press("Escape");
   }
 });
+
+test("Settings and Land are bounded popups with an accessible world and Escape dismissal", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => !!(window as any).timber);
+  for (const [width, height] of [[1440, 960], [390, 844], [844, 390]]) {
+    await page.setViewportSize({ width, height });
+    const canvas = page.locator("#viewport>canvas");
+    await expect.poll(() => canvas.boundingBox()).toEqual({ x: 0, y: 0, width, height });
+    const worldBounds = await canvas.boundingBox();
+    for (const name of ["settings", "land"] as const) {
+      if (name === "settings") {
+        await page.locator("#menu-tool").click();
+        await page.locator("#settings").click();
+      } else await page.locator("#land-tool").click();
+      const popup = page.locator("#modal");
+      await expect(popup).toBeVisible();
+      expect(await popup.evaluate(el => el.matches(":modal"))).toBe(false);
+      const bounds = (await popup.boundingBox())!;
+      expect(bounds.width).toBeLessThanOrEqual(360);
+      expect(bounds.height).toBeLessThanOrEqual(height - 140);
+      expect(bounds.x).toBeGreaterThanOrEqual(8);
+      expect(bounds.y).toBeGreaterThanOrEqual(56);
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(width - 8);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(height - 76);
+      expect(await canvas.boundingBox()).toEqual(worldBounds);
+      // Native modal dialogs make every world control inert. Popups must not.
+      await page.locator("#top").click();
+      await expect(popup).toBeVisible();
+      await page.locator("#close-modal").scrollIntoViewIfNeeded();
+      await expect(page.locator("#close-modal")).toBeInViewport();
+      await page.keyboard.press("Escape");
+      await expect(popup).toBeHidden();
+      await expect(page.locator(name === "settings" ? "#menu-tool" : "#land-tool")).toBeFocused();
+    }
+  }
+});
+
+test("popup switching and close controls keep destructive confirmations modal", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => !!(window as any).timber);
+  await page.locator("#land-tool").click();
+  await page.locator("#menu-tool").click();
+  await expect(page.locator("#modal")).toBeHidden();
+  await page.locator("#settings").click();
+  await page.locator("#popup-close").click();
+  await expect(page.locator("#modal")).toBeHidden();
+  await page.locator("#land-tool").click();
+  await page.locator("#land-tool").click();
+  await expect(page.locator("#modal")).toBeHidden();
+  await page.locator("#land-tool").click();
+  await page.locator("#wire-tool").click();
+  await expect(page.locator("#modal")).toBeHidden();
+  await expect(page.locator("#wiring-panel")).toBeVisible();
+  await page.locator("#select-tool").click();
+  await page.locator("#menu-tool").click();
+  await page.locator("#settings").click();
+  await page.locator("#walk-tool").click();
+  await expect(page.locator("#modal")).toBeHidden();
+  expect(await page.evaluate(() => (window as any).timber.editor.view.camera.keyboardBlocked())).toBe(false);
+  await page.locator("#walk-tool").click();
+  await page.locator("#menu-tool").click();
+  await page.locator("#settings").click();
+  await page.locator("#load-demo").scrollIntoViewIfNeeded();
+  await page.locator("#load-demo").click();
+  await expect(page.locator("#confirm-action")).toBeVisible();
+  expect(await page.locator("#modal").evaluate(el => el.matches(":modal"))).toBe(true);
+  await page.locator("#cancel-action").click();
+  await expect(page.locator("#modal")).toBeHidden();
+});

@@ -1,14 +1,33 @@
-/* Overlay controls leave the canvas size unchanged when panels open. */
+/* Shared neutral surfaces. Simple alpha compositing avoids blurring the 3D scene. */
+:root {
+  --hud-bg: rgb(18 18 18 / 80%);
+  --hud-border: rgb(255 255 255 / 18%);
+  --hud-text: #f5f5f5;
+  --hud-muted: #c2c2c2;
+  --hud-active: #e0e0e0;
+  --hud-selected: rgb(64 64 64 / 80%);
+  --hud-hover: rgb(255 255 255 / 10%);
+  --hud-field: rgb(0 0 0 / 26%);
+  --paper: var(--hud-bg);
+  --border: var(--hud-border);
+  --muted: var(--hud-muted);
+  --accent: var(--hud-active);
+  --ink: var(--hud-text);
+  --green: var(--hud-active);
+  color: var(--hud-text);
+  background: #181818;
+  color-scheme: dark;
+}
 #app { display: block; }
-.game-hud { --hud-bg: #202720ed; --hud-border: #ffffff24; --hud-text: #f1f1e9; --hud-muted: #b9c0b2; --hud-active: #a6bc7d; position: relative; display: block; width: 100%; height: 100dvh; color: var(--hud-text); font-size: 12px; }
+.game-hud { position: relative; display: block; width: 100%; height: 100dvh; color: var(--hud-text); font-size: 12px; }
 .game-hud .viewport { position: absolute; inset: 0; width: 100%; height: 100%; }
 .game-hud button { color: inherit; border-radius: 4px; }
 .game-hud button:hover:not(:disabled) { background: #ffffff16; }
-.game-hud button.active, .game-hud button.active:hover { color: #edf9d9; background: #536a40; }
+.game-hud button.active, .game-hud button.active:hover { color: var(--hud-text); background: var(--hud-selected); }
 .game-hud kbd { background: #ffffff09; border-color: #ffffff26; color: var(--hud-muted); font-size: 10px; border-radius: 3px; }
 .game-hud .icon-btn { width: 32px; height: 32px; flex-shrink: 0; }
-.game-hud input { color: var(--hud-text); background: #1119108c; border: 1px solid var(--hud-border); border-radius: 3px; }
-.game-hud input::placeholder { color: #b0b9a7; }
+.game-hud input { color: var(--hud-text); background: var(--hud-field); border: 1px solid var(--hud-border); border-radius: 3px; }
+.game-hud input::placeholder { color: var(--hud-muted); }
 .hud-panel, .build-toolbar, .hud-corner > button { background: var(--hud-bg); border: 1px solid var(--hud-border); border-radius: 6px; box-shadow: 0 4px 16px #0003; }
 .hud-panel { position: absolute; z-index: 5; }
 .hud-tool { display: flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 11px; white-space: nowrap; font-size: 12px; }
@@ -27,8 +46,8 @@
 .game-hud .build-toolbar { position: absolute; z-index: 6; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; padding: 5px; }
 .build-toolbar > i { height: 22px; width: 1px; background: var(--hud-border); margin: 0 3px; }
 .game-hud .view-controls { top: 16px; right: 16px; flex-direction: row; gap: 4px; }
-.game-hud .view-controls .icon-btn { background: #202720dc; border: 1px solid var(--hud-border); color: var(--hud-text); box-shadow: none; }
-.game-hud .view-controls .active { background: #536a40; }
+.game-hud .view-controls .icon-btn { background: var(--hud-bg); border: 1px solid var(--hud-border); color: var(--hud-text); box-shadow: none; }
+.game-hud .view-controls .active { background: var(--hud-selected); }
 .hud-status, .hud-fps { position: absolute; bottom: 9px; font-size: 10px; color: #fff; text-shadow: 0 1px 4px #000; pointer-events: none; }
 .hud-status { left: 16px; display: flex; gap: 14px; }
 .hud-fps { right: 16px; }
@@ -36,15 +55,15 @@
 .game-hud .catalog-heading { padding: 12px 14px 4px; align-items: center; }
 .game-hud .catalog-heading h1 { font-size: 16px; color: var(--hud-text); margin: 0; font-weight: 650; letter-spacing: 0; }
 .game-hud #catalog-total { font-size: 10px; background: #ffffff12; color: var(--hud-muted); padding: 3px 6px; border-radius: 3px; margin-left: 6px; }
-.game-hud .search { margin: 8px 14px; border: 1px solid var(--hud-border); background: #1119108c; border-radius: 4px; padding: 9px 10px; color: var(--hud-muted); }
+.game-hud .search { margin: 8px 14px; border: 1px solid var(--hud-border); background: var(--hud-field); border-radius: 4px; padding: 9px 10px; color: var(--hud-muted); }
 .game-hud .search input { border: 0; background: none; font-size: 12px; padding: 0; }
 .game-hud #categories { display: flex; flex-wrap: wrap; overflow: visible; gap: 4px; padding: 4px 14px; }
-.game-hud .category { padding: 7px 9px; font-size: 11px; color: #c3cbbb; border: 1px solid transparent; }
-.game-hud .category.active { background: #536a40; border-color: #a5bb7955; color: #fff; }
+.game-hud .category { padding: 7px 9px; font-size: 11px; color: var(--hud-muted); border: 1px solid transparent; }
+.game-hud .category.active { background: var(--hud-selected); border-color: var(--hud-border); color: #fff; }
 .game-hud .library-caption { padding: 10px 15px; font-size: 9px; color: var(--hud-muted); }
-.game-hud .catalog-grid { padding: 0 14px 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 130px; gap: 8px; align-content: start; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #728266 transparent; }
+.game-hud .catalog-grid { padding: 0 14px 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 130px; gap: 8px; align-content: start; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #888 transparent; }
 .game-hud .catalog-card { min-height: 130px; height: 130px; text-align: left; background: #ffffff08; border: 1px solid var(--hud-border); padding: 0 0 8px; border-radius: 4px; overflow: hidden; }
-.game-hud .catalog-card.selected { border-color: var(--hud-active); background: #a6bc7d14; }
+.game-hud .catalog-card.selected { border-color: var(--hud-active); background: #ffffff0d; }
 .game-hud .card-image { height: 79px; background: radial-gradient(ellipse at center, #ffffff10, transparent); }
 .game-hud .card-name { color: var(--hud-text); font-size: 11px; min-height: 28px; line-height: 1.25; }
 .game-hud .card-size { color: var(--hud-muted); font-size: 9px; padding-top: 2px; }
@@ -64,16 +83,16 @@
 .game-hud .wood-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; padding: 12px 1px 2px; }
 .game-hud .wood-swatch { height: 31px; width: 100%; background: var(--wood); border: 2px solid transparent; }
 .game-hud .wood-swatch:hover { background: var(--wood); border-color: #fff9; }
-.game-hud .wood-swatch.active { background: var(--wood); border-color: #d3eca4; }
+.game-hud .wood-swatch.active { background: var(--wood); border-color: var(--hud-text); }
 .game-hud .wood-swatch svg { color: #fff; filter: drop-shadow(0 1px 2px #000); }
 .game-hud .rotate-buttons { margin: 0; display: flex; gap: 8px; }
 .game-hud .rotate-buttons button { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; min-height: 34px; border: 1px solid var(--hud-border); font-size: 11px; }
 .game-hud .rotate-buttons svg { width: 15px; }
 .game-hud .setting-row { display: flex; gap: 9px; margin: 0; color: var(--hud-muted); font-size: 11px; }
 .game-hud .setting-row input { width: 65px; padding: 5px; height: 30px; text-align: center; margin-left: auto; }
-.game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
-.game-hud .overlap-option:has(input:checked), .game-hud .axis-copy-option:has(input:checked) { color: #d3eca4; }
-.game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
+.game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
+.game-hud .overlap-option:has(input:checked), .game-hud .axis-copy-option:has(input:checked) { color: var(--hud-text); }
+.game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 .game-hud #snap { font-size: 10px; }
 .game-hud .inspector section { padding: 0; border: 0; }
 .game-hud .coordinates { display: flex; gap: 6px; }
@@ -85,15 +104,15 @@
 #coordinates-details summary, #step-buttons-details summary { cursor: pointer; font-size: 10px; color: var(--hud-muted); margin-bottom: 6px; }
 #preview-controls { display: flex; gap: 6px; }
 #hold-position { flex: 1; }
-#hold-position[aria-pressed="true"] { background: #536a40; }
-.game-hud .coordinates label { min-width: 0; flex: 1; color: var(--hud-muted); background: #1119108c; border: 1px solid var(--hud-border); padding: 5px; }
+#hold-position[aria-pressed="true"] { background: var(--hud-selected); }
+.game-hud .coordinates label { min-width: 0; flex: 1; color: var(--hud-muted); background: var(--hud-field); border: 1px solid var(--hud-border); padding: 5px; }
 .game-hud .coordinates input { width: 100%; border: 0; padding: 4px 0; background: none; font-size: 11px; }
 #selection-actions { display: flex; align-items: center; gap: 4px; }
-.game-hud .primary-btn { margin: 0; flex: 1; width: auto; padding: 9px 7px; background: #536a40; color: #fff; font-size: 11px; }
-.game-hud .placement-bar { left: 16px; bottom: 88px; transform: none; gap: 12px; padding: 9px 12px; background: #202720ed; color: #fff; border-radius: 4px; pointer-events: none; }
+.game-hud .primary-btn { margin: 0; flex: 1; width: auto; padding: 9px 7px; background: var(--hud-selected); color: #fff; font-size: 11px; }
+.game-hud .placement-bar { left: 16px; bottom: 88px; transform: none; gap: 12px; padding: 9px 12px; background: var(--hud-bg); color: #fff; border-radius: 4px; pointer-events: none; }
 .game-hud .placement-bar strong { display: none; }
-.game-hud .placement-bar > span { color: #e0e7d8; font-size: 10px; }
-.game-hud #toast { bottom: 140px; max-width: min(480px, calc(100vw - 32px)); background: #202720f5; color: #fff; border: 1px solid var(--hud-border); pointer-events: none; }
+.game-hud .placement-bar > span { color: var(--hud-text); font-size: 10px; }
+.game-hud #toast { bottom: 140px; max-width: min(480px, calc(100vw - 32px)); background: var(--hud-bg); color: #fff; border: 1px solid var(--hud-border); pointer-events: none; }
 @media (max-width: 1050px) {
   .build-toolbar kbd { display: none; }
   .game-hud .inspector { width: 250px; }
@@ -115,14 +134,135 @@
   .hud-fps { right: 8px; }
 }
 
-.game-hud #elevation { color: var(--hud-text); background: #1119108c; border-color: var(--hud-border); }
+.game-hud #elevation { color: var(--hud-text); background: var(--hud-field); border-color: var(--hud-border); }
 .game-hud .placement-bar > span { display: flex; }
 .game-hud #path-controls { display: grid; gap: 8px; }
-.game-hud select { color: var(--hud-text); background: #171f17; border: 1px solid var(--hud-border); border-radius: 3px; padding: 6px; min-width: 0; font-size: 11px; }
+.game-hud select { color: var(--hud-text); background: #242424; border: 1px solid var(--hud-border); border-radius: 3px; padding: 6px; min-width: 0; font-size: 11px; }
 #path-controls select { margin-left: auto; width: 150px; max-width: 157px; }
-.game-hud #path-fill { width: 16px; height: 16px; padding: 0; accent-color: #9cbe7e; }
+.game-hud #path-fill { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 #path-controls .nudge-hint { margin: 0; line-height: 1.5; }
-#path-status { font-size: 10px; line-height: 1.5; margin: 0; color: #d3eca4; }
+#path-status { font-size: 10px; line-height: 1.5; margin: 0; color: var(--hud-text); }
 #path-status.invalid { color: #ffc0a3; }
 #path-actions { display: flex; flex-wrap: wrap; gap: 5px; }
 #path-actions button { padding: 7px 6px; border: 1px solid var(--hud-border); font-size: 10px; }
+
+/* Keep older component rules from introducing a second palette. Material swatches
+   retain their colors; only the interface chrome uses neutral shades. */
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--hud-active);
+  outline-offset: 3px;
+}
+.game-hud { scrollbar-color: #888 transparent; }
+.game-hud :is(.hud-panel, .build-toolbar, .placement-bar, #toast, #logic-hover),
+.game-hud .hud-corner > button, .game-hud .view-controls .icon-btn {
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #0003;
+}
+.game-hud .category.active:hover { background: var(--hud-selected) !important; }
+.game-hud .view-controls .icon-btn.active { background: var(--hud-selected); }
+.game-hud .hud-corner > button:hover:not(:disabled),
+.game-hud .view-controls .icon-btn:hover:not(:disabled) { background: var(--hud-selected); }
+.game-hud .wood-swatch { box-shadow: none; }
+.game-hud .wood-swatch.active { box-shadow: 0 0 0 1px var(--hud-active); }
+.game-hud .catalog-card.selected { box-shadow: inset 0 0 0 1px #ffffff20; }
+.game-hud .catalog-card:hover:not(:disabled) { border-color: #ffffff55; }
+.game-hud .card-add { color: var(--hud-muted); }
+.game-hud .rotate-buttons kbd { color: var(--hud-muted); background: #ffffff09; }
+.game-hud .search kbd { border-color: var(--hud-border); }
+.game-hud input[type="checkbox"], .game-hud progress { accent-color: var(--hud-active); }
+.game-hud .logic-ports button { border-color: var(--hud-border); }
+.game-hud .wire-types button, .game-hud .wire-actions button {
+  background: #ffffff08;
+  border: 1px solid var(--hud-border);
+  color: var(--hud-text);
+}
+.game-hud .wire-types [aria-pressed="true"] {
+  background: var(--hud-selected);
+  border-color: var(--hud-active);
+}
+.game-hud .wire-actions button:hover:not(:disabled), .game-hud .wire-types button:hover:not(:disabled) {
+  background: var(--hud-hover);
+}
+.game-hud :is(#wiring-panel p, #wire-selection-panel p, .wire-types small, #logic-hover-click) { color: var(--hud-muted); }
+.game-hud #logic-hover { color: var(--hud-text); }
+.game-hud #logic-hover kbd { color: var(--hud-text); border-color: var(--hud-border); }
+.game-hud #selection-marquee { border-color: var(--hud-active); background: #ffffff22; }
+.game-hud #wire-colors button { border-color: #888; }
+.game-hud #wire-selection-panel { max-height: calc(100dvh - 155px); overflow: auto; }
+
+/* Help and confirmations share the same theme; only confirmations block the world.
+   Settings and Land use dialog.show(), with no fullscreen backdrop or blur. */
+#modal {
+  color: var(--hud-text);
+  background: var(--hud-bg);
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px #0003;
+  padding: 18px;
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #888 transparent;
+}
+#modal::backdrop { background: #0005; backdrop-filter: none; }
+#modal :is(p, .eyebrow, .control-list, .setting-row, .stats-grid, .land-feedback) { color: var(--hud-muted); }
+#modal h2 { color: var(--hud-text); font-size: 16px; margin: 0 0 12px; }
+#modal p { line-height: 1.6; }
+#modal a { color: var(--hud-text); }
+#modal :is(input, select) { accent-color: var(--hud-active); color: var(--hud-text); }
+#modal select { background: #242424; border: 1px solid var(--hud-border); font-size: 11px; border-radius: 4px; }
+#modal kbd { background: #ffffff09; color: var(--hud-muted); border-color: var(--hud-border); }
+#modal .dialog-actions { gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+#modal .dialog-actions button { padding: 9px 10px; border-color: var(--hud-border); border-radius: 4px; color: var(--hud-text); }
+#modal .dialog-actions .confirm { background: var(--hud-selected); }
+#modal button:hover:not(:disabled) { background: var(--hud-hover); }
+#modal .stats-grid { background: #ffffff06; border: 1px solid var(--hud-border); padding: 10px; border-radius: 4px; }
+#modal :is(.stats-grid strong, .plot-summary strong) { color: var(--hud-text); }
+#modal .plot-cell { background: #ffffff05; border-color: var(--hud-border); color: var(--hud-muted); }
+#modal .plot-cell.owned { background: var(--hud-selected); border-color: #ffffff55; color: var(--hud-text); }
+#modal .plot-cell.available { background: #ffffff08; border: 1px dashed #ffffff70; color: var(--hud-text); }
+#modal .plot-cell.unavailable { opacity: .6; }
+#modal .plot-cell:focus-visible { outline: 2px solid var(--hud-active); outline-offset: 2px; }
+#modal .plot-cell:hover { background: var(--hud-hover); }
+#modal .plot-cell.owned:hover { background: #ffffff26; }
+#modal .plot-legend { font-size: 10px; gap: 6px; }
+#modal.hud-popup {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100dvh - 155px);
+  padding: 0;
+  overflow: hidden;
+  z-index: 20;
+}
+#modal.hud-popup[data-panel="settings"] { top: 64px; left: 16px; }
+#modal.hud-popup[data-panel="land"] { bottom: 84px; left: 16px; }
+.hud-popup #modal-content { display: flex; flex-direction: column; max-height: inherit; }
+.popup-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--hud-border); flex-shrink: 0; }
+#modal .popup-heading h2 { margin: 0; font-size: 14px; }
+.popup-heading .icon-btn { color: var(--hud-text); width: 32px; height: 32px; border-radius: 4px; }
+.popup-body { padding: 12px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+#modal.hud-popup .setting-row { min-height: 32px; font-size: 11px; margin: 0 0 10px; }
+#modal.hud-popup p { font-size: 11px; }
+#modal.hud-popup .plot-summary { margin: 10px 0; font-size: 10px; flex-wrap: wrap; }
+#modal.hud-popup .land-feedback { min-height: 34px; margin: 10px 0 0; }
+#modal.hud-popup .plot-picker { gap: 5px; }
+#modal.hud-popup .plot-cell { border-radius: 4px; }
+#modal.hud-popup .plot-legend { flex-wrap: wrap; margin: 10px 0; }
+#modal.hud-popup select { width: 125px !important; padding: 7px; }
+#modal .camera-speed-control { gap: 8px; }
+#modal #camera-speed { width: 105px; max-width: 27vw; margin: 0; }
+#modal .popup-body > .settings-hint { margin: 12px 0 0; }
+@media (max-width: 650px) {
+  #modal.hud-popup { width: min(340px, calc(100vw - 16px)); max-height: calc(100dvh - 145px); }
+  #modal.hud-popup[data-panel="settings"] { top: 56px; left: 8px; }
+  #modal.hud-popup[data-panel="land"] { bottom: 82px; left: 8px; }
+}
+@media (max-height: 500px) {
+  #modal.hud-popup { max-height: calc(100dvh - 145px); }
+  #modal.hud-popup[data-panel="settings"] { top: 56px; }
+  #modal.hud-popup[data-panel="land"] { bottom: 82px; }
+}

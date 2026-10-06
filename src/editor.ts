@@ -66,6 +66,7 @@ export class Editor {
   private initialized = false;
   private savedRevision = 0;
   private generation = 0;
+  private popupTrigger: HTMLElement | null = null;
   constructor() {
     $("app").innerHTML = shell();
     this.view = new Viewport($("viewport"), this.world);
@@ -179,6 +180,7 @@ export class Editor {
   panel(id: "build-panel" | "project-menu" | "woods", open: boolean) {
     const triggers = { "build-panel": "build-tool", "project-menu": "menu-tool", woods: "wood-toggle" };
     if (open) {
+      this.closePopup(false);
       for (const other of ["build-panel", "project-menu", "woods"] as const)
         if (other !== id) this.panel(other, false);
     }
@@ -660,7 +662,7 @@ export class Editor {
   }
   async confirm(title: string, message: string, action = "Continue") {
     return new Promise<boolean>((resolve) => {
-      const modal = $<HTMLDialogElement>("modal");
+      const modal = this.prepareDialog();
       $("modal-content").innerHTML =
         `<h2></h2><p></p><div class="dialog-actions"><button id="cancel-action">Cancel</button><button class="confirm" id="confirm-action"></button></div>`;
       $("modal-content").querySelector("h2")!.textContent = title;
@@ -728,17 +730,51 @@ export class Editor {
   }
   help() {
     this.setMode(false);
-    const modal = $<HTMLDialogElement>("modal");
+    const modal = this.prepareDialog();
     $("modal-content").innerHTML =
       `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>100 items include wood blueprints, glass, store furniture, lighting and 12 logic components. Use Wire to join sockets; click surfaces for bends, Backspace removes a bend, and Escape cancels. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
-  settings() {
+  private closePopup(restoreFocus = true) {
     const modal = $<HTMLDialogElement>("modal");
+    if (!modal.open || !modal.classList.contains("hud-popup")) return;
+    const trigger = this.popupTrigger;
+    this.popupTrigger = null;
+    $(modal.dataset.panel === "land" ? "land-tool" : "settings").setAttribute("aria-expanded", "false");
+    $("land-tool").classList.remove("active");
+    modal.close();
+    if (restoreFocus) trigger?.focus({ preventScroll: true });
+  }
+  private prepareDialog() {
+    this.closePopup(false);
+    const modal = $<HTMLDialogElement>("modal");
+    if (modal.open) modal.close();
+    modal.classList.remove("hud-popup");
+    delete modal.dataset.panel;
+    modal.removeAttribute("aria-labelledby");
+    return modal;
+  }
+  private popup(panel: "settings" | "land", title: string, content: string) {
+    const modal = this.prepareDialog();
+    modal.classList.add("hud-popup");
+    modal.dataset.panel = panel;
+    modal.setAttribute("aria-labelledby", "popup-title");
+    $("modal-content").innerHTML = `<div class="popup-heading"><h2 id="popup-title">${title}</h2><button id="popup-close" class="icon-btn" aria-label="Close ${title.toLowerCase()}" title="Close (Escape)">${icon("close")}</button></div><div class="popup-body">${content}</div>`;
+    this.popupTrigger = $(panel === "land" ? "land-tool" : "menu-tool");
+    const control = $(panel === "land" ? "land-tool" : "settings");
+    control.setAttribute("aria-expanded", "true");
+    control.setAttribute("aria-controls", "modal");
+    if (panel === "land") $("land-tool").classList.add("active");
+    $("popup-close").onclick = () => this.closePopup();
+    modal.show();
+    $("popup-close").focus({ preventScroll: true });
+    return modal;
+  }
+  settings() {
     const stats = this.view.stats;
-    $("modal-content").innerHTML =
-      `<h2>Your view, your pace.</h2><label class="setting-row camera-speed-row"><span>Camera move speed</span><span class="camera-speed-control"><input id="camera-speed" type="range" min="1" max="5" step="1" value="${this.view.camera.speedLevel}" aria-label="Camera move speed"><output id="camera-speed-value" for="camera-speed">${this.view.camera.speedLevel} / 5</output></span></label><label class="setting-row"><span>Night preview</span><input id="night-preview" type="checkbox"></label><label class="setting-row"><span>Visual quality</span><select id="quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select></label><label class="setting-row"><span>Adaptive resolution</span><input type="checkbox" id="adaptive" ${this.view.adaptive ? "checked" : ""}></label><label class="setting-row"><span>View distance</span><select id="distance"><option value="192">192 studs</option><option value="384">384 studs</option><option value="640">640 studs</option><option value="896">896 studs</option></select></label><div class="stats-grid"><div>Rendering<strong>${stats.backend}</strong></div><div>Draw calls<strong>${stats.drawCalls}</strong></div><div>Resident chunks<strong>${stats.visibleChunks}</strong></div><div>Triangles<strong>${stats.triangles.toLocaleString()}</strong></div></div><p style="margin-top:16px">Lower view distance and quality keep large builds responsive. Distant pieces stay in your project.</p><div class="dialog-actions"><button id="load-demo">Load workshop example</button><button class="confirm" id="close-modal">Done</button></div>`;
+    this.popup("settings", "View settings",
+      `<label class="setting-row camera-speed-row"><span>Camera move speed</span><span class="camera-speed-control"><input id="camera-speed" type="range" min="1" max="5" step="1" value="${this.view.camera.speedLevel}" aria-label="Camera move speed"><output id="camera-speed-value" for="camera-speed">${this.view.camera.speedLevel} / 5</output></span></label><label class="setting-row"><span>Night preview</span><input id="night-preview" type="checkbox"></label><label class="setting-row"><span>Visual quality</span><select id="quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select></label><label class="setting-row"><span>Adaptive resolution</span><input type="checkbox" id="adaptive" ${this.view.adaptive ? "checked" : ""}></label><label class="setting-row"><span>View distance</span><select id="distance"><option value="192">192 studs</option><option value="384">384 studs</option><option value="640">640 studs</option><option value="896">896 studs</option></select></label><div class="stats-grid"><div>Rendering<strong>${stats.backend}</strong></div><div>Draw calls<strong>${stats.drawCalls}</strong></div><div>Resident chunks<strong>${stats.visibleChunks}</strong></div><div>Triangles<strong>${stats.triangles.toLocaleString()}</strong></div></div><p class="settings-hint">Lower view distance and quality keep large builds responsive. Distant pieces stay in your project.</p><div class="dialog-actions"><button id="load-demo">Load workshop example</button><button class="confirm" id="close-modal">Done</button></div>`);
     $('camera-speed').oninput=e=>{
       this.view.camera.setSpeedLevel(Number((e.target as HTMLInputElement).value));
       $('camera-speed-value').textContent=`${this.view.camera.speedLevel} / 5`;
@@ -755,17 +791,17 @@ export class Editor {
       this.view.renderDistance = Number((e.target as HTMLSelectElement).value);
       this.view.sync(true);
     };
-    $("close-modal").onclick = () => modal.close();
+    $("close-modal").onclick = () => this.closePopup();
     $("load-demo").onclick = () => {
-      modal.close();
+      this.closePopup(false);
       void this.replaceWithExample();
     };
-    modal.showModal();
   }
   land() {
+    const existing = $<HTMLDialogElement>("modal");
+    if (existing.open && existing.dataset.panel === "land") { this.closePopup(); return; }
     this.setMode(false);
-    const modal = $<HTMLDialogElement>("modal");
-    $("modal-content").innerHTML = `<span class="eyebrow">YOUR LAND</span><h2>Room to grow.</h2><p>Each plot is 40 × 40 studs. Expand from the center by connecting edges. Your full build must stay on active land.</p><div class="plot-summary"><strong id="land-count"></strong><span>Up to 200 × 200 studs</span></div><div class="plot-picker" id="plot-picker" role="group" aria-label="Building plots"></div><p id="land-feedback" class="land-feedback" role="status">Choose an adjoining plot to expand.</p><div class="plot-legend"><span>■ Active land</span><span>+ Available expansion</span><span>· Not connected</span></div><label class="setting-row"><span>Stud placement grid</span><input id="land-grid" type="checkbox" ${this.view.grid.visible ? "checked" : ""}></label><label class="setting-row"><span>40-stud plot borders</span><input id="land-borders" type="checkbox" ${this.view.terrain.borders.visible ? "checked" : ""}></label><div class="dialog-actions"><button id="land-focus">View all land</button><button class="confirm" id="close-modal">Done</button></div>`;
+    this.popup("land", "Building plots", `<p>Each plot is 40 × 40 studs. Connect edges to expand. Blueprints must stay on active land.</p><div class="plot-summary"><strong id="land-count"></strong><span>Up to 200 × 200 studs</span></div><div class="plot-picker" id="plot-picker" role="group" aria-label="Building plots"></div><p id="land-feedback" class="land-feedback" role="status">Choose an adjoining plot to expand.</p><div class="plot-legend"><span>✓ Active</span><span>+ Available</span><span>· Not connected</span></div><label class="setting-row"><span>Stud placement grid</span><input id="land-grid" type="checkbox" ${this.view.grid.visible ? "checked" : ""}></label><label class="setting-row"><span>40-stud plot borders</span><input id="land-borders" type="checkbox" ${this.view.terrain.borders.visible ? "checked" : ""}></label><div class="dialog-actions"><button id="land-focus">View all land</button><button class="confirm" id="close-modal">Done</button></div>`);
     const reasons = { center: "The starter plot always stays active.", occupied: "Move or delete the blueprints on this plot before turning it off.", disconnected: "Every active plot must connect by edges to the center. This change would leave disconnected land.", invalid: "Choose a plot inside the 5 × 5 layout." };
     const render = () => {
       const plots = this.world.plots ?? [12];
@@ -791,11 +827,16 @@ export class Editor {
       $("grid").classList.toggle("active", this.view.grid.visible);
     };
     $("land-borders").onchange = e => { this.view.terrain.borders.visible = (e.target as HTMLInputElement).checked; };
-    $("land-focus").onclick = () => { this.view.camera.focus(new Vector3(0, 0, 0), 265); modal.close(); };
-    $("close-modal").onclick = () => modal.close();
-    modal.showModal();
+    $("land-focus").onclick = () => { this.view.camera.focus(new Vector3(0, 0, 0), 265); this.closePopup(); };
+    $("close-modal").onclick = () => this.closePopup();
   }
   bind() {
+    // A new tool takes over the workspace; view controls can still preview it
+    // without dismissing Settings or Land.
+    document.querySelector(".build-toolbar")!.addEventListener("click", e => {
+      const tool = (e.target as HTMLElement).closest<HTMLButtonElement>("button");
+      if (tool && tool.id !== "land-tool") this.closePopup(false);
+    }, true);
     $("catalog").onclick = (e) => {
       const card = (e.target as HTMLElement).closest<HTMLElement>(
         "[data-item]",
@@ -1167,6 +1208,11 @@ export class Editor {
       this.move();
     });
     window.addEventListener("keydown", (e) => {
+      if (e.code === "Escape" && $<HTMLDialogElement>("modal").open && $("modal").classList.contains("hud-popup")) {
+        e.preventDefault();
+        this.closePopup();
+        return;
+      }
       if (moveDrag) {
         e.preventDefault();
         if (e.code==="Escape") endMove();
