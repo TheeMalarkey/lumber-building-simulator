@@ -28,7 +28,7 @@ export class PathBuilder {
     host.view.worldRoot.add(this.overlay.root);
     this.bind();
   }
-  get eligible() {return this.host.placing && !this.host.moving && !this.host.groupPlacement && !this.host.orbit;}
+  get eligible() {return this.host.placing && !this.host.moving && !this.host.groupPlacement;}
   get hasDraft() {return this.anchors.length>0;}
   private template():Piece {return {id:"path",...this.host.logicConfig,item:this.host.item,wood:this.host.wood,position:[0,0,0],rotation:[...this.host.rotation],...(ITEMS.get(this.host.item)!.fixedMaterial==='lighting'?{lightOn:this.host.lightOn}:{})};}
   syncUI() {

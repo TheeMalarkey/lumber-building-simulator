@@ -21,9 +21,9 @@ One-stud movement is browser-tested for cursor previews in both directions, elev
 
 Floor-grid alignment is checked against every catalog footprint in three orientations, at positive and negative coordinates near and far from the origin. Actual browser mouse placement verifies tiny floors and rotated walls across a floating-origin shift. The grid shader shares the placement step. Visual evidence: artifacts/grid-alignment.png.
 
-Camera regressions verify WASD and Q/E movement without mouse buttons, stable view direction and orbit target, stopping on key release or lost focus, continued movement after releasing mouse look, and no movement while typing, saving with Ctrl+S, or using a dialog.
+Camera regressions verify WASD and Q/E movement without mouse buttons, stable view direction and view target, stopping on key release or lost focus, continued movement after releasing mouse look, and no movement while typing, saving with Ctrl+S, or using a dialog. Retired Orbit shortcuts and middle dragging cannot rotate the camera; wheel zoom and Shift-right-drag panning remain available.
 
-Double-click moving is browser-tested for single-click selection, pickup without mutating the original, Escape cancellation, committed relocation with stable identity and finish, undo, empty-space clicks, rapid placement clicks, and orbit mode isolation.
+Double-click moving is browser-tested for single-click selection, pickup without mutating the original, Escape cancellation, committed relocation with stable identity and finish, undo, empty-space clicks, and rapid placement clicks.
 
 The ground boundary rejects fully and partially buried blueprints using their rotated bounds. All catalog entries are checked for flush ground contact and small penetration in upright and tilted orientations. Browser checks cover red previews, negative elevation, rejected placement, rejected movement, numeric Y edits, and tilting a thin tile, with the original piece retained on rejection.
 

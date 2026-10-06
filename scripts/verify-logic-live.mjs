@@ -2,6 +2,12 @@ import {chromium,expect} from '@playwright/test';
 import {PerspectiveCamera,Vector3} from 'three';
 import {mkdirSync,writeFileSync} from 'node:fs';
 
+async function openWire(page,kind='wire') {
+ if(!await page.locator('#build-panel').isVisible())await page.locator('#build-tool').click();
+ await page.locator('#search').fill('');await page.locator('[data-category="Wires"]').click();
+ await page.locator(`[data-wire-item="${kind}"]`).click();
+}
+
 const target=process.env.TIMBER_URL||'http://127.0.0.1:5179/';
 const browser=await chromium.launch({channel:'chrome',headless:true});
 try{
@@ -13,7 +19,7 @@ try{
   {id:'light',item:'worklight',wood:'oak',position:[6,1.5,0],rotation:[0,0,0],lightOn:false}];
  await page.locator('#menu-tool').click();await page.locator('#file-input').setInputFiles({name:'logic-check.timber',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,name:'Logic check',plots:[12],pieces:fixture}))});await page.locator('#confirm-action').click();
  if(await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();
- await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#catalog-total')).toHaveText('100');await expect(page.locator('.catalog-card')).toHaveCount(12);
+ await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#catalog-total')).toHaveText('102');await expect(page.locator('.catalog-card')).toHaveCount(12);
  for(const [id,size] of [['signal-delay','2 × 2 × 2'],['signal-sustain','2 × 2 × 2'],['signal-inverter','2 × 1 × 1']])await expect(page.locator(`[data-item="${id}"] .card-size`)).toHaveText(size);
  await page.locator('#select-tool').click();
  const rect=await page.locator('#viewport>canvas').boundingBox(),camera=new PerspectiveCamera(45,rect.width/rect.height,.1,4000);camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
@@ -33,7 +39,7 @@ try{
  await page.locator('#select-tool').click();await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/logic-live.png'});
  await page.setViewportSize({width:390,height:844});await expect(page.locator('[data-item="lever"]')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.locator('#wire-tool').click();await expect(page.locator('#wiring-panel')).toBeVisible();await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
- expect(errors).toEqual([]);writeFileSync('release/pages-verification/logic-live.json',JSON.stringify({target,errors,debugAPI:false,catalog:12,total:100,wiring:true,logicDrivenLight:true,savedSwitch:true,exportReload:true,deleteUndo:true,compactFits:true,modeExit:true},null,2));
+ await openWire(page);await expect(page.locator('#wiring-panel')).toBeVisible();await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
+ expect(errors).toEqual([]);writeFileSync('release/pages-verification/logic-live.json',JSON.stringify({target,errors,debugAPI:false,catalog:12,total:102,wiring:true,logicDrivenLight:true,savedSwitch:true,exportReload:true,deleteUndo:true,compactFits:true,modeExit:true},null,2));
  console.log('Production logic: catalog, socket wiring, controlled Worklight, export/reload, delete/undo, compact controls and Wire mode exit passed.');
 }finally{await browser.close();}

@@ -17,7 +17,7 @@ try{
  const menu=async()=>{if(!await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();};
  const closeMenu=async()=>{if(await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();};
  const select=async(position,name)=>{if(await page.locator('#edit-panel').isVisible())await page.locator('#close-edit').click();await page.mouse.click(...xy(position));await expect(page.locator('#piece-name')).toHaveText(name);};
- const inspectTimer=async name=>{await select([0,1,.8],name);await page.locator('#focus').click();focus();};
+ const inspectTimer=async name=>{await select([0,1,.8],name);await page.keyboard.press('f');focus();};
  const pixels=async()=>{
   const png=await page.locator('#viewport>canvas').screenshot(),points=[0,1,4,8,11].map(i=>xy([.55,.2696+.112*i,1.0002]));points.push(xy([-.4,.28,.958]));
   return page.evaluate(async({url,points,rect})=>{

@@ -20,10 +20,10 @@ await page.locator("#file-input").setInputFiles({ name: "selection-check.timber"
   buffer: Buffer.from(JSON.stringify({ version: 1, name: "Selection check", pieces: fixture, plots: [12] })) });
 await page.locator("#confirm-action").click();
 await page.locator("#menu-tool").click();
-await page.locator("#top").click();
+await page.locator("#home").click();
 const rect = await page.locator("#viewport>canvas").boundingBox();
 const camera = new PerspectiveCamera(45, rect.width / rect.height, .1, 4000);
-camera.position.set(0, 69, .01); camera.lookAt(0, 4, 0); camera.updateMatrixWorld();
+camera.position.set(40, 30, 44); camera.lookAt(0, 4, 0); camera.updateMatrixWorld();
 const project = p => {
   const v = new Vector3(...p).project(camera);
   return [rect.x + (v.x + 1) * rect.width / 2, rect.y + (1 - v.y) * rect.height / 2];

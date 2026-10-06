@@ -12,9 +12,9 @@ try {
   await page.locator('#menu-tool').click();
   await page.locator('#file-input').setInputFiles({name:'drag-check.timber',mimeType:'application/json',
     buffer:Buffer.from(JSON.stringify({version:1,name:'Straight drag check',pieces:[],plots:[12]}))});
-  await page.locator('#confirm-action').click();await page.locator('#menu-tool').click();await page.locator('#top').click();
+  await page.locator('#confirm-action').click();await page.locator('#menu-tool').click();await page.locator('#home').click();
   const camera=new PerspectiveCamera(45,1440/960,.1,4000);
-  camera.position.set(0,69,.01);camera.lookAt(0,4,0);camera.updateMatrixWorld();
+  camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
   const screen=p=>{const v=new Vector3(...p).project(camera);return [(v.x+1)*720,(1-v.y)*480];};
   async function choose() {await page.locator('#build-tool').click();await page.locator('[data-item="small-floor"]').click();}
   async function drag(from,to,ctrl=false) {

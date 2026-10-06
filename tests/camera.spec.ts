@@ -7,6 +7,14 @@ async function setup(page:Page){
 const state=(page:Page)=>page.evaluate(()=>{const e=(window as any).timber.editor,c=e.view.camera;return {position:c.camera.position.toArray(),target:c.controls.target.toArray(),rotation:c.camera.quaternion.toArray(),flying:c.flying,pieces:e.world.pieces.size};});
 const distance=(a:number[],b:number[])=>Math.hypot(...a.map((v,i)=>v-b[i]));
 
+test('retired orbit gestures cannot rotate the camera while wheel zoom remains available',async({page})=>{
+ await setup(page);await page.mouse.move(720,450);const before=await state(page);
+ await page.keyboard.press('o');await page.mouse.down({button:'middle'});await page.mouse.move(870,530,{steps:6});await page.mouse.up({button:'middle'});
+ const after=await state(page);expect(distance(after.position,before.position)).toBeLessThan(.000001);expect(distance(after.rotation,before.rotation)).toBeLessThan(.000001);
+ await page.mouse.wheel(0,240);
+ await expect.poll(async()=>distance((await state(page)).position,after.position)).toBeGreaterThan(1);
+});
+
 test('Shift right-drag pans in screen space while right-drag still looks around',async({page})=>{
  await setup(page);await page.mouse.move(720,450);const before=await state(page);
  await page.keyboard.down('Shift');await page.mouse.down({button:'right'});await page.mouse.move(870,530,{steps:6});await page.mouse.up({button:'right'});await page.keyboard.up('Shift');

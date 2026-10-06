@@ -35,13 +35,14 @@ export class CameraController {
     this.controls = new OrbitControls(this.camera, element);
     this.controls.target.set(0, 4, 0);
     this.controls.enableDamping = true;
+    this.controls.enableRotate = false;
     this.controls.dampingFactor = 0.09;
     this.controls.maxPolarAngle = Math.PI;
     this.controls.minDistance = 2;
     this.controls.maxDistance = 1500;
     this.controls.mouseButtons = {
       LEFT: null as any,
-      MIDDLE: 0,
+      MIDDLE: null as any,
       RIGHT: null as any,
     };
     this.controls.update();
@@ -180,7 +181,7 @@ export class CameraController {
                 : 1),
           );
         this.camera.position.add(delta);
-        // Keep orbit's target in step so releasing WASD never turns the view.
+        // Keep the view target in step so releasing WASD never turns the view.
         this.controls.target.add(delta);
       }
     }
@@ -252,10 +253,5 @@ export class CameraController {
       .copy(this.controls.target)
       .add(new Vector3(0, 65, 0.01));
     this.controls.update();
-  }
-  orbitMode(enabled: boolean) {
-    if (enabled) this.setWalking(false);
-    this.controls.mouseButtons.LEFT = enabled ? 0 : (null as any);
-    this.element.style.cursor = enabled ? "grab" : "";
   }
 }

@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {openWire} from './ui-helpers';
 import {CATALOG} from '../src/catalog';
 test('builds a visible wired lever circuit, operates lights and persists edits',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'||/GL_INVALID/.test(m.text()))errors.push(m.text());});
@@ -26,9 +27,9 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.locator('#undo').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires)).toEqual(connected);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-circuit.png'});
- await page.setViewportSize({width:390,height:844});await page.locator('#wire-tool').click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.setViewportSize({width:390,height:844});await openWire(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
- await page.locator('#wire-tool').click();await page.locator('#build-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
+ await openWire(page);await page.locator('#build-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
  expect(errors).toEqual([]);
 });
 test('walks onto a pressure plate to power a light, then walks off',async({page})=>{

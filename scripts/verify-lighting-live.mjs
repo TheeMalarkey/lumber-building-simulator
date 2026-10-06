@@ -15,7 +15,7 @@ try {
     buffer:Buffer.from(JSON.stringify({version:1,name:'Lighting',pieces:fixture,plots:[12]}))});
   await page.locator('#confirm-action').click();if(await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();
   await page.locator('#build-tool').click();await page.locator('[data-category="Lighting"]').click();
-  await expect(page.locator('#catalog-total')).toHaveText('100');
+  await expect(page.locator('#catalog-total')).toHaveText('102');
   await expect(page.locator('.catalog-card')).toHaveCount(5);
   await expect(page.locator('.card-name')).toHaveText(['Wall Light','Floodlight','Lamp','Floor Lamp','Worklight']);
   await page.locator('[data-item="lamp"]').click();await expect(page.locator('#wood-picker')).toBeHidden();

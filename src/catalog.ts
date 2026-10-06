@@ -42,6 +42,7 @@ export const CATEGORIES = [
   "Store furniture",
   "Lighting",
   "Logic",
+  "Wires",
   "Other",
 ];
 export const CATALOG: CatalogItem[] = [];

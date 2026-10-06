@@ -1,4 +1,9 @@
 import { CATALOG, CATEGORIES, WOODS } from "./catalog";
+const WIRE_TOOLS = [
+  { kind: "wire", name: "Wire", limit: 20 },
+  { kind: "neon", name: "Neon Wire", limit: 16 },
+] as const;
+const catalogTotal = CATALOG.length + WIRE_TOOLS.length;
 export function icon(name: string) {
   const paths: Record<string, string> = {
     wire: '<circle cx="4" cy="6" r="2"/><circle cx="20" cy="18" r="2"/><path d="M6 6h6v12h6"/>',
@@ -29,11 +34,6 @@ export function icon(name: string) {
     panel:
       '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
-    focus:
-      '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="3"/>',
-    top: '<path d="m3 8 9-5 9 5-9 5ZM3 12l9 5 9-5M3 16l9 5 9-5"/>',
-    orbit:
-      '<ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-30 12 12)"/><circle cx="12" cy="12" r="3"/>',
     folder: '<path d="M3 6h7l2 3h9v12H3Z"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',
   };
@@ -46,7 +46,7 @@ export function shell() {
   return `
 <main class="workspace game-hud">
 <section class="viewport" id="viewport" aria-label="Building world">
-<div class="view-controls">${button("home", "home", "Home view")}${button("top", "top", "Top view")}${button("focus", "focus", "Focus selection (F)")}${button("grid", "grid", "Toggle grid", "active")}${button("orbit-tool", "orbit", "Orbit camera (O)")}</div>
+<div class="view-controls" role="toolbar" aria-label="World controls">${button("home", "home", "Home view")}${button("walk-tool", "walk", "Switch to walk camera (C)", "camera-toggle")}${button("land-tool", "grid", "Land")}${button("undo", "undo", "Undo (Ctrl+Z)")}${button("redo", "redo", "Redo (Ctrl+Shift+Z)")}</div>
 <div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span id="placing-instruction">Click to place</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span id="placing-hold"><kbd>L</kbd> Hold</span><span><kbd>Esc</kbd> Cancel</span></div>
 <div id="selection-marquee" hidden aria-hidden="true"></div>
 <div id="logic-hover" role="status" hidden><kbd>E</kbd><span id="logic-hover-click" hidden>or click</span><span id="logic-hover-label"></span></div>
@@ -60,10 +60,10 @@ export function shell() {
 <div class="menu-stats"><span id="mode-label">Select mode</span><span id="draw-calls">— draw calls</span><span id="scene-label">Creative workspace</span></div>
 </aside>
 <aside id="build-panel" class="catalog-panel hud-panel" aria-label="Blueprint library" hidden>
-<div class="catalog-heading"><h1>Blueprints <span id="catalog-total">${CATALOG.length}</span></h1>${button("collapse","close","Close blueprint library")}</div>
+<div class="catalog-heading"><h1>Build catalog <span id="catalog-total">${catalogTotal}</span></h1>${button("collapse","close","Close blueprint library")}</div>
 <label class="search">${icon("search")}<input id="search" placeholder="Find a building piece…" autocomplete="off" aria-label="Search building pieces"><kbd>/</kbd></label>
 <nav id="categories" aria-label="Blueprint categories">${CATEGORIES.map((c,i)=>`<button data-category="${c}" class="category ${i===0?"active":""}">${c==="All pieces"?"All":c}</button>`).join("")}</nav>
-<div class="library-caption"><span id="results-count">${CATALOG.length} blueprints</span><span>SELECT TO BUILD</span></div><div id="catalog" class="catalog-grid"></div>
+<div class="library-caption"><span id="results-count">${catalogTotal} items</span><span>SELECT TO BUILD</span></div><div id="catalog" class="catalog-grid"></div>
 </aside>
 <aside id="edit-panel" class="inspector hud-panel" aria-label="Blueprint controls" hidden>
 <div class="piece-summary"><img id="piece-preview" alt="Selected blueprint preview"><div><span id="piece-category"></span><h3 id="piece-name"></h3><span id="piece-size"></span></div>${button("close-edit","close","Cancel or deselect (Escape)")}</div>
@@ -85,7 +85,7 @@ export function shell() {
 <section id="transform-section" hidden><span id="nudge-label">Move selection · 1 stud</span><p class="nudge-hint" id="axis-hint">Drag the X, Y or Z arrow on your selection.<br>Hold a placement with L to adjust it in the air.</p><details id="step-buttons-details"><summary>Step buttons</summary><div id="nudge-buttons" class="nudge-buttons" role="group" aria-label="Move by one stud">${["left","up","forward","right","down","back"].map(d=>`<button data-nudge="${d}" title="Move ${d} one stud">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div><p class="nudge-hint">Directions follow your view, along the grid.</p></details><details id="coordinates-details"><summary>Coordinates</summary><div class="coordinates">${["X","Y","Z"].map((a,i)=>`<label>${a}<input id="pos-${i}" type="number" step="1" aria-label="Position ${a}"></label>`).join("")}</div></details></section>
 <div id="selection-actions"><button id="place-selected" class="primary-btn">${icon("plus")} Place blueprint</button>${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div>
 </aside>
-<nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}<i></i>${tool("wire-tool","wire","Wire")}${tool("land-tool","grid","Land")}${tool("walk-tool","walk","Walk","C")}<i></i>${button("undo","undo","Undo (Ctrl+Z)")}${button("redo","redo","Redo (Ctrl+Shift+Z)")}</nav>
+<nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}</nav>
 <aside id="wire-selection-panel" class="hud-panel" hidden aria-label="Selected wires"><strong id="wire-selection-name"></strong><p id="wire-selection-length"></p><div class="wire-actions"><button id="move-wires">Move</button><button id="copy-wires">Duplicate</button><button id="rotate-wires">Rotate</button><button id="tilt-wires">Tilt</button><button id="delete-wire">Delete wire</button><button id="close-wire-selection">Done</button></div><label class="setting-row axis-copy-option"><span>Copy with arrows</span><input id="wire-axis-copy-toggle" type="checkbox" aria-label="Copy wires with axis arrows"></label></aside>
 <aside id="wiring-panel" class="hud-panel" hidden aria-label="Wire placement">
 <div class="wire-types" role="group" aria-label="Wire type"><button data-wire-kind="wire" aria-pressed="true">Wire <small>20 studs</small></button><button data-wire-kind="neon" aria-pressed="false">Neon <small>16 studs</small></button></div>
@@ -104,20 +104,22 @@ export function renderCatalog(
   category: string,
   search: string,
   selected: string,
+  selectedWire: "wire" | "neon" | null = null,
 ) {
   const items = CATALOG.filter(
     (c) =>
       (category === "All pieces" || c.category === category) &&
       c.name.toLowerCase().includes(search.toLowerCase()),
   );
-  document.querySelector("#results-count")!.textContent =
-    `${items.length} blueprint${items.length === 1 ? "" : "s"}`;
-  document.querySelector("#catalog")!.innerHTML = items.length
+  const wires = WIRE_TOOLS.filter(w => (category === "All pieces" || category === "Wires") && w.name.toLowerCase().includes(search.toLowerCase()));
+  const count = items.length + wires.length;
+  document.querySelector("#results-count")!.textContent = `${count} item${count === 1 ? "" : "s"}`;
+  document.querySelector("#catalog")!.innerHTML = count
     ? items
         .map(
           (c) =>
             `<button class="catalog-card ${c.id === selected ? "selected" : ""}" data-item="${c.id}" title="${c.name} · ${c.dimensionsEstimated ? 'Estimated dimensions: ' : ''}${c.size.join(" × ")} studs"><div class="card-image"><img loading="lazy" src="${thumbnails.get(c.id)}" alt=""><span class="card-add">+</span></div><span class="card-name">${c.name}</span><span class="card-size">${c.dimensionsEstimated ? '≈ ' : ''}${c.size.join(" × ")}</span></button>`,
         )
-        .join("")
+        .join("") + wires.map(w => `<button class="catalog-card wire-card ${selectedWire === w.kind ? "selected" : ""}" data-wire-item="${w.kind}" title="${w.name} · ${w.limit} studs per wire"><div class="card-image"><svg viewBox="0 0 140 80" aria-hidden="true"><path d="M28 58h34V25h49" fill="none" stroke="${w.kind === "neon" ? "#f5f5f5" : "#59727c"}" stroke-width="${w.kind === "neon" ? 7 : 5}"/><path d="M28 58h6m72-33h6" stroke="${w.kind === "neon" ? "#d6d6d6" : "#7d939d"}" stroke-width="${w.kind === "neon" ? 11 : 9}"/></svg><span class="card-add">+</span></div><span class="card-name">${w.name}</span><span class="card-size">${w.limit} studs per wire</span></button>`).join("")
     : '<div class="empty-results">No pieces found.<br>Try a different name.</div>';
 }

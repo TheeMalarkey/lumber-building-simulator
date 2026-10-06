@@ -160,9 +160,6 @@ test("double click picks up a placed blueprint, supports cancellation, placement
   });
   await page.keyboard.press("Control+z");
   expect((await state()).pieces).toEqual(original);
-  await page.locator("#orbit-tool").click();
-  await page.mouse.dblclick(screen.piece.x, screen.piece.y);
-  expect((await state()).moving).toBeNull();
 });
 test("floor placement follows visible grid cells across rotation and origin shifts", async ({
   page,
@@ -466,7 +463,7 @@ test("catalog cards stay readable and every category is reachable", async ({
   await page.goto("/");
   await page.waitForFunction(() => !!(window as any).timber);
   await openBuild(page);
-  await expect(page.locator(".catalog-card")).toHaveCount(100);
+  await expect(page.locator(".catalog-card")).toHaveCount(102);
   expect(
     (await page.locator(".catalog-card").first().boundingBox())!.height,
   ).toBeGreaterThan(120);

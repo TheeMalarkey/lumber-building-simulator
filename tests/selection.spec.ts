@@ -166,8 +166,8 @@ test("group placement rejects even one member outside plots or below ground", as
   await page.keyboard.press("Escape");expect(await pieces(page)).toEqual(original);
 });
 
-test("Ctrl-drag overrides orbit, Escape cancels the gesture, and selection rendering is batched",async({page})=>{
-  const s=await fixture(page);await page.mouse.click(s.c.x,s.c.y);await page.locator("#orbit-tool").click();
+test("Escape cancels Ctrl-drag without moving the camera, and selection rendering is batched",async({page})=>{
+  const s=await fixture(page);await page.mouse.click(s.c.x,s.c.y);
   const camera=()=>page.evaluate(()=>(window as any).timber.editor.view.camera.camera.position.toArray());
   const before=await camera();
   await page.keyboard.down("Control");await page.mouse.move(s.start.x,s.start.y);await page.mouse.down();await page.mouse.move(s.end.x,s.end.y,{steps:4});

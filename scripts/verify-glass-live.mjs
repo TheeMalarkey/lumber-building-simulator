@@ -16,7 +16,7 @@ try {
     buffer:Buffer.from(JSON.stringify({version:1,name:'Glass building pieces',pieces:fixture,plots:[12]}))});
   await page.locator('#confirm-action').click();if(await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();
   await page.locator('#build-tool').click();await page.locator('[data-category="Glass"]').click();
-  await expect(page.locator('#catalog-total')).toHaveText('100');
+  await expect(page.locator('#catalog-total')).toHaveText('102');
   await expect(page.locator('.catalog-card')).toHaveCount(5);
   await expect(page.locator('.card-name')).toHaveText(['Tiny Glass Pane','Small Glass Pane','Glass Pane','Large Glass Pane','Glass Door']);
   await page.locator('[data-item="tiny-glass-pane"]').click();await expect(page.locator('#wood-picker')).toBeHidden();

@@ -55,7 +55,6 @@ export class Editor {
   ghost: Piece | null = null;
   held = false;
   copyWithArrows = false;
-  orbit = false;
   pointer: [number, number] | null = null;
   dirty = false;
   private toastTimer = 0;
@@ -175,7 +174,7 @@ export class Editor {
     );
   }
   catalog() {
-    renderCatalog(this.thumbnails, this.category, this.search, this.item);
+    renderCatalog(this.thumbnails, this.category, this.search, this.item, this.logicTools?.selectedKind ?? null);
   }
   panel(id: "build-panel" | "project-menu" | "woods", open: boolean) {
     const triggers = { "build-panel": "build-tool", "project-menu": "menu-tool", woods: "wood-toggle" };
@@ -285,9 +284,6 @@ export class Editor {
     this.paths.cancel();
     this.held = false;
     this.placing = placing;
-    this.orbit = false;
-    this.view.camera.orbitMode(false);
-    $("orbit-tool").classList.remove("active");
     $("select-tool").classList.toggle("active", !placing);
     $("placement-bar").hidden = !placing;
     $("mode-label").innerHTML =
@@ -316,10 +312,13 @@ export class Editor {
     $("walk-tool").setAttribute("aria-pressed", String(walking));
     $("walk-tool").innerHTML =
       icon(walking ? "eye" : "walk") +
-      `<span>${walking ? "Free cam" : "Walk"}</span><kbd>C</kbd>`;
+      `<span>${walking ? "Free cam" : "Walk"}</span>`;
+    const cameraLabel = `Switch to ${walking ? "free" : "walk"} camera (C)`;
+    $("walk-tool").setAttribute("aria-label", cameraLabel);
+    $("walk-tool").title = cameraLabel;
     $("camera-hint").innerHTML = walking
       ? "<span><kbd>W A S D</kbd> Walk · RMB Look</span><span><kbd>Space</kbd> Jump · <kbd>Shift</kbd> Run</span><span>Wheel Zoom · <kbd>C</kbd> Free camera</span>"
-      : "<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Fly · RMB Look</span><span><kbd>Q</kbd><kbd>E</kbd> Elevate</span><span>Shift + RMB Pan · MMB Orbit · Wheel Zoom</span>";
+      : "<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Fly · RMB Look</span><span><kbd>Q</kbd><kbd>E</kbd> Elevate</span><span>Shift + RMB Pan · Wheel Zoom</span>";
   }
   toggleWalk() {
     const entering = !this.view.camera.walking;
@@ -424,8 +423,8 @@ export class Editor {
   syncGizmo() {
     if (this.paths.syncGizmo()) return;
     const assembly=this.placing?this.held&&this.groupPlacement?{pieces:this.groupPreview,wires:this.groupWirePreview}:null:{pieces:this.selectedPieces,wires:this.selectedWires};
-    if(!this.orbit&&assembly?.wires.length){this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);return;}
-    this.view.gizmo.setPieces(this.orbit ? [] : this.placing
+    if(assembly?.wires.length){this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);return;}
+    this.view.gizmo.setPieces(this.placing
       ? this.held ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : []
       : this.selectedPieces);
   }
@@ -732,7 +731,7 @@ export class Editor {
     this.setMode(false);
     const modal = this.prepareDialog();
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Orbit / zoom</span><span>Middle drag / wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>100 items include wood blueprints, glass, store furniture, lighting and 12 logic components. Use Wire to join sockets; click surfaces for bends, Backspace removes a bend, and Escape cancels. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Zoom</span><span>Mouse wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>The Build catalog includes 100 building items and Wire / Neon Wire tools. Choose a wire in Build or use a circuit socket shortcut; click surfaces for bends, Backspace removes a bend, and Escape cancels. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -824,23 +823,22 @@ export class Editor {
     };
     $("land-grid").onchange = e => {
       this.view.grid.visible = (e.target as HTMLInputElement).checked;
-      $("grid").classList.toggle("active", this.view.grid.visible);
     };
     $("land-borders").onchange = e => { this.view.terrain.borders.visible = (e.target as HTMLInputElement).checked; };
     $("land-focus").onclick = () => { this.view.camera.focus(new Vector3(0, 0, 0), 265); this.closePopup(); };
     $("close-modal").onclick = () => this.closePopup();
   }
   bind() {
-    // A new tool takes over the workspace; view controls can still preview it
-    // without dismissing Settings or Land.
-    document.querySelector(".build-toolbar")!.addEventListener("click", e => {
+    // Home previews the view; changing tools closes a nonmodal popup.
+    document.querySelectorAll(".build-toolbar,.view-controls").forEach(toolbar => toolbar.addEventListener("click", e => {
       const tool = (e.target as HTMLElement).closest<HTMLButtonElement>("button");
-      if (tool && tool.id !== "land-tool") this.closePopup(false);
-    }, true);
+      if (tool && !["home", "land-tool"].includes(tool.id)) this.closePopup(false);
+    }, true));
     $("catalog").onclick = (e) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>(
-        "[data-item]",
-      );
+      const target = e.target as HTMLElement;
+      const wire = target.closest<HTMLElement>("[data-wire-item]");
+      if (wire) { this.logicTools.chooseWire(wire.dataset.wireItem === "neon" ? "neon" : "wire"); return; }
+      const card = target.closest<HTMLElement>("[data-item]");
       if (card) this.choose(card.dataset.item!);
     };
     $("categories").onclick = (e) => {
@@ -865,15 +863,6 @@ export class Editor {
     };
     const actions: Record<string, () => unknown> = {
       "select-tool": () => this.pickSelection(null),
-      "orbit-tool": () => {
-        this.setMode(false);
-        this.orbit = true;
-        this.syncGizmo();
-        this.view.camera.orbitMode(true);
-        $("orbit-tool").classList.add("active");
-        $("select-tool").classList.remove("active");
-        $("mode-label").innerHTML = icon("orbit") + "Orbit mode";
-      },
       "move-tool": () => this.move(),
       "hold-position": () => this.holdPosition(),
       "commit-preview": () => this.place(),
@@ -891,12 +880,6 @@ export class Editor {
       rotate: () => this.rotate(1),
       tilt: () => this.rotate(0),
       home: () => this.view.camera.home(),
-      top: () => this.view.camera.top(),
-      focus: () => this.focus(),
-      grid: () => {
-        this.view.grid.visible = !this.view.grid.visible;
-        $("grid").classList.toggle("active", this.view.grid.visible);
-      },
       "place-selected": () => {
         this.setMode(false);
         this.selected = null;
@@ -1080,7 +1063,7 @@ export class Editor {
         return;
       }
       this.pointer = [e.clientX, e.clientY];
-      if (!gesture && !this.orbit && !this.view.camera.flying)
+      if (!gesture && !this.view.camera.flying)
         canvas.style.cursor=this.view.gizmo.hit(e.clientX,e.clientY,this.view.camera.camera,canvas.getBoundingClientRect())!==null ? "grab" : "";
       if (!gesture || gesture.pointerId !== e.pointerId) return;
       gesture.dragged ||= Math.hypot(e.clientX - gesture.start[0], e.clientY - gesture.start[1]) > 5;
@@ -1102,7 +1085,7 @@ export class Editor {
     });
     canvas.addEventListener("pointerdown", (e) => {
       if (moveDrag) { e.preventDefault();e.stopImmediatePropagation();return; }
-      if (e.button===0 && !e.ctrlKey && !e.metaKey && !this.orbit && !this.view.camera.flying) {
+      if (e.button===0 && !e.ctrlKey && !e.metaKey && !this.view.camera.flying) {
         const rect=canvas.getBoundingClientRect(),gizmo=this.view.gizmo;
         const axis=gizmo.hit(e.clientX,e.clientY,this.view.camera.camera,rect);
         const math=axis!==null ? gizmo.begin(axis,e.clientX,e.clientY,this.view.camera.camera,rect) : null;
@@ -1133,7 +1116,7 @@ export class Editor {
         canvas.setPointerCapture(e.pointerId);
         return;
       }
-      if (this.placing || this.orbit || this.view.camera.flying)
+      if (this.placing || this.view.camera.flying)
         selectionClicks = [];
       if (e.button === 0) down = [e.clientX, e.clientY];
     }, true);
@@ -1173,7 +1156,7 @@ export class Editor {
       if (e.button !== 0 || !down) return;
       const delta = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
       down = null;
-      if (delta > 5 || this.orbit || this.view.camera.flying) {
+      if (delta > 5 || this.view.camera.flying) {
         selectionClicks = [];
         return;
       }
@@ -1199,7 +1182,6 @@ export class Editor {
         e.button !== 0 ||
         !samePiece ||
         this.placing ||
-        this.orbit ||
         this.view.camera.flying
       )
         return;
@@ -1266,9 +1248,6 @@ export class Editor {
           break;
         case "KeyV":
           this.pickSelection(null);
-          break;
-        case "KeyO":
-          void actions["orbit-tool"]();
           break;
         case "KeyR":
           this.rotate(1);

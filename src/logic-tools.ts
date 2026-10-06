@@ -22,7 +22,7 @@ export class LogicTools {
  constructor(private e:Editor){
   this.interaction=new LogicInteraction(e,()=>!this.wiring,id=>this.activate(id));
   e.view.worldRoot.add(this.guide);this.guide.visible=false;
-  $('wire-tool').onclick=()=>this.toggle();$('wire-done').onclick=()=>this.toggle(false);
+  $('wire-done').onclick=()=>this.toggle(false);
   $('wire-finish').onclick=()=>this.finishSurface();
   document.querySelectorAll<HTMLButtonElement>('[data-wire-kind]').forEach(b=>b.onclick=()=>{if(this.start)return;this.style=b.dataset.wireKind==='neon'?{kind:'neon',color:this.style.color??'white'}:{kind:'wire'};this.status();});
   $('wire-colors').replaceChildren(...Object.entries(NEON_COLORS).map(([id,c])=>{const b=document.createElement('button');b.dataset.wireColor=id;b.title=c.label+(id==='pink'?' · Bright Gift':'')+' neon';b.setAttribute('aria-label',b.title);b.style.setProperty('--wire-color','#'+c.hex.toString(16).padStart(6,'0'));b.onclick=()=>{if(this.start)return;this.style={kind:'neon',color:id as NeonColor};this.status();};return b;}));
@@ -95,11 +95,17 @@ export class LogicTools {
   this.e.view.renderer.domElement.focus({preventScroll:true});this.status();
  }
  private cancel(){this.start=null;this.bends=[];this.startSurface=undefined;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.guide.visible=false;this.status();}
+ get selectedKind(){return this.wiring?this.style.kind:null;}
+ chooseWire(kind:'wire'|'neon'){
+  this.style=kind==='neon'?{kind,color:this.style.color??'white'}:{kind};
+  this.toggle(true);
+  this.e.view.renderer.domElement.focus({preventScroll:true});
+ }
  toggle(value=!this.wiring){
   if(value){this.e.pickSelection(null);this.e.panel('build-panel',false);this.e.panel('project-menu',false);}
   this.wiring=value;this.clearSelection();this.cancel();
   $('select-tool').classList.toggle('active',!value);
-  this.e.view.logic.showSockets=value;this.e.view.logic.refresh();$('wire-tool').classList.toggle('active',value);$('wire-tool').setAttribute('aria-pressed',String(value));$('wiring-panel').hidden=!value;this.status();
+  this.e.view.logic.showSockets=value;this.e.view.logic.refresh();$('wiring-panel').hidden=!value;this.status();this.e.catalog();
  }
  begin(endpoint:Endpoint,surface?:WireSurface){if(!this.wiring)this.toggle(true);this.start=endpoint;this.startSurface=surface;this.bends=[];this.selectedWire=null;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.status();}
  private visible(point:Vec3,owner?:string){

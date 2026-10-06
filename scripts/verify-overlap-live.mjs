@@ -14,10 +14,10 @@ const fixture=[
 await page.locator('#menu-tool').click();
 await page.locator('#file-input').setInputFiles({name:'overlap-check.timber',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify({version:1,name:'Overlap check',pieces:fixture,plots:[12]}))});
-await page.locator('#confirm-action').click();await page.locator('#menu-tool').click();await page.locator('#top').click();
+await page.locator('#confirm-action').click();await page.locator('#menu-tool').click();await page.locator('#home').click();
 const r=await page.locator('#viewport>canvas').boundingBox();
 const camera=new PerspectiveCamera(45,r.width/r.height,.1,4000);
-camera.position.set(0,69,.01);camera.lookAt(0,4,0);camera.updateMatrixWorld();
+camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
 const v=new Vector3(-4,1,0).project(camera);
 await page.mouse.click(r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2);
 await expect(page.locator('#overlap-toggle')).not.toBeChecked();

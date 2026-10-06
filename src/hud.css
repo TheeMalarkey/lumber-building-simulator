@@ -44,9 +44,9 @@
 .menu-stats { display: flex; flex-wrap: wrap; gap: 7px 16px; padding: 12px 4px 0; color: var(--hud-muted); font-size: 10px; }
 .menu-stats svg { display: none; }
 .game-hud .build-toolbar { position: absolute; z-index: 6; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 3px; padding: 5px; }
-.build-toolbar > i { height: 22px; width: 1px; background: var(--hud-border); margin: 0 3px; }
 .game-hud .view-controls { top: 16px; right: 16px; flex-direction: row; gap: 4px; }
 .game-hud .view-controls .icon-btn { background: var(--hud-bg); border: 1px solid var(--hud-border); color: var(--hud-text); box-shadow: none; }
+.game-hud .view-controls .camera-toggle { width: auto; display: flex; align-items: center; gap: 6px; padding: 0 8px; font-size: 11px; }
 .game-hud .view-controls .active { background: var(--hud-selected); }
 .hud-status, .hud-fps { position: absolute; bottom: 9px; font-size: 10px; color: #fff; text-shadow: 0 1px 4px #000; pointer-events: none; }
 .hud-status { left: 16px; display: flex; gap: 14px; }
@@ -122,10 +122,11 @@
   .hud-corner .save-state { display: none; }
   .game-hud .view-controls { top: 8px; right: 8px; gap: 2px; }
   .game-hud .view-controls .icon-btn { width: 29px; }
+  .game-hud .view-controls .camera-toggle { padding: 0; }
+  .game-hud .view-controls .camera-toggle span { display: none; }
   .game-hud .build-toolbar { bottom: 24px; gap: 1px; padding: 3px; max-width: calc(100% - 12px); }
   .build-toolbar .hud-tool { flex-direction: column; height: 44px; gap: 2px; padding: 3px 9px; font-size: 9px; }
   .build-toolbar .icon-btn { width: 27px; }
-  .build-toolbar > i { margin: 0 1px; }
   .game-hud .catalog-panel { left: 8px; width: calc(100% - 16px); bottom: 82px; height: min(580px, calc(100dvh - 145px)); }
   .game-hud .inspector { right: 8px; bottom: 114px; width: 245px; max-height: calc(100dvh - 180px); }
   .game-hud .placement-bar { left: 8px; bottom: 82px; padding: 7px 9px; gap: 8px; }
@@ -239,7 +240,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   z-index: 20;
 }
 #modal.hud-popup[data-panel="settings"] { top: 64px; left: 16px; }
-#modal.hud-popup[data-panel="land"] { bottom: 84px; left: 16px; }
+#modal.hud-popup[data-panel="land"] { top: 64px; right: 16px; }
 .hud-popup #modal-content { display: flex; flex-direction: column; max-height: inherit; }
 .popup-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--hud-border); flex-shrink: 0; }
 #modal .popup-heading h2 { margin: 0; font-size: 14px; }
@@ -259,10 +260,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 @media (max-width: 650px) {
   #modal.hud-popup { width: min(340px, calc(100vw - 16px)); max-height: calc(100dvh - 145px); }
   #modal.hud-popup[data-panel="settings"] { top: 56px; left: 8px; }
-  #modal.hud-popup[data-panel="land"] { bottom: 82px; left: 8px; }
+  #modal.hud-popup[data-panel="land"] { top: 56px; right: 8px; }
 }
 @media (max-height: 500px) {
   #modal.hud-popup { max-height: calc(100dvh - 145px); }
   #modal.hud-popup[data-panel="settings"] { top: 56px; }
-  #modal.hud-popup[data-panel="land"] { bottom: 82px; }
+  #modal.hud-popup[data-panel="land"] { top: 56px; }
 }
+
+.game-hud .wire-card .card-image svg { width: 100%; height: 100%; }

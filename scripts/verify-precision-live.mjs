@@ -13,9 +13,9 @@ await page.locator("#file-input").setInputFiles({name:"precision-check.timber",m
   {...piece("upper","4-4-wedge",[5,3,0],[2,0,0]),wood:"birch"},piece("table","long-table",[0,5,-7]),
 ]}))});
 await page.locator("#confirm-action").click();await page.locator("#menu-tool").click();
-await page.locator("#top").click();
+await page.locator("#home").click();
 const r=await page.locator("#viewport>canvas").boundingBox();
-const c=new PerspectiveCamera(45,r.width/r.height,.1,4000);c.position.set(0,69,.01);c.lookAt(0,4,0);c.updateMatrixWorld();
+const c=new PerspectiveCamera(45,r.width/r.height,.1,4000);c.position.set(40,30,44);c.lookAt(0,4,0);c.updateMatrixWorld();
 const project=p=>{const v=new Vector3(...p).project(c);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];};
 await page.mouse.click(...project([-5,1,5]));await page.locator("#duplicate-tool").click();
 await page.locator("#hold-position").click();

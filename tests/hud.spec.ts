@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { openWire } from "./ui-helpers";
 test("compact HUD keeps the world full screen and reveals only relevant controls", async ({ page }) => {
   await page.goto("/");
   await page.waitForFunction(() => !!(window as any).timber);
@@ -76,7 +77,7 @@ test("Settings and Land are bounded popups with an accessible world and Escape d
       expect(bounds.y + bounds.height).toBeLessThanOrEqual(height - 76);
       expect(await canvas.boundingBox()).toEqual(worldBounds);
       // Native modal dialogs make every world control inert. Popups must not.
-      await page.locator("#top").click();
+      await page.locator("#home").click();
       await expect(popup).toBeVisible();
       await page.locator("#close-modal").scrollIntoViewIfNeeded();
       await expect(page.locator("#close-modal")).toBeInViewport();
@@ -100,7 +101,7 @@ test("popup switching and close controls keep destructive confirmations modal", 
   await page.locator("#land-tool").click();
   await expect(page.locator("#modal")).toBeHidden();
   await page.locator("#land-tool").click();
-  await page.locator("#wire-tool").click();
+  await openWire(page);
   await expect(page.locator("#modal")).toBeHidden();
   await expect(page.locator("#wiring-panel")).toBeVisible();
   await page.locator("#select-tool").click();
@@ -118,4 +119,34 @@ test("popup switching and close controls keep destructive confirmations modal", 
   expect(await page.locator("#modal").evaluate(el => el.matches(":modal"))).toBe(true);
   await page.locator("#cancel-action").click();
   await expect(page.locator("#modal")).toBeHidden();
+});
+
+test("compact toolbars keep wire building and land controls accessible", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(() => !!(window as any).timber);
+  expect(await page.locator('.build-toolbar>button').evaluateAll(buttons => buttons.map(b => b.id))).toEqual(['build-tool','select-tool','move-tool']);
+  expect(await page.locator('.view-controls>button').evaluateAll(buttons => buttons.map(b => b.id))).toEqual(['home','walk-tool','land-tool','undo','redo']);
+  await openWire(page);
+  await expect(page.locator('#wiring-panel')).toBeVisible();
+  await expect(page.locator('#wire-length')).toHaveText('0.00 / 20 studs');
+  await openWire(page, 'neon');
+  await expect(page.locator('#wire-length')).toHaveText('0.00 / 16 studs');
+  await expect(page.locator('#wire-colors')).toBeVisible();
+  await page.locator('#wire-done').click();
+  for (const [width,height] of [[1440,960],[390,844],[320,640]]) {
+    await page.setViewportSize({width,height});
+    const top = (await page.locator('.view-controls').boundingBox())!;
+    const menu = (await page.locator('.hud-corner').boundingBox())!;
+    expect(top.x).toBeGreaterThanOrEqual(menu.x + menu.width);
+    expect(top.x + top.width).toBeLessThanOrEqual(width - 8);
+    await page.locator('#land-tool').click();
+    await expect(page.locator('#land-grid')).toBeVisible();
+    await page.locator('#land-grid').uncheck();
+    expect(await page.evaluate(() => (window as any).timber.editor.view.grid.visible)).toBe(false);
+    await page.locator('#land-grid').check();
+    const popup = (await page.locator('#modal').boundingBox())!;
+    expect(popup.y).toBeGreaterThan(top.y + top.height);
+    expect(popup.x + popup.width).toBeCloseTo(top.x + top.width, 0);
+    await page.keyboard.press('Escape');
+  }
 });

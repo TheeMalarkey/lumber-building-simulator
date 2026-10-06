@@ -1,4 +1,5 @@
 import {test, expect, type Page} from '@playwright/test';
+import {openWire} from './ui-helpers';
 
 async function setup(page:Page) {
   await page.goto('/');
@@ -140,7 +141,7 @@ test('building, wiring, camera drags and UI controls retain their normal input',
   await page.mouse.move(...await point(page,[-2+.693,1.093,0]));
   await expect(page.locator('#logic-hover')).toBeVisible();
   await page.mouse.down({button:'right'});await expect(page.locator('#logic-hover')).toBeHidden();await page.mouse.up({button:'right'});
-  await page.locator('#wire-tool').click();
+  await openWire(page);
   await page.mouse.move(...await point(page,[2,.5,0]));await expect(page.locator('#logic-hover')).toBeHidden();
   await page.mouse.click(...await point(page,[2,.5,0]));
   expect(await page.evaluate(()=>(window as any).timber.editor.view.logic.circuit.output('button'))).toBe(false);

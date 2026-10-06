@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  # Keep a fresh serialized queue after a stalled deployment run.
+  group: timber-pages
   cancel-in-progress: false
 
 jobs:

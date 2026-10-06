@@ -16,10 +16,10 @@ await page.locator('#menu-tool').click();
 await page.locator('#file-input').setInputFiles({name:'group-edit-check.timber',mimeType:'application/json',
   buffer:Buffer.from(JSON.stringify({version:1,name:'Group editing',pieces:fixture,plots:[12]}))});
 await page.locator('#confirm-action').click();await page.locator('#menu-tool').click();
-await page.locator('#top').click();
+await page.locator('#home').click();
 const r=await page.locator('#viewport>canvas').boundingBox();
 const camera=new PerspectiveCamera(45,r.width/r.height,.1,4000);
-camera.position.set(0,69,.01);camera.lookAt(0,4,0);camera.updateMatrixWorld();
+camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
 const project=position=>{const v=new Vector3(...position).project(camera);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];};
 await page.mouse.click(...project(fixture[0].position));
 await page.keyboard.down('Control');await page.mouse.click(...project(fixture[1].position));await page.keyboard.up('Control');
@@ -49,7 +49,7 @@ await page.locator('#duplicate-tool').click();await page.locator('#hold-position
 await page.locator('#wood-toggle').click();await page.locator('[data-wood="walnut"]').click();await page.keyboard.press('Escape');
 expect((await exported()).sort((a,b)=>a.id.localeCompare(b.id))).toEqual([...edited].sort((a,b)=>a.id.localeCompare(b.id)));
 // Restore the group for a readable screenshot and compact controls check.
-await page.locator('#top').click();
+await page.locator('#home').click();
 await page.mouse.click(...project([1,5,0]));await page.keyboard.down('Control');await page.mouse.click(...project([-1,11,0]));await page.keyboard.up('Control');
 await page.locator('#home').click();await page.waitForTimeout(1000);
 await expect(page.locator('#toast')).not.toHaveClass(/visible/);

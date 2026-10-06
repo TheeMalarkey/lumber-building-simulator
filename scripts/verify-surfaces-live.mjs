@@ -16,12 +16,12 @@ async function importPieces(pieces) {
   await expect(page.locator('#piece-count')).toHaveText(`${pieces.length} pieces`);
   if(await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();
 }
-async function view(top=false) {
-  await page.locator('#home').click();if(top) await page.locator('#top').click();
+async function view() {
+  await page.locator('#home').click();
   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   rect=await page.locator('#viewport>canvas').boundingBox();
   camera=new PerspectiveCamera(45,rect.width/rect.height,.1,4000);
-  camera.position.set(...(top ? [0,69,.01] : [40,30,44]));camera.lookAt(0,4,0);camera.updateMatrixWorld();
+  camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
 }
 const screen=p=>{const v=new Vector3(...p).project(camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];};
 async function choose(item) {await page.locator('#build-tool').click();await page.locator(`[data-item="${item}"]`).click();}
@@ -46,7 +46,7 @@ const original={id:'platform',item:'large-floor',wood:'oak',position:[0,.5,0],ro
 try {
   await page.goto(target);await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
   expect(await page.evaluate(()=>typeof window.timber)).toBe('undefined');
-  await importPieces([original]);await view(true);await choose('small-floor');await page.locator('#elevation').fill('0');
+  await importPieces([original]);await view();await choose('small-floor');await page.locator('#elevation').fill('0');
   await drag([-2,1,-1],[2,1,-1],true);
   let result=await exported();
   expect(result.pieces.filter(p=>p.id!=='platform').map(p=>p.position)).toEqual([[-2,1.5,-1],[0,1.5,-1],[2,1.5,-1]]);
@@ -66,7 +66,7 @@ try {
     {id:'a',item:'tiny-tile',wood:'oak',position:[-3,.1,0],rotation:[0,0,0]},
     {id:'b',item:'tiny-tile',wood:'birch',position:[3,.1,0],rotation:[0,1,0]},
   ];
-  await importPieces(originals);await view(true);await page.mouse.click(...screen(originals[0].position));
+  await importPieces(originals);await view();await page.mouse.click(...screen(originals[0].position));
   await expect(page.locator('#axis-copy-toggle')).not.toBeChecked();await page.locator('#axis-copy-toggle').check();
   await view();await arrow(originals[0].position,1,1);
   result=await exported();expect(result.pieces).toHaveLength(3);
@@ -85,7 +85,7 @@ try {
   expect(new Set(result.pieces.map(p=>p.id)).size).toBe(5);
   await page.locator('#undo').click();expect((await exported()).pieces).toEqual(single);
   await page.locator('#redo').click();expect((await exported()).pieces).toEqual(result.pieces);
-  await view(true);await page.mouse.click(...screen([-3,2.1,0]));
+  await view();await page.mouse.click(...screen([-3,2.1,0]));
   await page.keyboard.down('Control');await page.mouse.click(...screen([3,2.1,0]));await page.keyboard.up('Control');
   await expect(page.locator('#selection-count')).toHaveText('2 selected');await view();
   mkdirSync('release/pages-verification',{recursive:true});

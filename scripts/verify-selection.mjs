@@ -14,7 +14,7 @@ await page.evaluate(() => {
 await expect(page.locator("#piece-name")).toHaveText("8 blueprints selected");
 await page.waitForTimeout(5000); // Let startup frames leave the FPS window.
 await page.screenshot({ path: "artifacts/group-selection.png" });
-await page.locator("#top").click();
+await page.evaluate(() => window.timber.editor.view.camera.top());
 await page.keyboard.down("Control");
 await page.mouse.move(485, 620);
 await page.mouse.down();

@@ -77,7 +77,7 @@ export class LogicInteraction {
   private available() {
     const {camera}=this.e.view;
     return this.pointer && !this.buttons && !this.modified && this.enabled() &&
-      !this.e.placing && !this.e.orbit && !camera.flying && !camera.selecting &&
+      !this.e.placing && !camera.flying && !camera.selecting &&
       !this.keyboardBlocked() && document.elementFromPoint(...this.pointer)===this.canvas;
   }
   private target():Piece|null {
