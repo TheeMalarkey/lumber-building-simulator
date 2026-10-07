@@ -1,4 +1,4 @@
-import { openBuild, openMenu, openWoods, openCoordinates } from "./ui-helpers";
+import { openBuild, openMenu, openWoods } from "./ui-helpers";
 import { test, expect } from "@playwright/test";
 test("rotate then tilt tips blueprints sideways in previews and placed edits", async ({ page }) => {
   await page.goto("/"); await page.waitForFunction(() => !!(window as any).timber);
@@ -11,7 +11,7 @@ test("rotate then tilt tips blueprints sideways in previews and placed edits", a
     const b = (window as any).timber.editor.world.bounds.get("turn");
     return b.max.map((v: number, i: number) => v - b.min[i]);
   });
-  await page.locator("#rotate").click(); await page.locator("#tilt").click();
+  await page.keyboard.press('r'); await page.keyboard.press('t');
   expect(await size()).toEqual([1, 4, 8]);
   const placedRotation = await page.evaluate(() => (window as any).timber.editor.world.pieces.get("turn").rotation);
   await page.locator("#undo").click(); expect(await size()).toEqual([1, 8, 4]);
@@ -32,7 +32,7 @@ test("rotate then tilt tips blueprints sideways in previews and placed edits", a
   expect(await page.evaluate(() => (window as any).timber.editor.rotation)).toEqual(placedRotation);
   expect(await page.evaluate(() => (window as any).timber.editor.ghost.rotation)).toEqual(placedRotation);
 });
-test("ground boundary blocks placement, moving, numeric edits, and tilting below the map", async ({
+test("ground boundary blocks placement, moving, nudges, and tilting below the map", async ({
   page,
 }) => {
   await page.goto("/");
@@ -72,13 +72,11 @@ test("ground boundary blocks placement, moving, numeric edits, and tilting below
     e.pickSelection(p.id);
     return p;
   });
-  await page.locator("#tilt").click();
+  await page.keyboard.press('t');
   await expect(page.locator("#toast")).toContainText("ground");
-  await openCoordinates(page);
-  await page.locator("#pos-1").fill("-0.9");
-  await openCoordinates(page);
-  await page.locator("#pos-1").press("Tab");
-  await expect(page.locator("#pos-1")).toHaveValue("0.1");
+  await page.locator('[data-nudge="down"]').click();
+  await expect(page.locator("#toast")).toContainText("ground");
+  expect(await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()])).toEqual([original]);
   await page.locator("#move-tool").click();
   await page.locator("#elevation").fill("-1");
   await page.mouse.click(point.x, point.y);
@@ -258,7 +256,7 @@ test("floor placement follows visible grid cells across rotation and origin shif
   );
   await page.screenshot({ path: "artifacts/grid-alignment.png" });
 });
-test("placement, position controls, and elevation move in whole studs", async ({
+test("placement, arrow controls, and elevation move in whole studs", async ({
   page,
 }) => {
   await page.goto("/");
@@ -278,22 +276,15 @@ test("placement, position controls, and elevation move in whole studs", async ({
     ]);
     e.pickSelection("tile");
   });
-  await openCoordinates(page);
-  await page.locator("#pos-1").press("ArrowUp");
-  await openCoordinates(page);
-  await page.locator("#pos-1").press("Tab");
-  await expect(page.locator("#pos-1")).toHaveValue("1.1");
-  await openCoordinates(page);
-  await page.locator("#pos-1").press("ArrowDown");
-  await openCoordinates(page);
-  await page.locator("#pos-1").press("Tab");
-  await expect(page.locator("#pos-1")).toHaveValue("0.1");
-  await openCoordinates(page);
-  await page.locator("#pos-0").fill("2.7");
-  await openCoordinates(page);
-  await page.locator("#pos-0").press("Tab");
-  await expect(page.locator("#pos-0")).toHaveValue("3");
-  await page.locator("#place-selected").click();
+  const tilePosition = () => page.evaluate(() => (window as any).timber.editor.world.pieces.get("tile").position);
+  await page.locator('[data-nudge="up"]').click();
+  expect(await tilePosition()).toEqual([0, 1.1, 0]);
+  await page.locator('[data-nudge="down"]').click();
+  expect(await tilePosition()).toEqual([0, 0.1, 0]);
+  for (let i = 0; i < 3; i++) await page.locator('[data-nudge="right"]').click();
+  expect(await tilePosition()).toEqual([3, 0.1, 0]);
+  await openBuild(page);
+  await page.locator('[data-item="tiny-tile"]').click();
   await page.locator("#elevation").fill("1.7");
   await page.locator("#elevation").press("Tab");
   await expect(page.locator("#elevation")).toHaveValue("2");
@@ -365,7 +356,7 @@ test("intersecting placement turns red and is blocked while stacking stays valid
   await expect(page.locator("#piece-count")).toHaveText("2 pieces");
   await expect(page.locator("#overlap")).toHaveCount(0);
 });
-test("rotation and numeric movement cannot intersect another piece", async ({
+test("rotation and arrow movement cannot intersect another piece", async ({
   page,
 }) => {
   await page.goto("/");
@@ -390,22 +381,21 @@ test("rotation and numeric movement cannot intersect another piece", async ({
     ]);
     e.pickSelection("a");
   });
-  await page.locator("#rotate").click();
+  await page.keyboard.press('r');
   expect(
     await page.evaluate(
       () => (window as any).timber.editor.world.pieces.get("a").rotation,
     ),
   ).toEqual([0, 0, 0]);
-  await openCoordinates(page);
-  await page.locator("#pos-2").fill("2");
-  await openCoordinates(page);
-  await page.locator("#pos-2").press("Tab");
-  await expect(page.locator("#pos-2")).toHaveValue("0");
+  await page.locator('[data-nudge="back"]').click();
+  expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get("a").position)).toEqual([0, 4, 1]);
+  await page.locator('[data-nudge="back"]').click();
+  await expect(page.locator("#toast")).toContainText("overlap");
   expect(
     await page.evaluate(
       () => (window as any).timber.editor.world.pieces.get("a").position,
     ),
-  ).toEqual([0, 4, 0]);
+  ).toEqual([0, 4, 1]);
 });
 test("cancelling a recolored duplicate does not alter its original", async ({
   page,
@@ -516,14 +506,11 @@ test("place rotate recolor move delete undo and export preserve a real build", a
   await openWoods(page);
   await page.locator('[data-wood="walnut"]').click();
   await page.locator("#undo").click();
-  await expect(page.locator("#wood-name")).toHaveText("Oak");
+  await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Oak/);
   await page.keyboard.press("r");
   await openWoods(page);
   await page.locator('[data-wood="cherry"]').click();
-  await openCoordinates(page);
-  await page.locator("#pos-0").fill("12");
-  await openCoordinates(page);
-  await page.locator("#pos-0").press("Tab");
+  await page.locator('[data-nudge="right"]').click();
   await canvas.focus();
   await page.keyboard.press("Control+z");
   const before = await page.evaluate(() =>

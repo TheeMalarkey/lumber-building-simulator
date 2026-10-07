@@ -31,7 +31,7 @@ try{
  await page.keyboard.press('Escape');
  const from=xy([-8,0,-3]),to=xy([8,2,2]);await page.keyboard.down('Control');await page.mouse.move(...from);await page.mouse.down();await page.mouse.move(...to,{steps:8});await page.mouse.up();await page.keyboard.up('Control');
  await expect(page.locator('#piece-name')).toHaveText('2 blueprints · 1 wire');
- await page.keyboard.press('Control+d');await page.keyboard.press('l');await page.locator('#step-buttons-details summary').click();
+ await page.keyboard.press('Control+d');await page.keyboard.press('l');
  for(let i=0;i<6;i++)await page.locator('[data-nudge="up"]').click();await page.locator('#commit-preview').click();
  result=await exported();expect(result.pieces).toHaveLength(4);expect(result.wires).toHaveLength(3);expect(result.wires.slice(0,2)).toEqual(fixture.wires);
  const copy=result.wires[2],copies=result.pieces.filter(p=>!['lever','lamp'].includes(p.id));

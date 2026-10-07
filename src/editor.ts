@@ -184,6 +184,7 @@ export class Editor {
         if (other !== id) this.panel(other, false);
     }
     $(id).hidden = !open;
+    if(id === "woods" && !open)this.hideWoodHint();
     $(triggers[id]).setAttribute("aria-expanded", String(open));
     $(triggers[id]).classList.toggle("active", open);
     if (id === "build-panel") {
@@ -193,6 +194,10 @@ export class Editor {
     if (open && id === "build-panel") $("search").focus();
     if (!open && $(id).contains(document.activeElement))
       this.view.renderer.domElement.focus({ preventScroll: true });
+  }
+  private hideWoodHint() {
+    $("wood-tooltip").hidden=true;
+    document.querySelector('#woods [aria-describedby="wood-tooltip"]')?.removeAttribute("aria-describedby");
   }
   inspect() {
     const pieces = this.selectedPieces;
@@ -215,23 +220,17 @@ export class Editor {
     $("hold-position").textContent = this.held ? "Release position (L)" : "Hold position (L)";
     $("hold-position").setAttribute("aria-pressed", String(this.held));
     $("commit-preview").hidden = !this.held;
-    $("nudge-label").textContent = this.placing ? "Adjust preview · 1 stud" : this.copyWithArrows ? "Copy with arrows · 1 stud" : "Move selection · 1 stud";
     $("axis-copy-row").hidden=this.placing || !p;
     $<HTMLInputElement>("axis-copy-toggle").checked=this.copyWithArrows;
-    $("axis-hint").innerHTML=this.copyWithArrows && !this.placing
-      ? "Drag an X, Y or Z arrow to copy your selection.<br>Release to place; Esc cancels."
-      : "Drag the X, Y or Z arrow on your selection.<br>Hold a placement with L to adjust it in the air.";
-    $("step-buttons-details").querySelector("summary")!.textContent=this.copyWithArrows && !this.placing ? "Move step buttons" : "Step buttons";
     const displayedWood=multi ? woodPieces[0]?.wood ?? this.wood : this.wood;
-    $("wood-color").style.background = mixedWood
-      ? "linear-gradient(135deg, #d7c59a 50%, #694028 50%)" : WOOD_MAP.get(displayedWood)!.color;
     if (!(p || this.placing)) this.panel("woods", false);
     const item = ITEMS.get(this.item)!;
     ($("piece-preview") as HTMLImageElement).src = this.thumbnails.get(
       item.id,
     )!;
     $("piece-name").textContent = wireCount||this.groupPlacement?.wires.length ? selectionLabel(pieces.length,wireCount||this.groupPlacement?.wires.length||0) : multi ? `${pieces.length} blueprints selected` : item.name;
-    $("piece-size").textContent = multi||wireCount ? "Rotate, tilt, move or copy together" : (item.dimensionsEstimated ? "≈ " : "") + item.size.join(" × ") + " studs";
+    $("piece-size").hidden = multi||!!wireCount;
+    $("piece-size").textContent = (item.dimensionsEstimated ? "≈ " : "") + item.size.join(" × ") + " studs";
     $("piece-category").textContent = multi ? "GROUP SELECTION" : item.category.toUpperCase();
     $("piece-preview").hidden = multi||!!wireCount||!!this.groupPlacement?.wires.length;
     const fixedFinish=wireCount||this.groupPlacement?.wires.length ? !woodPieces.length : multi ? !woodPieces.length : !!item.fixedMaterial;
@@ -240,31 +239,25 @@ export class Editor {
     $("light-controls").hidden=this.placing || !lights.length;
     this.logicTools.inspect();
     if(fixedFinish) this.panel("woods",false);
-    $("rotate-controls").hidden = false;
     $<HTMLInputElement>("overlap-toggle").checked=this.world.allowOverlaps;
-    $("place-selected").hidden = multi;
-    $("selection-hint").hidden = !multi;
     $("selection-count").hidden = !this.hasSelection;
     $("selection-count").textContent = wireCount?`${selectionLabel(pieces.length,wireCount)} selected`:`${pieces.length} selected`;
-    $("wood-name").textContent = mixedWood ? "Mixed woods" : WOOD_MAP.get(displayedWood)!.name;
+    const finishLabel = `Wood finish: ${mixedWood ? "Mixed woods" : WOOD_MAP.get(displayedWood)!.name}`;
+    $("wood-toggle").setAttribute("aria-label", finishLabel);
+    $("wood-toggle").title = finishLabel;
     document
       .querySelectorAll<HTMLElement>("[data-wood]")
       .forEach((b) =>
         b.classList.toggle("active", !mixedWood && b.dataset.wood === displayedWood),
       );
-    $("transform-section").hidden = !(p || this.placing);
-    $("coordinates-details").hidden = !p || multi || this.placing;
-    if (p)
-      for (let i = 0; i < 3; i++) {
-        const input = $<HTMLInputElement>(`pos-${i}`);
-        // Anchor native number-input steps to the piece's surface offset.
-        input.defaultValue = String(p.position[i]);
-        input.value = String(p.position[i]);
-      }
+    const wireOnly=!!wireCount&&!pieces.length&&!this.placing;
+    const pad=$("transform-section"), padParent=$(wireOnly ? "wire-nudge-slot" : "selection-footer");
+    if(pad.parentElement!==padParent)padParent.prepend(pad);
+    pad.hidden = !(p || this.placing || wireOnly);
+    $("selection-footer").hidden = !(p || this.placing);
     this.view.selectMany(pieces);
     this.syncGizmo();
     this.paths.syncUI();
-    $("place-selected").innerHTML = icon("plus") + " Place blueprint";
   }
   updateWorldUI() {
     this.view.setPlots(this.world.plots ?? [12]);
@@ -861,6 +854,26 @@ export class Editor {
       if (!b) return;
       this.changeWood(b.dataset.wood!);
     };
+    const showWoodHint = (event: Event) => {
+      const swatch=(event.target as HTMLElement).closest<HTMLElement>("[data-wood]");
+      if(!swatch || $("woods").hidden)return;
+      const wood=WOOD_MAP.get(swatch.dataset.wood!);if(!wood)return;
+      this.hideWoodHint();
+      const hint=$("wood-tooltip");hint.textContent=wood.name;hint.hidden=false;
+      swatch.setAttribute("aria-describedby",hint.id);
+      const bounds=swatch.getBoundingClientRect(),width=hint.offsetWidth,height=hint.offsetHeight;
+      hint.style.left=`${Math.max(8,Math.min(innerWidth-width-8,bounds.x+bounds.width/2-width/2))}px`;
+      hint.style.top=`${bounds.y-height-7>=8 ? bounds.y-height-7 : bounds.bottom+7}px`;
+    };
+    $("woods").addEventListener("pointerover",showWoodHint);
+    $("woods").addEventListener("focusin",showWoodHint);
+    $("woods").addEventListener("pointerout",event=>{
+      const swatch=(event.target as HTMLElement).closest<HTMLElement>("[data-wood]");
+      if(swatch && (!event.relatedTarget || !swatch.contains(event.relatedTarget as Node)))this.hideWoodHint();
+    });
+    $("woods").addEventListener("focusout",()=>this.hideWoodHint());
+    document.querySelector(".inspector-body")!.addEventListener("scroll",()=>this.hideWoodHint(),{passive:true});
+    window.addEventListener("resize",()=>this.hideWoodHint());
     const actions: Record<string, () => unknown> = {
       "select-tool": () => this.pickSelection(null),
       "move-tool": () => this.move(),
@@ -877,17 +890,7 @@ export class Editor {
         this.setMode(false);
         this.world.redo();
       },
-      rotate: () => this.rotate(1),
-      tilt: () => this.rotate(0),
       home: () => this.view.camera.home(),
-      "place-selected": () => {
-        this.setMode(false);
-        this.selected = null;
-        this.moving = null;
-        this.setMode(true);
-        this.updateWorldUI();
-        this.updateGhost();
-      },
       "build-tool": () => {if(this.logicTools.wiring)this.logicTools.toggle(false);this.panel("build-panel", !!$("build-panel").hidden);},
       "menu-tool": () => this.panel("project-menu", !!$("project-menu").hidden),
       "wood-toggle": () => this.panel("woods", !!$("woods").hidden),
@@ -949,33 +952,6 @@ export class Editor {
       const f = $<HTMLInputElement>("file-input").files?.[0];
       if (f) void this.import(f);
     };
-    for (let i = 0; i < 3; i++)
-      $(`pos-${i}`).onchange = () => {
-        if (this.selection.size > 1) return;
-        const p = this.selected ? this.world.pieces.get(this.selected) : null;
-        if (!p) return;
-        const n = Number($<HTMLInputElement>(`pos-${i}`).value);
-        if (
-          !Number.isFinite(n) ||
-          Math.abs(n) > Number.MAX_SAFE_INTEGER / 10000
-        ) {
-          this.inspect();
-          return;
-        }
-        const q = structuredClone(p);
-        q.position[i] = snapMovement(n, p.position[i]);
-        const issue = this.world.placementIssue(q, p.id);
-        if (issue) {
-          this.toast(
-            issue === "below-ground"
-              ? BELOW_GROUND_MESSAGE
-              : issue === "outside-plots" ? OUTSIDE_PLOTS_MESSAGE : "Cannot move here: this piece would overlap another.",
-          );
-          this.inspect();
-          return;
-        }
-        if(!this.world.execute([{ before: p, after: q }]))this.inspect();
-      };
     const canvas = this.view.renderer.domElement;
     let down: [number, number] | null = null;
     let selectionClicks: string[] = [];

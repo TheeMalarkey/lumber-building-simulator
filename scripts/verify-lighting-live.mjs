@@ -40,7 +40,7 @@ try {
   await expect(page.locator('#piece-count')).toHaveText('6 pieces');
   project=await exported();expect(project.pieces.filter(p=>p.id.startsWith('light-')).sort((a,b)=>a.id.localeCompare(b.id))).toEqual(fixture.map(p=>p.id==='light-3'?{...p,lightOn:false}:p));
   expect(project.pieces.at(-1)).toMatchObject({item:'floor-lamp',position:[6,11,0],lightOn:false});
-  await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await page.keyboard.press('r');await page.keyboard.press('t');
   await page.locator('#undo').click();await page.locator('#redo').click();
   project=await exported();await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');

@@ -28,10 +28,9 @@ test('all nine furnishings save with fixed finishes and seating supports group c
   await expect(page.locator('#wood-picker')).toBeHidden();
   expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].every((p:any)=>p.wood==='oak'))).toBe(true);
   await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();
-  await page.locator('#step-buttons-details').evaluate((el:HTMLDetailsElement)=>el.open=true);
   for(let i=0;i<5;i++) await page.locator('[data-nudge="up"]').click();
   await page.locator('#commit-preview').click();await expect(page.locator('#piece-count')).toHaveText('11 pieces');
-  await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await page.keyboard.press('r');await page.keyboard.press('t');
   await page.locator('#undo').click();await page.locator('#redo').click();
   await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
   await page.reload();await page.waitForFunction(()=>!!(window as any).timber);
@@ -87,7 +86,6 @@ test('glass catalog and mixed selections preserve fixed finishes through editing
   await page.evaluate(()=>(window as any).timber.editor.pickSelections(['pane','door']));
   await expect(page.locator('#wood-picker')).toBeHidden();
   await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();
-  await page.locator('#step-buttons-details').evaluate((el:HTMLDetailsElement)=>el.open=true);
   for(let i=0;i<8;i++) await page.locator('[data-nudge="up"]').click();
   await page.locator('#commit-preview').click();
   await expect(page.locator('#piece-count')).toHaveText('5 pieces');

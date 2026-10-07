@@ -24,8 +24,8 @@ const project=position=>{const v=new Vector3(...position).project(camera);return
 await page.mouse.click(...project(fixture[0].position));
 await page.keyboard.down('Control');await page.mouse.click(...project(fixture[1].position));await page.keyboard.up('Control');
 await expect(page.locator('#selection-count')).toHaveText('2 selected');
-await expect(page.locator('#wood-name')).toHaveText('Mixed woods');
-await page.locator('#rotate').click();await page.locator('#tilt').click();
+await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Mixed woods/);
+await page.keyboard.press('r');await page.keyboard.press('t');
 await page.locator('#wood-toggle').click();await page.locator('[data-wood="pine"]').click();
 const exported=async()=>{
   await page.locator('#menu-tool').click();const pending=page.waitForEvent('download');await page.locator('#export').click();
@@ -43,9 +43,9 @@ for(const initial of fixture.slice(0,2)) {
   const actual=new Quaternion().setFromEuler(new Euler(...edited.find(p=>p.id===initial.id).rotation.map(n=>n*Math.PI/2),'YXZ'));
   expect(Math.abs(actual.dot(expected))).toBeCloseTo(1,8);
 }
-await page.locator('#undo').click();await expect(page.locator('#wood-name')).toHaveText('Mixed woods');
-await page.locator('#redo').click();await expect(page.locator('#wood-name')).toHaveText('Pine');
-await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();await page.locator('#rotate').click();
+await page.locator('#undo').click();await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Mixed woods/);
+await page.locator('#redo').click();await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Pine/);
+await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();await page.keyboard.press('r');
 await page.locator('#wood-toggle').click();await page.locator('[data-wood="walnut"]').click();await page.keyboard.press('Escape');
 expect((await exported()).sort((a,b)=>a.id.localeCompare(b.id))).toEqual([...edited].sort((a,b)=>a.id.localeCompare(b.id)));
 // Restore the group for a readable screenshot and compact controls check.
@@ -55,7 +55,7 @@ await page.locator('#home').click();await page.waitForTimeout(1000);
 await expect(page.locator('#toast')).not.toHaveClass(/visible/);
 await page.screenshot({path:'artifacts/group-editing.png'});
 await page.setViewportSize({width:390,height:844});
-await expect(page.locator('#rotate')).toBeVisible();await expect(page.locator('#tilt')).toBeVisible();await expect(page.locator('#wood-toggle')).toBeVisible();
+await expect(page.locator('[data-nudge]')).toHaveCount(6);await expect(page.locator('#wood-toggle')).toBeVisible();
 expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 expect(errors).toEqual([]);
 mkdirSync('release/pages-verification',{recursive:true});

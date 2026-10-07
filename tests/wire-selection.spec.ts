@@ -42,7 +42,7 @@ test('mixed deletion preserves unselected leads with a free end and undoes the w
 
 test('copies wire-only selections with Ctrl+D and the held placement controls',async({page})=>{
  await setup(page);await click(page,[0,.145,-3]);await click(page,[0,.155,0],true);const original=await wires(page);
- await page.keyboard.press('Control+d');await page.keyboard.press('l');await page.locator('#step-buttons-details summary').click();await page.locator('[data-nudge="up"]').click();await page.locator('[data-nudge="up"]').click();await page.locator('#commit-preview').click();
+ await page.keyboard.press('Control+d');await page.keyboard.press('l');await page.locator('[data-nudge="up"]').click();await page.locator('[data-nudge="up"]').click();await page.locator('#commit-preview').click();
  const after=await wires(page);expect(after).toHaveLength(5);expect(after.slice(0,3)).toEqual(original);
  const copies=after.filter((w:any)=>!['a','b','c'].includes(w.id));expect(copies.map((w:any)=>w.kind)).toEqual(['wire','neon']);expect(copies[1].color).toBe('pink');
  expect((await selected(page)).wires).toHaveLength(2);await page.keyboard.press('Control+z');expect(await wires(page)).toEqual(original);

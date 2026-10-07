@@ -30,7 +30,6 @@ export class LogicTools {
   $('delete-wire').onclick=()=>e.remove();
   $('close-wire-selection').onclick=()=>e.pickSelection(null);
   $('copy-wires').onclick=()=>e.move(true);$('move-wires').onclick=()=>e.move();
-  $('rotate-wires').onclick=()=>e.rotate(1);$('tilt-wires').onclick=()=>e.rotate(0);
   $('wire-axis-copy-toggle').onchange=event=>{e.copyWithArrows=(event.target as HTMLInputElement).checked;e.inspect();};
   $('logic-action').onclick=()=>this.activate();
   $('logic-timing').onchange=()=>{const p=e.selectedPieces[0];if(!p)return;e.world.execute([{before:p,after:{...p,timing:Number(($('logic-timing') as HTMLSelectElement).value)}}]);this.inspect();};

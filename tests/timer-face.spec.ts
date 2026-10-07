@@ -5,7 +5,8 @@ test('timer faces visibly animate independent of output, without rebuilding hous
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  // Manually stepped snapshots do not represent live rendering throughput.
  await page.addStyleTag({content:'#fps{visibility:hidden}'});
- await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
+ // A stopped animation loop cannot repaint after an adaptive buffer resize.
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.view.adaptive=false;e.world.load([
   {id:'source',item:'button',wood:'oak',position:[-7,.25,-4],rotation:[0,0,0]},
   {id:'delay',item:'signal-delay',wood:'oak',position:[-2,1,0],rotation:[0,0,0],timing:12},
   {id:'sustain',item:'signal-sustain',wood:'oak',position:[2,1,0],rotation:[0,0,0],timing:12}

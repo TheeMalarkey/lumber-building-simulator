@@ -40,7 +40,7 @@ try {
   await expect(page.locator('#piece-count')).toHaveText('10 pieces');
   project=await exported();expect(project.pieces.slice(0,9)).toEqual(fixture);
   expect(project.pieces.at(-1)).toMatchObject({item:'refrigerator',position:[-10,11,10]});
-  await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await page.keyboard.press('r');await page.keyboard.press('t');
   await page.locator('#undo').click();await page.locator('#redo').click();
   project=await exported();await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');

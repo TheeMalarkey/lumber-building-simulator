@@ -68,26 +68,24 @@
 .game-hud .card-name { color: var(--hud-text); font-size: 11px; min-height: 28px; line-height: 1.25; }
 .game-hud .card-size { color: var(--hud-muted); font-size: 9px; padding-top: 2px; }
 .game-hud .empty-results { grid-column: 1 / -1; padding: 24px; color: var(--hud-muted); }
-.game-hud .inspector { right: 16px; bottom: 84px; top: auto; width: 270px; max-height: calc(100dvh - 155px); padding: 12px; overflow: auto; display: flex; gap: 10px; border: 1px solid var(--hud-border); }
-.piece-summary { display: flex; gap: 10px; align-items: center; }
+.game-hud .inspector { right: 16px; bottom: 84px; top: auto; width: 270px; max-height: calc(100dvh - 155px); padding: 12px; overflow: hidden; display: flex; gap: 10px; border: 1px solid var(--hud-border); }
+.piece-summary { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
 .piece-summary > img { width: 46px; height: 54px; object-fit: contain; }
-.piece-summary > div { min-width: 0; flex: 1; }
+.piece-summary > .piece-caption { min-width: 0; flex: 1; }
 .game-hud #piece-category { font-size: 8px; letter-spacing: 1px; color: var(--hud-muted); }
 .game-hud #piece-name { font-size: 13px; margin: 3px 0; line-height: 1.3; }
 .game-hud #piece-size { font-size: 10px; color: var(--hud-muted); }
-.piece-summary .icon-btn { align-self: flex-start; width: 24px; height: 24px; }
+.piece-summary #close-edit { align-self: flex-start; width: 24px; height: 24px; }
+.piece-summary #wood-toggle { width: 32px; height: 32px; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
+.piece-summary #wood-toggle svg { width: 20px; height: 20px; }
+.inspector-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.selection-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-shrink: 0; }
 .wood-picker { position: relative; }
-#wood-toggle { display: flex; align-items: center; gap: 8px; width: 100%; height: 35px; padding: 6px 8px; background: #ffffff08; border: 1px solid var(--hud-border); font-size: 12px; }
-#wood-color { width: 20px; height: 20px; border: 1px solid #ffffff44; border-radius: 3px; }
-.wood-caption { margin-left: auto; color: var(--hud-muted); font-size: 10px; }
 .game-hud .wood-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; padding: 12px 1px 2px; }
 .game-hud .wood-swatch { height: 31px; width: 100%; background: var(--wood); border: 2px solid transparent; }
 .game-hud .wood-swatch:hover { background: var(--wood); border-color: #fff9; }
 .game-hud .wood-swatch.active { background: var(--wood); border-color: var(--hud-text); }
 .game-hud .wood-swatch svg { color: #fff; filter: drop-shadow(0 1px 2px #000); }
-.game-hud .rotate-buttons { margin: 0; display: flex; gap: 8px; }
-.game-hud .rotate-buttons button { display: flex; align-items: center; justify-content: center; gap: 6px; flex: 1; min-height: 34px; border: 1px solid var(--hud-border); font-size: 11px; }
-.game-hud .rotate-buttons svg { width: 15px; }
 .game-hud .setting-row { display: flex; gap: 9px; margin: 0; color: var(--hud-muted); font-size: 11px; }
 .game-hud .setting-row input { width: 65px; padding: 5px; height: 30px; text-align: center; margin-left: auto; }
 .game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
@@ -95,18 +93,21 @@
 .game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 .game-hud #snap { font-size: 10px; }
 .game-hud .inspector section { padding: 0; border: 0; }
-.game-hud .coordinates { display: flex; gap: 6px; }
-#nudge-label { display: block; font-size: 11px; color: var(--hud-text); margin-bottom: 7px; }
-.nudge-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.nudge-buttons button, #hold-position { min-height: 33px; padding: 6px; border: 1px solid var(--hud-border); font-size: 11px; }
+.nudge-buttons { display: grid; grid-template-columns: repeat(3, 30px) 8px 30px; grid-template-rows: repeat(3, 30px); gap: 3px; }
+.nudge-buttons button { width: 30px; height: 30px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
+.nudge-buttons svg { width: 18px; height: 18px; }
+.nudge-buttons [data-nudge="forward"] { grid-area: 1 / 2; }
+.nudge-buttons [data-nudge="left"] { grid-area: 2 / 1; }
+.nudge-buttons [data-nudge="right"] { grid-area: 2 / 3; }
+.nudge-buttons [data-nudge="back"] { grid-area: 3 / 2; }
+.nudge-buttons [data-nudge="up"] { grid-area: 1 / 5; }
+.nudge-buttons [data-nudge="down"] { grid-area: 3 / 5; }
+#hold-position { min-height: 33px; padding: 6px; border: 1px solid var(--hud-border); font-size: 11px; }
+#wire-nudge-slot:not(:empty) { display: flex; justify-content: center; margin-top: 10px; }
 .nudge-hint { font-size: 10px; color: var(--hud-muted); margin: 7px 0 0; }
-#coordinates-details, #step-buttons-details { margin-top: 8px; }
-#coordinates-details summary, #step-buttons-details summary { cursor: pointer; font-size: 10px; color: var(--hud-muted); margin-bottom: 6px; }
 #preview-controls { display: flex; gap: 6px; }
 #hold-position { flex: 1; }
 #hold-position[aria-pressed="true"] { background: var(--hud-selected); }
-.game-hud .coordinates label { min-width: 0; flex: 1; color: var(--hud-muted); background: var(--hud-field); border: 1px solid var(--hud-border); padding: 5px; }
-.game-hud .coordinates input { width: 100%; border: 0; padding: 4px 0; background: none; font-size: 11px; }
 #selection-actions { display: flex; align-items: center; gap: 4px; }
 .game-hud .primary-btn { margin: 0; flex: 1; width: auto; padding: 9px 7px; background: var(--hud-selected); color: #fff; font-size: 11px; }
 .game-hud .placement-bar { left: 16px; bottom: 88px; transform: none; gap: 12px; padding: 9px 12px; background: var(--hud-bg); color: #fff; border-radius: 4px; pointer-events: none; }
@@ -128,7 +129,7 @@
   .build-toolbar .hud-tool { flex-direction: column; height: 44px; gap: 2px; padding: 3px 9px; font-size: 9px; }
   .build-toolbar .icon-btn { width: 27px; }
   .game-hud .catalog-panel { left: 8px; width: calc(100% - 16px); bottom: 82px; height: min(580px, calc(100dvh - 145px)); }
-  .game-hud .inspector { right: 8px; bottom: 114px; width: 245px; max-height: calc(100dvh - 180px); }
+  .game-hud .inspector { right: 8px; bottom: 82px; width: 245px; max-height: calc(100dvh - 145px); }
   .game-hud .placement-bar { left: 8px; bottom: 82px; padding: 7px 9px; gap: 8px; }
   .game-hud .placement-bar > span { font-size: 9px; }
   .hud-status { left: 8px; }
@@ -170,7 +171,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud .catalog-card.selected { box-shadow: inset 0 0 0 1px #ffffff20; }
 .game-hud .catalog-card:hover:not(:disabled) { border-color: #ffffff55; }
 .game-hud .card-add { color: var(--hud-muted); }
-.game-hud .rotate-buttons kbd { color: var(--hud-muted); background: #ffffff09; }
 .game-hud .search kbd { border-color: var(--hud-border); }
 .game-hud input[type="checkbox"], .game-hud progress { accent-color: var(--hud-active); }
 .game-hud .logic-ports button { border-color: var(--hud-border); }
@@ -191,7 +191,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud #logic-hover kbd { color: var(--hud-text); border-color: var(--hud-border); }
 .game-hud #selection-marquee { border-color: var(--hud-active); background: #ffffff22; }
 .game-hud #wire-colors button { border-color: #888; }
-.game-hud #wire-selection-panel { max-height: calc(100dvh - 155px); overflow: auto; }
+.game-hud #wire-selection-panel { display: flex; flex-direction: column; max-height: calc(100dvh - 155px); overflow: hidden; }
+.wire-selection-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+#wire-nudge-slot { flex-shrink: 0; }
 
 /* Help and confirmations share the same theme; only confirmations block the world.
    Settings and Land use dialog.show(), with no fullscreen backdrop or blur. */
@@ -269,3 +271,4 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 }
 
 .game-hud .wire-card .card-image svg { width: 100%; height: 100%; }
+#wood-tooltip { position: fixed; z-index: 25; pointer-events: none; padding: 6px 9px; border: 1px solid var(--hud-border); border-radius: 4px; background: rgb(18 18 18 / 95%); color: var(--hud-text); font-size: 11px; white-space: nowrap; box-shadow: 0 3px 10px #0003; }

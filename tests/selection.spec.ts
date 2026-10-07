@@ -31,8 +31,8 @@ async function elevatedPair(page:Page) {
 
 test('group rotate and tilt keep the assembly together and undo as whole actions',async({page})=>{
   await elevatedPair(page);const original=await pieces(page);
-  await expect(page.locator('#rotate')).toBeVisible();await expect(page.locator('#tilt')).toBeVisible();
-  await page.locator('#rotate').click();
+  await expect(page.locator('[data-nudge]')).toHaveCount(6);
+  await page.keyboard.press('r');
   const yawed=await pieces(page);expect(yawed.slice(0,2).map((p:any)=>p.position)).toEqual([[1,8,3],[-1,8,-3]]);
   await page.keyboard.press('t');const tilted=await pieces(page);
   expect(tilted.slice(0,2).map((p:any)=>p.position)).toEqual([[1,5,0],[-1,11,0]]);
@@ -61,13 +61,13 @@ test('group turns reject ground, plot and outsider collisions without partial ed
 
 test('group wood changes show mixed finishes and preserve undo, outsiders and saves',async({page})=>{
   await elevatedPair(page);const original=await pieces(page);
-  await expect(page.locator('#wood-name')).toHaveText('Mixed woods');await openWoods(page);
+  await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Mixed woods/);await openWoods(page);
   await expect(page.locator('[data-wood].active')).toHaveCount(0);
   await page.locator('[data-wood="pine"]').click();const recolored=await pieces(page);
   expect(recolored.slice(0,2).map((p:any)=>p.wood)).toEqual(['pine','pine']);expect(recolored[2]).toEqual(original[2]);
   expect(recolored.map((p:any)=>[p.id,p.position,p.rotation])).toEqual(original.map((p:any)=>[p.id,p.position,p.rotation]));
-  await expect(page.locator('#wood-name')).toHaveText('Pine');
-  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);await expect(page.locator('#wood-name')).toHaveText('Mixed woods');
+  await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Pine/);
+  await page.locator('#undo').click();expect(await pieces(page)).toEqual(original);await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', /Mixed woods/);
   await page.locator('#redo').click();expect(await pieces(page)).toEqual(recolored);
   await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
   await page.reload();await page.waitForFunction(()=>!!(window as any).timber);expect(await pieces(page)).toEqual(recolored);
@@ -75,7 +75,7 @@ test('group wood changes show mixed finishes and preserve undo, outsiders and sa
 
 test('held group copies can turn and recolor without modifying their originals',async({page})=>{
   await elevatedPair(page);const original=await pieces(page);await page.locator('#duplicate-tool').click();
-  await page.locator('#hold-position').click();await page.locator('#rotate').click();await page.locator('#tilt').click();
+  await page.locator('#hold-position').click();await page.keyboard.press('r');await page.keyboard.press('t');
   await openWoods(page);await page.locator('[data-wood="pine"]').click();
   expect(await pieces(page)).toEqual(original);
   expect(await page.evaluate(()=>(window as any).timber.editor.groupPreview.map((p:any)=>[p.position,p.wood]))).toEqual([[[1,5,0],'pine'],[[-1,11,0],'pine']]);

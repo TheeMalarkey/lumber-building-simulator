@@ -50,8 +50,9 @@ export class PathBuilder {
       $("placing-hold").hidden=this.hasDraft;
       $("preview-controls").hidden=this.hasDraft;
       $("commit-preview").hidden=this.mode==="line" || !this.host.held;
-      if(this.hasDraft) {$("elevation-row").hidden=true;$("transform-section").hidden=true;}
+      if(this.hasDraft) $("elevation-row").hidden=true;
     } else {$("placing-instruction").textContent="Click to place";$("placing-hold").hidden=false;}
+    document.querySelectorAll<HTMLButtonElement>('[data-nudge]').forEach(button => button.disabled=this.hasDraft);
   }
   syncGizmo() {
     if(!this.hasDraft) return false;

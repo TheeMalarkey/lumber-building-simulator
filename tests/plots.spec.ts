@@ -1,4 +1,4 @@
-import { openBuild, openMenu, openWoods, openCoordinates } from "./ui-helpers";
+import { openBuild, openMenu, openWoods } from "./ui-helpers";
 import { expect, test } from "@playwright/test";
 
 test("raised plots remain visible over grass across free-camera origin shifts", async ({ page }) => {
@@ -88,8 +88,7 @@ test("placement, moving and rotation require the whole footprint on land; terrai
   expect(result.rejected && result.countAfterPlacement && result.moveRejected && result.rotationRejected).toBe(true);
   expect(result.top).toBeCloseTo(0); expect(result.grass).toBe(-.1); expect(result.thickness).toBeCloseTo(.1);
   expect(result.borderY).toBeGreaterThan(0); expect(result.texturesReady).toBe(true);
-  await openCoordinates(page);
-  await page.locator("#pos-0").fill("40"); await page.locator("#pos-0").press("Tab");
-  await expect(page.locator("#pos-0")).toHaveValue("19");
+  await page.locator('[data-nudge="right"]').click();
+  expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get("post").position)).toEqual([19, 2, 0]);
   await expect(page.locator("#toast")).toContainText("active plots");
 });

@@ -19,7 +19,6 @@ const c=new PerspectiveCamera(45,r.width/r.height,.1,4000);c.position.set(40,30,
 const project=p=>{const v=new Vector3(...p).project(c);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];};
 await page.mouse.click(...project([-5,1,5]));await page.locator("#duplicate-tool").click();
 await page.locator("#hold-position").click();
-await page.locator("#step-buttons-details summary").click();
 for (let i=0;i<3;i++) {
   await page.locator('[data-nudge="up"]').click();await page.locator('[data-nudge="forward"]').click();
   await page.locator("#commit-preview").click();
@@ -43,10 +42,8 @@ expect(exported.pieces.find(p=>p.id==="upper").position).toEqual([5,2,0]);
 const steps=exported.pieces.filter(p=>!["step","ramp","upper","table"].includes(p.id));
 expect(steps.map(p=>p.position).sort((a,b)=>a[1]-b[1])).toEqual([[-5,1.5,4],[-5,2.5,3],[-5,3.5,2]]);
 await page.locator("#home").click();await page.waitForTimeout(5000);
-await page.locator("#step-buttons-details summary").click();
 await page.screenshot({path:"artifacts/precision-building.png"});
 await page.setViewportSize({width:390,height:844});
-await page.locator("#step-buttons-details summary").click();
 await expect(page.locator('[data-nudge="down"]')).toBeVisible();
 expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 expect(errors).toEqual([]);

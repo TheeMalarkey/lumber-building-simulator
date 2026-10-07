@@ -20,7 +20,7 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await expect(page.locator("#woods")).toBeVisible();
   await page.locator('[data-wood="cherry"]').click();
   await expect(page.locator("#woods")).toBeHidden();
-  await expect(page.locator("#wood-name")).toHaveText("Cherry");
+  await expect(page.locator("#wood-toggle")).toHaveAttribute("aria-label", "Wood finish: Cherry");
   await page.keyboard.press("b");
   await page.keyboard.press("Escape");
   await expect(page.locator("#build-panel")).toBeHidden();
@@ -32,6 +32,62 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await page.locator("#help").click();
   await expect(page.locator("#modal")).toBeVisible();
   await expect(page.locator("#project-menu")).toBeHidden();
+});
+
+test("selected inspector uses a header palette and an always-visible arrow pad", async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => !!(window as any).timber);
+  await page.evaluate(() => {
+    const e = (window as any).timber.editor;
+    e.world.load([{id:'a',item:'stairs',wood:'oak',position:[-4,5.1,0],rotation:[0,0,0]},
+      {id:'b',item:'stairs',wood:'pine',position:[4,5.1,0],rotation:[0,0,0]}],[12]);
+    e.pickSelections(['a']);
+    e.view.camera.home();
+  });
+  await expect(page.locator('#rotate,#tilt,#coordinates-details,#place-selected,#step-buttons-details,#axis-hint,#nudge-label')).toHaveCount(0);
+  await expect(page.locator('.piece-summary #wood-toggle')).toBeVisible();
+  await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', 'Wood finish: Oak');
+  expect(await page.locator('#nudge-buttons').innerText()).toBe('');
+  for (const direction of ['left','right','forward','back','up','down']) await expect(page.locator(`[data-nudge="${direction}"]`)).toBeVisible();
+  const position = () => page.evaluate(() => (window as any).timber.editor.world.pieces.get('a').position);
+  const original = await position();
+  await page.locator('[data-nudge="up"]').click();
+  expect(await position()).toEqual([original[0],original[1]+1,original[2]]);
+  await page.locator('[data-nudge="down"]').click();
+  expect(await position()).toEqual(original);
+  await page.keyboard.press('r');
+  await page.keyboard.press('t');
+  expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get('a').rotation)).not.toEqual([0,0,0]);
+  await page.evaluate(() => (window as any).timber.editor.pickSelections(['a','b']));
+  await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', 'Wood finish: Mixed woods');
+  await page.locator('#wood-toggle').click();
+  await page.locator('[data-wood="oak"]').focus();
+  await expect(page.getByRole('tooltip')).toHaveText('Oak');
+  await page.locator('[data-wood="cherry"]').hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Cherry');
+  await page.locator('[data-wood="cherry"]').click();
+  await expect(page.getByRole('tooltip')).toBeHidden();
+  expect(await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()].map((p:any) => p.wood))).toEqual(['cherry','cherry']);
+  for (const [width,height] of [[1440,960],[390,844],[844,390]]) {
+    await page.setViewportSize({width,height});
+    await expect(page.locator('#nudge-buttons')).toBeInViewport();
+    await expect(page.locator('#duplicate-tool')).toBeInViewport();
+    await expect(page.locator('#delete-tool')).toBeInViewport();
+    const bounds = (await page.locator('#edit-panel').boundingBox())!;
+    expect(bounds.height).toBeLessThanOrEqual(280);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+  }
+  await page.evaluate(async () => {
+    const e = (window as any).timber.editor;
+    e.world.load([],[12],[{id:'w1',kind:'wire',from:{point:[-2,.18,0]},to:{point:[2,.18,0]},points:[]}]);
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    e.pickSelections([],['w1']);
+  });
+  await page.locator('[data-nudge="up"]').click();
+  expect(await page.evaluate(() => (window as any).timber.editor.world.wires[0].from.point)).toEqual([-2,1.18,0]);
+  const wirePanel = (await page.locator('#wire-selection-panel').boundingBox())!;
+  const pad = (await page.locator('#nudge-buttons').boundingBox())!;
+  expect(pad.y + pad.height).toBeLessThanOrEqual(wirePanel.y + wirePanel.height);
 });
 test("HUD and scrollable catalog fit compact screens", async ({ page }) => {
   await page.goto("/");

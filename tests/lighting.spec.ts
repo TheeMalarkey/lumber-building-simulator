@@ -21,7 +21,6 @@ test('lighting catalog, grouped switching, single copy, saved state and night pr
  await page.locator('#redo').click();await expect(page.locator('#light-toggle')).not.toBeChecked();
  await page.evaluate(()=>(window as any).timber.editor.pickSelection('l2'));
  await page.locator('#duplicate-tool').click();await page.locator('#hold-position').click();
- await page.locator('#step-buttons-details').evaluate((el:HTMLDetailsElement)=>el.open=true);
  for(let i=0;i<5;i++)await page.locator('[data-nudge="up"]').click();
  await page.locator('#commit-preview').click();
  expect(await page.evaluate(()=>[...(window as any).timber.editor.world.pieces.values()].filter((p:any)=>p.item==='lamp').every((p:any)=>p.lightOn===false))).toBe(true);

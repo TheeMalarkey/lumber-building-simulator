@@ -39,11 +39,10 @@ test('overlap mode applies to group turns and moves while retaining ground and p
       {id:'c',item:'tiny-floor',wood:'walnut',position:[1,8,3],rotation:[0,0,0]},
     ],[12]);e.pickSelections(['a','b']);
   });
-  const before=await pieces(page);await page.locator('#rotate').click();expect(await pieces(page)).toEqual(before);
-  await page.locator('#overlap-toggle').check();await page.locator('#rotate').click();
+  const before=await pieces(page);await page.keyboard.press('r');expect(await pieces(page)).toEqual(before);
+  await page.locator('#overlap-toggle').check();await page.locator('#viewport>canvas').focus();await page.keyboard.press('r');
   expect((await pieces(page)).slice(0,2).map((p:any)=>p.position)).toEqual([[1,8,3],[-1,8,-3]]);
   await page.locator('#undo').click();expect(await pieces(page)).toEqual(before);
-  await page.locator('#step-buttons-details summary').click();
   for(let i=0;i<8;i++)await page.locator('[data-nudge="down"]').click();
   const floor=await pieces(page);expect(floor.slice(0,2).map((p:any)=>p.position[1])).toEqual([2,2]);
   await expect(page.locator('#toast')).toContainText('below ground');

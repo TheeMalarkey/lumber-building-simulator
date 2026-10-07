@@ -14,7 +14,3 @@ export async function openMenu(page: Page) {
 export async function openWoods(page: Page) {
   if (!await page.locator("#woods").isVisible()) await page.locator("#wood-toggle").click();
 }
-export async function openCoordinates(page: Page) {
-  if (!await page.locator("#coordinates-details").evaluate(el=>(el as HTMLDetailsElement).open))
-    await page.locator("#coordinates-details summary").click();
-}

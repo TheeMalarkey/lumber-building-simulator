@@ -9,7 +9,6 @@ async function setup(page:any, group=false) {
     ],[12]);e.view.camera.camera.position.set(0,20,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();
     e.pickSelections(multi?["a","b"]:["a"]);
   },group);
-  await page.locator("#step-buttons-details summary").click();
 }
 test("six movement buttons nudge one piece in whole studs, keep fractional height, and undo",async({page})=>{
   await setup(page);
@@ -21,7 +20,7 @@ test("six movement buttons nudge one piece in whole studs, keep fractional heigh
   expect((await positions(page))[0].position).toEqual([-3,.1,0]);
   await page.locator('[data-nudge="down"]').click();await expect(page.locator('#toast')).toContainText('below ground');
   await page.locator('#undo').click();expect((await positions(page))[0].position).toEqual([-3,1.1,0]);
-  await expect(page.locator('#pos-0')).toBeHidden();
+  await expect(page.locator('[data-nudge]')).toHaveCount(6);
 });
 test("group nudges are atomic and reject an obstacle under either member",async({page})=>{
   await setup(page,true);await page.locator('[data-nudge="up"]').click();
