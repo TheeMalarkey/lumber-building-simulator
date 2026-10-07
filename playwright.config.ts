@@ -9,6 +9,8 @@ export default defineConfig({
     "wire-selection.spec.ts",
     "wire-ui.spec.ts",
     "wire-controls.spec.ts",
+    "wire-inspector.spec.ts",
+    "wire-sharp-bends.spec.ts",
     "palette-colors.spec.ts",
     "wire-relocation.spec.ts",
     "hud.spec.ts",

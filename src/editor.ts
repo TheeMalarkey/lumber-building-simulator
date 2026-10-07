@@ -880,6 +880,9 @@ export class Editor {
       "walk-tool": () => this.toggleWalk(),
       "duplicate-tool": () => this.move(true),
       "delete-tool": () => this.remove(),
+      "wire-close": () => this.pickSelection(null),
+      "wire-duplicate": () => this.move(true),
+      "wire-delete": () => this.remove(),
       undo: () => {
         this.setMode(false);
         this.world.undo();

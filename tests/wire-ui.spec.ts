@@ -90,7 +90,7 @@ test('neon palette stays compact on phones and changing color updates an active 
   await expect.poll(()=>page.evaluate(()=>{const e=(window as any).timber.editor,t=e.view.worldRoot.getObjectByName('Wire placement preview').getObjectByName('Wire tubes and ends');return [...t.instanceColor.array.slice(0,3)];})).toEqual([0,0,1]);
   await page.keyboard.press('Escape');
   await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-color-toggle')).toBeInViewport();
-  const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact!.width).toBeLessThan(200);expect(compact!.height).toBeLessThan(160);
+  const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact!.width).toBe(245);expect(compact!.height).toBeLessThan(200);
   await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();
   await page.locator('#wire-color-toggle').click();await expect(page.locator('[data-wire-color="pink"]')).toBeInViewport();
   await page.mouse.click(180,320);await expect(page.locator('#wire-colors')).toBeHidden();

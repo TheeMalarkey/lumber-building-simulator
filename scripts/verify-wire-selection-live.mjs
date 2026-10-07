@@ -35,7 +35,7 @@ try{
  await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await page.locator('#wire-axis-copy-toggle').uncheck();
  await page.setViewportSize({width:390,height:844});await expect(page.locator('#select-tool')).toBeInViewport();
  await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();
- const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact.width).toBeLessThan(200);expect(compact.height).toBeLessThan(160);
+ const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact.width).toBe(245);expect(compact.height).toBeLessThan(200);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.setViewportSize({width:1440,height:960});
  await arrowUp([0,.145,1],2);const axisMove=await exported();expect(axisMove.wires.map(w=>w.id)).toEqual(['a','b']);expect(axisMove.pieces).toEqual([]);
  for(const [i,z] of [-3,5].entries()) expect(axisMove.wires[i]).toMatchObject({kind:'wire',from:{point:[-4,2.145,z]},to:{point:[4,2.145,z]},points:[]});

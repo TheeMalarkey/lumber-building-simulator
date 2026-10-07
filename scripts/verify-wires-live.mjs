@@ -83,9 +83,24 @@ try{
  await page.mouse.click(...xy([-5,.25,0]));await page.locator('#logic-action').click();await page.mouse.click(...xy([5,.5,0]));await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · Off');
  await page.keyboard.press('Control+z');await expect(page.locator('#logic-status')).toHaveText('Controlled by wire · On');expect((await exported()).wires).toEqual(linkedFixture.wires);
  await page.mouse.click(...xy([.5,.39,.11]));await page.keyboard.press('g');await page.mouse.click(...xy([0,0,-4]));await page.keyboard.press('Escape');expect((await exported()).wires).toEqual(linkedFixture.wires);await page.locator('#select-tool').click();
+ for(const kind of ['wire','neon']){
+  await load({version:1,logicModelVersion:3,name:'Sharp wire bend',plots:[12],pieces:[],wires:[]});
+  await openWire(page,kind);await expect(page.locator('#wire-name')).toHaveText(kind==='neon'?'Neon Wire':'Wire');
+  await expect(page.locator('#wire-category')).toHaveText('WIRES');await expect(page.locator('#wire-preview')).toBeVisible();
+  if(kind==='wire')await expect(page.locator('#wire-color-toggle')).toBeHidden();else await color(page,'pink');
+  await page.locator('#wire-overlap-toggle').uncheck();
+  await page.mouse.click(...xy([-5,0,0]));await page.mouse.click(...xy([0,0,0]));
+  const end=[-3.464101615,0,2];await page.mouse.move(...xy(end));
+  await expect(page.locator('#wire-length-label')).toHaveText(`9.0/${kind==='neon'?16:20}`);await expect(page.locator('#wire-length-label')).not.toHaveClass(/wire-invalid/);
+  await page.mouse.click(...xy(end));await page.keyboard.press('Enter');const result=await exported();expect(result.wires).toHaveLength(1);expect(result.wires[0].kind).toBe(kind);expect(result.wires[0].points).toHaveLength(1);
+  const height=kind==='neon'?.155:.145;for(const [actual,wanted] of [[result.wires[0].from.point,[-5,height,0]],[result.wires[0].points[0],[0,height,0]],[result.wires[0].to.point,[-3.464101615,height,2]]])actual.forEach((v,i)=>expect(v).toBeCloseTo(wanted[i],5));
+  await page.locator('#wire-close').click();await expect(page.locator('#wire-palette-panel')).toBeHidden();expect((await exported()).wires).toEqual(result.wires);
+  await page.mouse.click(...xy([-2.5,height,0]));await expect(page.locator('#wire-selection-actions')).toBeVisible();await page.locator('#wire-delete').click();expect((await exported()).wires??[]).toEqual([]);
+  await page.locator('#undo').click();expect((await exported()).wires).toEqual(result.wires);
+ }
  await openWire(page,'neon');await color(page,'pink');
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/wires-live.png'});
- await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-color-toggle')).toBeInViewport();await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();await expect(page.locator('#select-tool')).toBeInViewport();const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact.width).toBeLessThan(200);expect(compact.height).toBeLessThan(160);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-color-toggle')).toBeInViewport();await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();await expect(page.locator('#select-tool')).toBeInViewport();const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact.width).toBe(245);expect(compact.height).toBeLessThan(200);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect(errors).toEqual([]);writeFileSync('release/pages-verification/wires-live.json',JSON.stringify({target,errors,debugAPI:false,regularLimit:20,neonLimit:16,neonColors:9,midpointLengthLabel:true,surfaceRouting:true,wireCollision:true,overpass:true,bodyContactIsolated:true,endCapsCarryPower:true,individualWireDelete:true,componentDeletePreservesWires:true,singleWireReroute:true,rerouteUndo:true,connectedRerouteCancel:true,deleteUndoRedo:true,saveReload:true,leverSignal:true,compactFits:true},null,2));
  console.log('Production wires: placement, power, individual selection/deletion, preserved disconnected routes, history, save/reload, compact layout and WebGL checks passed.');
 }finally{await browser.close();}

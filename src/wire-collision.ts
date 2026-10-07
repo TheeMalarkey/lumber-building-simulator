@@ -27,8 +27,23 @@ function overlaps(a:WirePart,b:WirePart,joins:Vector3[]=[],jointRadius=.32){
  for(const p of joins){first=first&&trimAt(first,p,jointRadius);second=second&&trimAt(second,p,jointRadius);}
  return !!first&&!!second&&solidsOverlap(solid(first),solid(second));
 }
+function trimElbow(p:WirePart,joint:Vector3,axis:Vector3,distance:number):WirePart|null{
+ const a=p.a.clone().sub(joint).dot(axis),b=p.b.clone().sub(joint).dot(axis);
+ if(Math.max(a,b)<=distance+1e-6)return null;
+ if(Math.min(a,b)>=distance)return p;
+ const point=p.a.clone().lerp(p.b,(distance-a)/(b-a));
+ return {...p,a:a<distance?point:p.a,b:b<distance?point:p.b};
+}
 function selfOverlap(body:Body){
  const tubes=body.parts.filter(p=>p.kind==='tube'),arc=[0];for(const p of tubes)arc.push(arc.at(-1)!+p.a.distanceTo(p.b));
+ const joints=[];
+ for(let i=1;i<tubes.length;i++){
+  const first=tubes[i-1],second=tubes[i],a=first.a.clone().sub(first.b).normalize(),b=second.b.clone().sub(second.a).normalize(),cos=Math.max(-1,Math.min(1,a.dot(b)));
+  // Reversing along the same line is backtracking, even when a leg is too
+  // short for the elbow's body or end collar to extend outside the joint.
+  if(cos>=1-1e-12)return true;
+  joints.push({point:first.b,a,b,sinHalf:Math.sqrt((1-cos)*.5),cosHalf:Math.sqrt((1+cos)*.5),length:Math.max(first.a.distanceTo(first.b),second.a.distanceTo(second.b))});
+ }
  const interval=(p:WirePart)=>{
   if(p.kind==='bend')return [arc[p.segment+1],arc[p.segment+1]];
   const start=tubes[p.segment].a,a=arc[p.segment]+start.distanceTo(p.a),b=arc[p.segment]+start.distanceTo(p.b);return [Math.min(a,b),Math.max(a,b)];
@@ -42,11 +57,17 @@ function selfOverlap(body:Body){
   const a=first.part,b=second.part;if(a.segment===b.segment)continue;
   const arcGap=Math.max(0,first.arc[0]-second.arc[1],second.arc[0]-first.arc[1]);
   if((a.kind!=='tube'||b.kind!=='tube')&&arcGap<=a.radius+b.radius+1e-6)continue;
-  // Consecutive tubes intentionally meet inside their rounded elbow. Check
-  // beyond that small joint so a folded-back leg cannot hide inside its neighbor.
-  const joins=Math.abs(a.segment-b.segment)===1?[a.a,a.b].filter(p=>p.distanceToSquared(b.a)<1e-12||p.distanceToSquared(b.b)<1e-12):[];
-  if(joins.length&&a.kind==='tube'&&b.kind==='tube'&&a.b.clone().sub(a.a).normalize().dot(b.b.clone().sub(b.a).normalize())<-.9999)return true;
-  if(overlaps(a,b,joins,Math.max(a.radius,b.radius)*1.5))return true;
+  if(Math.abs(a.segment-b.segment)===1){
+   const index=Math.min(a.segment,b.segment),joint=joints[index];
+   // Adjacent legs share a finite elbow. The bisector plane separates their
+   // tube/collar bodies after r*cot(angle/2); spheres need their full radial
+   // support. Clip collars by distance along their leg, including short legs
+   // whose opposite end lies inside this local allowance.
+   const support=(p:WirePart)=>p.radius*(p.kind==='bend'?1:joint.cosHalf);
+   const distance=Math.min(joint.length,Math.max(Math.max(a.radius,b.radius)*1.5,(support(a)+support(b))/(2*joint.sinHalf))+1e-6);
+   const first=trimElbow(a,joint.point,a.segment===index?joint.a:joint.b,distance),second=trimElbow(b,joint.point,b.segment===index?joint.a:joint.b,distance);
+   if(first&&second&&overlaps(first,second))return true;
+  }else if(overlaps(a,b))return true;
  }return false;
 }
 function raySurface(ray:Ray,p:WirePart){

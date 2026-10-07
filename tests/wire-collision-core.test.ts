@@ -4,11 +4,16 @@ import {wireGroups,validateWires,type Wire} from '../src/logic-ports';
 import type {Vec3} from '../src/catalog';
 import {wireRadius,wireCollarRadius} from '../src/wire-design';
 import {Circuit} from '../src/logic';
-import {Vector3} from 'three';
+import {Quaternion,Vector3} from 'three';
 
 const wire=(id:string,a:Vec3,b:Vec3,points:Vec3[]=[]):Wire=>({id,kind:'wire',from:{point:a},to:{point:b},points});
 const host=()=>wire('host',[-4,1,0],[4,1,0]);
 const put=(world:World,w:Wire)=>world.execute([],[...world.wires,w]);
+const elbowRotations=[new Quaternion(),new Quaternion().setFromAxisAngle(new Vector3(1,2,3).normalize(),1.13),new Quaternion().setFromAxisAngle(new Vector3(3,-2,1).normalize(),2.4)];
+function acuteWire(kind:'wire'|'neon',degrees:number,left=4,right=4,rotation=new Quaternion()):Wire{
+ const angle=degrees*Math.PI/180,point=(p:Vec3)=>new Vector3(...p).applyQuaternion(rotation).add(new Vector3(0,6,0)).toArray() as Vec3;
+ return {id:'acute',kind,...(kind==='neon'?{color:'cyan' as const}:{}),from:{point:point([-left,0,0])},to:{point:point([-right*Math.cos(angle),0,right*Math.sin(angle)])},points:[point([0,0,0])],frame:rotation.toArray() as [number,number,number,number]};
+}
 
 it('thickens regular tubes and ends without changing the accepted neon dimensions',()=>{
  expect(wireRadius({kind:'wire'})).toBe(.10);expect(wireCollarRadius({kind:'wire'})).toBe(.14);
@@ -86,6 +91,37 @@ it('allows closely spaced forward bends whose rounded joints merge locally',()=>
  world.load([],null,[]);
  expect(put(world,wire('short-turn',[-1,1,0],[1,1,.1],[[0,1,0],[0,1,.1]]))).toBe(true);
 });
+for(const kind of ['wire','neon'] as const){
+ it(`allows sharp local ${kind} elbows in previews and commits through arbitrary rigid rotations`,()=>{
+  for(const degrees of [15,30,45])for(const rotation of elbowRotations){
+   const world=new World();world.load([],[12]);const candidate=acuteWire(kind,degrees,4,4,rotation),label=`${kind} ${degrees} degrees ${rotation.toArray()}`;
+   expect(world.allowOverlaps).toBe(false);expect(world.wirePlacementIssue(candidate),label).toBeNull();expect(put(world,candidate),label).toBe(true);
+   expect(world.wires).toEqual([candidate]);world.undo();expect(world.wires).toEqual([]);world.redo();expect(world.wires).toEqual([candidate]);
+  }
+ });
+ it(`allows ${kind} endpoint collars merging inside a sharp elbow with a short neighboring leg`,()=>{
+  const legs=[[.05,4],[4,.05],[.15,4],[4,.15],[.35,4],[4,.35],[.75,4],[4,.75],[.05,.05],[.15,.35],[.35,.15]];
+  for(const degrees of [15,30,45])for(const [left,right] of legs)for(const rotation of elbowRotations){
+   const world=new World();world.load([],[12]);const candidate=acuteWire(kind,degrees,left,right,rotation),label=`${kind} ${degrees} degrees legs ${left}/${right}`;
+   expect(world.wirePlacementIssue(candidate),label).toBeNull();expect(put(world,candidate),label).toBe(true);expect(world.wires).toEqual([candidate]);
+  }
+ });
+ it(`keeps nonlocal ${kind} self crossings and exact backtracking blocked beyond the local elbow allowance`,()=>{
+  const crossing:Wire={...wire('crossing',[-4,6,0],[-2,6,-1],[[0,6,0],[-3*Math.cos(Math.PI/6),6,1.5],[0,6,3]]),kind};
+  for(const rotation of elbowRotations)for(const raw of [crossing,acuteWire(kind,0,4,2),acuteWire(kind,0,4,.05)]){
+   const point=(p:Vec3)=>new Vector3(...p).sub(new Vector3(0,6,0)).applyQuaternion(rotation).add(new Vector3(0,6,0)).toArray() as Vec3;
+   const candidate:Wire={...raw,from:{point:point((raw.from as {point:Vec3}).point)},to:{point:point((raw.to as {point:Vec3}).point)},points:raw.points.map(point),frame:rotation.toArray() as [number,number,number,number]},world=new World();world.load([],[12]);
+   expect(world.wirePlacementIssue(candidate)).toContain('itself');expect(put(world,candidate)).toBe(false);expect(world.wires).toEqual([]);expect(world.canUndo).toBe(false);
+   world.allowOverlaps=true;expect(world.wirePlacementIssue(candidate)).toBeNull();expect(put(world,candidate)).toBe(true);world.undo();expect(world.wires).toEqual([]);
+  }
+ });
+ it(`does not exempt a separate wire intersecting a sharp ${kind} elbow route`,()=>{
+  for(const x of [-1,-.1]){
+   const world=new World();world.load([],[12],[wire('host',[x,6,-4],[x,6,4])]);const candidate=acuteWire(kind,30);
+   expect(world.wirePlacementIssue(candidate)).toContain('other wires');expect(put(world,candidate)).toBe(false);expect(world.wires).toHaveLength(1);expect(world.canUndo).toBe(false);
+  }
+ });
+}
 it('snaps diagonal end caps using the new collar shape and preserves electrical contact',()=>{
  for(const degrees of [0,15,30,45,60,75,90]){
   const a=degrees*Math.PI/180,d=new Vector3(Math.cos(a),0,Math.sin(a)),start=d.clone().multiplyScalar(-4).setY(1).toArray() as Vec3,end=d.clone().multiplyScalar(4).setY(1).toArray() as Vec3;

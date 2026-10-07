@@ -78,12 +78,12 @@
 .piece-summary { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
 .piece-summary > img { width: 46px; height: 54px; object-fit: contain; }
 .piece-summary > .piece-caption { min-width: 0; flex: 1; }
-.game-hud #piece-category { font-size: 8px; letter-spacing: 1px; color: var(--hud-muted); }
-.game-hud #piece-name { font-size: 13px; margin: 3px 0; line-height: 1.3; }
-.game-hud #piece-size { font-size: 10px; color: var(--hud-muted); }
-.piece-summary #close-edit { align-self: flex-start; width: 24px; height: 24px; }
-.piece-summary #wood-toggle { width: 32px; height: 32px; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
-.piece-summary #wood-toggle svg { width: 20px; height: 20px; }
+.game-hud :is(#piece-category, #wire-category) { font-size: 8px; letter-spacing: 1px; color: var(--hud-muted); }
+.game-hud :is(#piece-name, #wire-name) { font-size: 13px; margin: 3px 0; line-height: 1.3; }
+.game-hud :is(#piece-size, #wire-size) { font-size: 10px; color: var(--hud-muted); }
+.piece-summary :is(#close-edit, #wire-close) { align-self: flex-start; width: 24px; height: 24px; }
+.piece-summary :is(#wood-toggle, #wire-color-toggle) { width: 32px; height: 32px; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
+.piece-summary :is(#wood-toggle, #wire-color-toggle) svg { width: 20px; height: 20px; }
 .inspector-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .selection-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-shrink: 0; }
 .wood-picker { position: relative; }
@@ -173,24 +173,28 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud #logic-hover { color: var(--hud-text); }
 .game-hud #logic-hover kbd { color: var(--hud-text); border-color: var(--hud-border); }
 .game-hud #selection-marquee { border-color: var(--hud-active); background: #ffffff22; }
-.game-hud #wire-palette-panel { right: 16px; bottom: 84px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding: 6px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 155px); }
-.game-hud #wire-palette-panel.with-inspector { top: 64px; bottom: auto; }
-.game-hud #wire-options { width: 160px; display: flex; flex-direction: column; gap: 10px; padding: 3px; }
+.game-hud #wire-palette-panel { z-index: 12; max-width: calc(100vw - 32px); }
+.game-hud #wire-palette-panel.with-inspector { top: 64px; bottom: auto; width: auto; padding: 6px; gap: 8px; }
+.game-hud #wire-palette-panel.with-inspector .piece-summary > :is(img, .piece-caption, #wire-close) { display: none; }
+.game-hud #wire-palette-panel.with-inspector .piece-summary { justify-content: flex-end; }
+.game-hud #wire-palette-panel .wood-picker:has(> #wire-color-toggle[hidden]) { display: none; }
+.game-hud #wire-options { display: flex; flex-direction: column; gap: 10px; }
 .game-hud #wire-options input { width: 16px; height: 16px; padding: 0; }
-.game-hud #wire-color-toggle { border: 1px solid var(--hud-border); background: var(--hud-field); padding: 5px; }
 .game-hud #wire-color-toggle[aria-expanded="true"] { background: var(--hud-selected); }
-.game-hud #wire-color-toggle svg { width: 20px; height: 20px; }
+.game-hud #wire-selection-actions { justify-content: flex-end; gap: 4px; }
 .game-hud :is(#wood-toggle, #wire-color-toggle).palette-color,
 .game-hud :is(#wood-toggle, #wire-color-toggle).palette-color:is(:hover, .active, [aria-expanded="true"]) { background: var(--palette-background); color: var(--palette-ink); }
 .game-hud .palette-mixed svg { background: var(--palette-icon-bg); border-radius: 50%; }
-.game-hud #wire-colors { display: grid; grid-template-columns: repeat(3, 32px); gap: 6px; padding: 3px; overflow: auto; scrollbar-width: thin; }
-.game-hud #wire-colors button { width: 32px; height: 32px; flex-shrink: 0; padding: 0; background: var(--wire-color); border: 2px solid #888; border-radius: 4px; }
+.game-hud #wire-colors { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; padding: 12px 1px 2px; overflow: auto; scrollbar-width: thin; }
+.game-hud #wire-colors button { width: 100%; height: 31px; flex-shrink: 0; padding: 0; background: var(--wire-color); border: 2px solid #888; border-radius: 4px; }
+.game-hud #wire-palette-panel.with-inspector #wire-colors { grid-template-columns: repeat(3, 32px); gap: 6px; padding: 3px; }
+.game-hud #wire-palette-panel.with-inspector #wire-colors button { width: 32px; height: 32px; }
 .game-hud #wire-colors button:hover:not(:disabled) { background: var(--wire-color); border-color: #fff9; }
 .game-hud #wire-colors button[aria-pressed="true"] { border-color: var(--hud-text); outline: 1px solid var(--hud-active); outline-offset: 2px; }
 .game-hud #wire-length-label { position: absolute; z-index: 15; transform: translate(-50%, -50%); margin-top: 0; padding: 6px 8px; font-size: 11px; font-variant-numeric: tabular-nums; line-height: 1.3; white-space: nowrap; pointer-events: none; }
 .game-hud #wire-length-label.wire-invalid { color: #ffc0a3; }
 @media (max-width: 650px) {
-  .game-hud #wire-palette-panel { right: 8px; bottom: 82px; }
+  .game-hud #wire-palette-panel { max-width: calc(100vw - 16px); }
   .game-hud #wire-palette-panel.with-inspector { top: 56px; bottom: auto; }
 }
 

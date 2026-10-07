@@ -8,6 +8,7 @@ import type {WireSurface} from './wire-shape';
 import {WireView} from './wire-view';
 import type {Piece} from './world';
 import {setPaletteColor} from './palette-color';
+import {wireThumbnail} from './wire-thumbnail';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
@@ -105,6 +106,13 @@ export class LogicTools {
   const label=`Neon color: ${mixed?'Mixed colors':NEON_COLORS[color].label}`,toggle=$('wire-color-toggle');
   toggle.title=label;toggle.setAttribute('aria-label',label);
   setPaletteColor(toggle,colors.map(id=>'#'+NEON_COLORS[id].hex.toString(16).padStart(6,'0')));
+  const kind=this.wiring?this.style.kind??'wire':selected[0]?.kind??'wire',multiple=selected.length>1;
+  const name=multiple?`${selected.length} wires`:kind==='neon'?'Neon Wire':'Wire';
+  $('wire-name').textContent=name;$('wire-category').textContent=multiple?'GROUP SELECTION':'WIRES';
+  const image=$('wire-preview') as HTMLImageElement;image.hidden=multiple;
+  const thumbnail=wireThumbnail(kind,'#'+NEON_COLORS[color].hex.toString(16).padStart(6,'0'));
+  if(image.getAttribute('src')!==thumbnail)image.src=thumbnail;image.alt=name+' preview';
+  $('wire-selection-actions').hidden=this.wiring||!selected.length||withInspector;
   document.querySelectorAll<HTMLButtonElement>('[data-wire-color]').forEach(b=>b.setAttribute('aria-pressed',String(!mixed&&b.dataset.wireColor===color)));
  }
  private cancel(keepMoving=false){
