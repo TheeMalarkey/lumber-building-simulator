@@ -17,10 +17,9 @@ try {
   camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
   const screen=p=>{const v=new Vector3(...p).project(camera);return [(v.x+1)*720,(1-v.y)*480];};
   async function choose() {await page.locator('#build-tool').click();await page.locator('[data-item="small-floor"]').click();}
-  async function drag(from,to,ctrl=false) {
-    await page.mouse.move(...screen(from));if(ctrl) await page.keyboard.down('Control');
+  async function drag(from,to) {
+    await page.mouse.move(...screen(from));
     await page.mouse.down();await page.mouse.move(...screen(to),{steps:10});await page.mouse.up();
-    if(ctrl) await page.keyboard.up('Control');
   }
   async function exportProject() {
     await page.locator('#menu-tool').click();const pending=page.waitForEvent('download');await page.locator('#export').click();
@@ -29,21 +28,25 @@ try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   }
   await choose();
-  await expect(page.locator('#build-mode option')).toHaveText(['Single piece','Straight drag']);
+  await expect(page.locator('#build-mode,#path-fill,#elevation')).toHaveCount(0);
+  await page.mouse.click(...screen([-10,0,-12]));await expect(page.locator('#piece-count')).toHaveText('1 pieces');
+  await page.locator('#undo').click();await expect(page.locator('#piece-count')).toHaveText('0 pieces');
+  await expect(page.locator('#undo')).toBeDisabled();await choose();
   await expect(page.locator('#wedge-mode, #path-remove')).toHaveCount(0);
-  await drag([-10,0,-12],[2,0,-12],true);
+  await drag([-10,0,-12],[2,0,-12]);
   await expect(page.locator('#piece-count')).toHaveText('7 pieces');
   const line=await exportProject();
   expect(line.pieces.map(p=>p.position)).toEqual(Array.from({length:7},(_,i)=>[-10+2*i,.5,-12]));
   await page.locator('#undo').click();await expect(page.locator('#piece-count')).toHaveText('0 pieces');
   await page.locator('#redo').click();await expect(page.locator('#piece-count')).toHaveText('7 pieces');
-  await choose();await page.locator('#build-mode').selectOption('line');await page.locator('#path-fill').check();
-  await drag([-10,0,8],[-6,0,8]);await expect(page.locator('#piece-count')).toHaveText('7 pieces');
-  await expect(page.locator('#path-status')).toContainText('intersect');
-  await page.locator('#overlap-toggle').check();await page.locator('#path-build').click();
-  await expect(page.locator('#piece-count')).toHaveText('12 pieces');
+  await choose();
+  await drag([-10,0,8],[22,0,8]);await expect(page.locator('#piece-count')).toHaveText('7 pieces');
+  await expect(page.locator('#path-status')).toContainText('active plots');
+  await page.locator('#path-cancel').click();
+  await drag([-10,0,8],[-6,0,10]);
+  await expect(page.locator('#piece-count')).toHaveText('10 pieces');
   const result=await exportProject();
-  expect(result.pieces.filter(p=>p.position[2]===8).map(p=>p.position)).toEqual(Array.from({length:5},(_,i)=>[-10+i,.5,8]));
+  expect(result.pieces.filter(p=>p.position[2]===8).map(p=>p.position)).toEqual(Array.from({length:3},(_,i)=>[-10+2*i,.5,8]));
   expect(result.pieces.every(p=>p.rotation.every(Number.isInteger))).toBe(true);
   await page.keyboard.press('Control+s');await expect(page.locator('#save-state')).toHaveText('Saved on this device');
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
@@ -64,6 +67,6 @@ try {
   expect(errors).toEqual([]);
   mkdirSync('release/pages-verification',{recursive:true});
   writeFileSync('release/pages-verification/drag-live-check.json',JSON.stringify({target,errors,debugAPI:false,
-    ctrlDrag:true,straightMode:true,fill:true,groupedUndo:true,saveReload:true,legacySaves:true,curvesRemoved:true,compactFits:true},null,2));
-  console.log('Production straight drag verified: Ctrl drag, fill validation, one-step undo, save/reload and compact controls. Curve controls are absent.');
+    plainClick:true,plainDrag:true,axisAligned:true,footprintSpacing:true,landValidation:true,groupedUndo:true,saveReload:true,legacySaves:true,curvesRemoved:true,compactFits:true},null,2));
+  console.log('Production straight drag verified: plain click/drag, dominant world axis, land validation, one-step undo, save/reload and compact controls.');
 } finally {await browser.close();}

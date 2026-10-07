@@ -1,5 +1,7 @@
 # Validation — 2026-10-04
 
+This is a cumulative validation record. Later sections supersede earlier control descriptions; the direct-drag and held-control revision at the end is awaiting validation.
+
 ## Implemented and checked
 
 - 69 unique reference blueprints: 24 walls/fences, 8 floors/tiles, 3 doors, 22 wedges/stairs, 10 furniture, 2 other pieces. Every recipe produces finite geometry within its reference footprint.
@@ -103,7 +105,7 @@ Ctrl-click toggles individual pieces, and Ctrl-left-drag adds intersecting bluep
 
 Six browser scenarios and five core cases cover additive/reversed rectangles, toggle selection without accidental pickup, orbit isolation, group move/copy/delete, retained offsets/rotations/finishes, collision rejection, full-group ground and plot validation, cancellation, one-step history, and saved group copies. A 200-piece rendering check verifies one combined outline buffer and two preview instance batches for two blueprint types. This checks batching, not a new large-scene FPS benchmark. Rectangle queries run only on release, and unchanged outline geometry is reused.
 
-Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Group rotation, tilt and finish editing were added in the follow-up below; all selections use an icon-only arrow pad. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.
+Visual checks: `artifacts/group-selection.png`, `artifacts/group-selection-drag.png`; reproduce with `node scripts/verify-selection.mjs`. Group rotation, tilt and finish editing were added in the follow-up below. The latest control revision reserves the icon pad for held placements; selected objects retain XYZ gizmos. The separate production check (`node scripts/verify-selection-live.mjs`) imports a fixture through the UI, exercises the controls without a debug API, and checks exported positions, rotations, finishes, and independent copy IDs.
 
 ## Jump pose correction — 2026-10-04
 
@@ -245,6 +247,16 @@ The animation uses two shared instanced batches and a bounded runtime input hist
 
 ## Compact inspector update
 
-The item header includes the wood palette icon, with the current finish in its accessible name. Swatches show wood names on hover and keyboard focus, and tooltips clear when the palette closes or moves. R/T shortcuts retain rotation and tilt; coordinate fields, rotate/tilt buttons, instructional rows and Place blueprint were removed. A six-direction icon pad stays visible at the bottom of the inspector, including group/held previews; the same pad serves wire-only selections. An active straight-run draft disables the pad while retaining its layout. Browser coverage checks grouping, one-stud movement, fixed-finish items, collision/ground/plot/wire-budget rejection, and compact layouts.
+The item header includes the wood palette icon, with the current finish in its accessible name. Swatches show wood names on hover and keyboard focus, and tooltips clear when the palette closes or moves. R/T shortcuts retain rotation and tilt; coordinate fields, rotate/tilt buttons, instructional rows and Place blueprint were removed. This update initially kept a six-direction icon pad visible for selected objects and held previews, including wire-only selections; the held-only revision below supersedes that visibility. Browser coverage checked grouping, one-stud movement, fixed-finish items, collision/ground/plot/wire-budget rejection, and compact layouts.
 
 All 208 core cases and the production build pass. Separate production browser checks verify hover/focus wood names, one-stud movement, R/T, export, fixed finishes, group recoloring/history/copy cancellation, and desktop, portrait and landscape layouts without a development API. These are browser viewport checks; no physical-phone acceptance is claimed. The six-view public gallery and PDF were refreshed and visually inspected.
+
+## Direct drag placement and held controls — 2026-10-06
+
+New-piece placement uses a normal left drag for a straight run, with a movement threshold separating it from single-click placement. Runs follow exactly one world X, Y or Z axis, chosen from the dominant projected drag displacement; diagonal runs are disabled. Spacing follows the blueprint footprint and orientation; the Build mode selector, one-stud fill option, elevation field and Ctrl-drag build instructions are removed. Ctrl-click and Ctrl-drag retain their additive-selection behavior in Select mode. The run status and Build run/Cancel actions remain for rejected drafts and retries, with full-batch collision, ground and active-land validation before placement. Starting contact is snapped to the picked face, but world-axis runs do not reproduce a slope's coupled rise/run; only a compatible tangent axis stays flush with that slope.
+
+The icon pad appears only while a placement is held, including held move/copy previews and wire assemblies. Selected objects retain XYZ gizmo movement without a pad. The compact palette header, R/T shortcuts, finish restrictions and existing project data are unchanged.
+
+All 208 core cases, the production build and 85 distinct affected browser scenarios pass. One stale selected-pad assertion was corrected and its scenario rerun; the remaining affected cases passed in their first batch. New checks cover single clicks with pointer jitter, one-action history, plain X/Y/Z runs, diagonal pointer projection, tops and vertical sides, held air runs, failed drag projection, cancellation, invalid-draft retries and held-only controls. Existing checks retain collision, ground, plot, selection, wire, copy and history validation.
+
+Separate production UI checks pass without the development API for click/drag, axis-only spacing, land rejection, undo/redo, save/reload, blueprint tops, vertical sides, held air runs, single/group axis copies, palette names, R/T and held-only pads at desktop, portrait and landscape viewport sizes. The refreshed six-view gallery and PDF were visually inspected. These viewport checks do not establish physical-phone acceptance.

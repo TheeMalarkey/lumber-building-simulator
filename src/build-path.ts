@@ -3,7 +3,6 @@ import { ITEMS, type Vec3 } from "./catalog";
 import { rotatedSize, snapMovement } from "./placement";
 import type { Piece } from "./world";
 
-export type BuildMode = "single" | "line";
 export interface PathOptions { fill: boolean; surfaceNormal?: Vec3 }
 export interface BuildPath { pieces: Piece[]; guide: Vec3[] }
 

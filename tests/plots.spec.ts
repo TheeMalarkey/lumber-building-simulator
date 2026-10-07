@@ -88,7 +88,7 @@ test("placement, moving and rotation require the whole footprint on land; terrai
   expect(result.rejected && result.countAfterPlacement && result.moveRejected && result.rotationRejected).toBe(true);
   expect(result.top).toBeCloseTo(0); expect(result.grass).toBe(-.1); expect(result.thickness).toBeCloseTo(.1);
   expect(result.borderY).toBeGreaterThan(0); expect(result.texturesReady).toBe(true);
-  await page.locator('[data-nudge="right"]').click();
+  await page.evaluate(() => (window as any).timber.editor.nudge('right'));
   expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get("post").position)).toEqual([19, 2, 0]);
   await expect(page.locator("#toast")).toContainText("active plots");
 });

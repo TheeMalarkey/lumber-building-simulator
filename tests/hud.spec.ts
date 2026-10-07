@@ -34,7 +34,7 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await expect(page.locator("#project-menu")).toBeHidden();
 });
 
-test("selected inspector uses a header palette and an always-visible arrow pad", async ({ page }) => {
+test("selected inspector keeps the header palette and reveals the arrow pad only for held previews", async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => !!(window as any).timber);
   await page.evaluate(() => {
@@ -47,14 +47,7 @@ test("selected inspector uses a header palette and an always-visible arrow pad",
   await expect(page.locator('#rotate,#tilt,#coordinates-details,#place-selected,#step-buttons-details,#axis-hint,#nudge-label')).toHaveCount(0);
   await expect(page.locator('.piece-summary #wood-toggle')).toBeVisible();
   await expect(page.locator('#wood-toggle')).toHaveAttribute('aria-label', 'Wood finish: Oak');
-  expect(await page.locator('#nudge-buttons').innerText()).toBe('');
-  for (const direction of ['left','right','forward','back','up','down']) await expect(page.locator(`[data-nudge="${direction}"]`)).toBeVisible();
-  const position = () => page.evaluate(() => (window as any).timber.editor.world.pieces.get('a').position);
-  const original = await position();
-  await page.locator('[data-nudge="up"]').click();
-  expect(await position()).toEqual([original[0],original[1]+1,original[2]]);
-  await page.locator('[data-nudge="down"]').click();
-  expect(await position()).toEqual(original);
+  await expect(page.locator('#nudge-buttons')).toBeHidden();
   await page.keyboard.press('r');
   await page.keyboard.press('t');
   expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get('a').rotation)).not.toEqual([0,0,0]);
@@ -70,24 +63,43 @@ test("selected inspector uses a header palette and an always-visible arrow pad",
   expect(await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()].map((p:any) => p.wood))).toEqual(['cherry','cherry']);
   for (const [width,height] of [[1440,960],[390,844],[844,390]]) {
     await page.setViewportSize({width,height});
-    await expect(page.locator('#nudge-buttons')).toBeInViewport();
+    await expect(page.locator('#nudge-buttons')).toBeHidden();
     await expect(page.locator('#duplicate-tool')).toBeInViewport();
     await expect(page.locator('#delete-tool')).toBeInViewport();
     const bounds = (await page.locator('#edit-panel').boundingBox())!;
     expect(bounds.height).toBeLessThanOrEqual(280);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
   }
+  const originalPieces = await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()]);
+  await page.locator('#move-tool').click();
+  await expect(page.locator('#nudge-buttons')).toBeHidden();
+  await page.locator('#hold-position').click();
+  expect(await page.locator('#nudge-buttons').innerText()).toBe('');
+  for (const direction of ['left','right','forward','back','up','down']) await expect(page.locator(`[data-nudge="${direction}"]`)).toBeVisible();
+  const preview = () => page.evaluate(() => (window as any).timber.editor.groupPreview.map((p:any) => p.position));
+  const frozen = await preview();
+  await page.locator('[data-nudge="up"]').click();
+  expect(await preview()).toEqual(frozen.map((p:number[]) => [p[0],p[1]+1,p[2]]));
+  await page.locator('[data-nudge="down"]').click();
+  expect(await preview()).toEqual(frozen);
+  expect(await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()])).toEqual(originalPieces);
+  await expect(page.locator('#nudge-buttons')).toBeInViewport();
+  await page.keyboard.press('Escape');await expect(page.locator('#nudge-buttons')).toBeHidden();
   await page.evaluate(async () => {
     const e = (window as any).timber.editor;
     e.world.load([],[12],[{id:'w1',kind:'wire',from:{point:[-2,.18,0]},to:{point:[2,.18,0]},points:[]}]);
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     e.pickSelections([],['w1']);
   });
+  await expect(page.locator('#nudge-buttons')).toBeHidden();
+  await page.keyboard.press('Control+d');
+  await expect(page.locator('#nudge-buttons')).toBeHidden();
+  await page.keyboard.press('l');await expect(page.locator('#nudge-buttons')).toBeVisible();
+  const before = await page.evaluate(() => (window as any).timber.editor.groupWirePreview[0].from.point);
   await page.locator('[data-nudge="up"]').click();
-  expect(await page.evaluate(() => (window as any).timber.editor.world.wires[0].from.point)).toEqual([-2,1.18,0]);
-  const wirePanel = (await page.locator('#wire-selection-panel').boundingBox())!;
-  const pad = (await page.locator('#nudge-buttons').boundingBox())!;
-  expect(pad.y + pad.height).toBeLessThanOrEqual(wirePanel.y + wirePanel.height);
+  expect(await page.evaluate(() => (window as any).timber.editor.groupWirePreview[0].from.point)).toEqual([before[0],before[1]+1,before[2]]);
+  expect(await page.evaluate(() => (window as any).timber.editor.world.wires[0].from.point)).toEqual([-2,.18,0]);
+  await page.keyboard.press('Escape');await expect(page.locator('#nudge-buttons')).toBeHidden();
 });
 test("HUD and scrollable catalog fit compact screens", async ({ page }) => {
   await page.goto("/");

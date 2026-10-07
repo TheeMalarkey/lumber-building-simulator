@@ -52,7 +52,7 @@ export function shell() {
 <main class="workspace game-hud">
 <section class="viewport" id="viewport" aria-label="Building world">
 <div class="view-controls" role="toolbar" aria-label="World controls">${button("home", "home", "Home view")}${button("walk-tool", "walk", "Switch to walk camera (C)", "camera-toggle")}${button("land-tool", "grid", "Land")}${button("undo", "undo", "Undo (Ctrl+Z)")}${button("redo", "redo", "Redo (Ctrl+Shift+Z)")}</div>
-<div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span id="placing-instruction">Click to place</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span id="placing-hold"><kbd>L</kbd> Hold</span><span><kbd>Esc</kbd> Cancel</span></div>
+<div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span id="placing-instruction">Click to place · Drag a straight run</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span id="placing-hold"><kbd>L</kbd> Hold</span><span><kbd>Esc</kbd> Cancel</span></div>
 <div id="selection-marquee" hidden aria-hidden="true"></div>
 <div id="logic-hover" role="status" hidden><kbd>E</kbd><span id="logic-hover-click" hidden>or click</span><span id="logic-hover-label"></span></div>
 <div id="camera-hint" hidden></div><div id="toast" role="status"></div>
@@ -79,18 +79,15 @@ export function shell() {
 <label class="setting-row overlap-option" title="Allow blueprints to intersect while keeping ground and active-land boundaries"><span>Allow overlaps</span><input id="overlap-toggle" type="checkbox" aria-label="Allow blueprint overlaps"></label>
 <label class="setting-row axis-copy-option" id="axis-copy-row" hidden title="Create a copy when you release an X, Y or Z arrow drag"><span>Copy with arrows</span><input id="axis-copy-toggle" type="checkbox" aria-label="Copy selection with axis arrows"></label>
 <section id="path-controls" hidden>
-<label class="setting-row"><span>Build mode</span><select id="build-mode" aria-label="Build mode"><option value="single">Single piece</option><option value="line">Straight drag</option></select></label>
-<label class="setting-row" id="path-fill-row" title="Place every stud along a drag, including the end point. Dense joins may need Allow overlaps."><span>Fill span · every stud</span><input id="path-fill" type="checkbox" aria-label="Fill path at one-stud spacing"></label>
-<p id="path-hint" class="nudge-hint">Ctrl + drag builds a straight run.</p><p id="path-status" role="status" hidden></p>
+<p id="path-status" role="status" hidden></p>
 <div id="path-actions" hidden><button id="path-build" class="primary-btn">Build run</button><button id="path-cancel" title="Cancel run (Escape)">Cancel</button></div>
 </section>
-<label class="setting-row" id="elevation-row"><span>Elevation</span><input id="elevation" type="number" value="0" step="1" aria-label="Build elevation"><span id="snap">1 stud</span></label>
 <div id="preview-controls"><button id="hold-position" aria-pressed="false">Hold position (L)</button><button id="commit-preview" class="primary-btn" hidden>Place here</button></div>
 </div>
-<div id="selection-footer" class="selection-footer"><section id="transform-section" hidden><div id="nudge-buttons" class="nudge-buttons" role="group" aria-label="Move by one stud">${["left","up","forward","right","down","back"].map(d=>`<button data-nudge="${d}" title="Move ${d} one stud" aria-label="Move ${d} one stud">${icon(d)}</button>`).join("")}</div></section><div id="selection-actions">${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div></div>
+<div id="selection-footer" class="selection-footer" hidden><section id="transform-section" hidden><div id="nudge-buttons" class="nudge-buttons" role="group" aria-label="Move held placement by one stud">${["left","up","forward","right","down","back"].map(d=>`<button data-nudge="${d}" title="Move ${d} one stud" aria-label="Move ${d} one stud">${icon(d)}</button>`).join("")}</div></section><div id="selection-actions">${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div></div>
 </aside>
 <nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}</nav>
-<aside id="wire-selection-panel" class="hud-panel" hidden aria-label="Selected wires"><div class="wire-selection-body"><strong id="wire-selection-name"></strong><p id="wire-selection-length"></p><div class="wire-actions"><button id="move-wires">Move</button><button id="copy-wires">Duplicate</button><button id="delete-wire">Delete wire</button><button id="close-wire-selection">Done</button></div><label class="setting-row axis-copy-option"><span>Copy with arrows</span><input id="wire-axis-copy-toggle" type="checkbox" aria-label="Copy wires with axis arrows"></label></div><div id="wire-nudge-slot"></div></aside>
+<aside id="wire-selection-panel" class="hud-panel" hidden aria-label="Selected wires"><div class="wire-selection-body"><strong id="wire-selection-name"></strong><p id="wire-selection-length"></p><div class="wire-actions"><button id="move-wires">Move</button><button id="copy-wires">Duplicate</button><button id="delete-wire">Delete wire</button><button id="close-wire-selection">Done</button></div><label class="setting-row axis-copy-option"><span>Copy with arrows</span><input id="wire-axis-copy-toggle" type="checkbox" aria-label="Copy wires with axis arrows"></label></div></aside>
 <aside id="wiring-panel" class="hud-panel" hidden aria-label="Wire placement">
 <div class="wire-types" role="group" aria-label="Wire type"><button data-wire-kind="wire" aria-pressed="true">Wire <small>20 studs</small></button><button data-wire-kind="neon" aria-pressed="false">Neon <small>16 studs</small></button></div>
 <div id="wire-colors" role="group" aria-label="Neon color" hidden></div>

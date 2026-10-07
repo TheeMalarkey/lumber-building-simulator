@@ -25,10 +25,9 @@ async function view() {
 }
 const screen=p=>{const v=new Vector3(...p).project(camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];};
 async function choose(item) {await page.locator('#build-tool').click();await page.locator(`[data-item="${item}"]`).click();}
-async function drag(from,to,ctrl=false) {
-  await page.mouse.move(...screen(from));if(ctrl) await page.keyboard.down('Control');
+async function drag(from,to) {
+  await page.mouse.move(...screen(from));
   await page.mouse.down();await page.mouse.move(...screen(to),{steps:10});await page.mouse.up();
-  if(ctrl) await page.keyboard.up('Control');
 }
 async function arrow(center,axis,delta) {
   const depth=-new Vector3(...center).applyMatrix4(camera.matrixWorldInverse).z;
@@ -46,21 +45,24 @@ const original={id:'platform',item:'large-floor',wood:'oak',position:[0,.5,0],ro
 try {
   await page.goto(target);await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
   expect(await page.evaluate(()=>typeof window.timber)).toBe('undefined');
-  await importPieces([original]);await view();await choose('small-floor');await page.locator('#elevation').fill('0');
-  await drag([-2,1,-1],[2,1,-1],true);
+  await importPieces([original]);await view();await choose('small-floor');
+  await drag([-2,1,-1],[2,1,-1]);
   let result=await exported();
   expect(result.pieces.filter(p=>p.id!=='platform').map(p=>p.position)).toEqual([[-2,1.5,-1],[0,1.5,-1],[2,1.5,-1]]);
   await page.locator('#undo').click();await expect(page.locator('#piece-count')).toHaveText('1 pieces');
 
   const wall={id:'wall',item:'smooth-wall',wood:'oak',position:[0,4,0],rotation:[0,0,0]};
-  await importPieces([wall]);await view();await choose('small-floor');await page.locator('#elevation').fill('0');
-  await drag([0,1.2,.5],[0,10.2,.5],true);
+  await importPieces([wall]);await view();await choose('small-floor');
+  await drag([0,1.2,.5],[0,10.2,.5]);
   result=await exported();
   expect(result.pieces.filter(p=>p.id!=='wall').map(p=>p.position)).toEqual(Array.from({length:10},(_,i)=>[0,1.5+i,1.5]));
-  await page.locator('#undo').click();await choose('small-floor');await page.locator('#elevation').fill('2');
-  await drag([0,1.2,.5],[0,3.2,.5],true);
+  await page.locator('#undo').click();await choose('small-floor');
+  await page.mouse.move(...screen([0,1.2,.5]));await page.locator('#hold-position').click();
+  await page.locator('[data-nudge="up"]').click();await page.locator('[data-nudge="up"]').click();
+  await page.locator('[data-nudge="up"]').click();
+  await drag([0,4.5,1.5],[4,4.5,1.5]);
   result=await exported();
-  expect(result.pieces.filter(p=>p.id!=='wall').map(p=>p.position)).toEqual([[0,3.5,1.5],[0,4.5,1.5],[0,5.5,1.5]]);
+  expect(result.pieces.filter(p=>p.id!=='wall').map(p=>p.position)).toEqual([[0,4.5,1.5],[2,4.5,1.5],[4,4.5,1.5]]);
 
   const originals=[
     {id:'a',item:'tiny-tile',wood:'oak',position:[-3,.1,0],rotation:[0,0,0]},
@@ -96,7 +98,7 @@ try {
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
   expect((await exported()).pieces).toEqual(result.pieces);expect(errors).toEqual([]);
   writeFileSync('release/pages-verification/surfaces-copy-live-check.json',JSON.stringify({target,errors,debugAPI:false,
-    blueprintTop:true,verticalSide:true,elevation:true,singleAxisCopy:true,groupAxisCopy:true,originalsPreserved:true,
+    blueprintTop:true,verticalSide:true,heldAirRun:true,singleAxisCopy:true,groupAxisCopy:true,originalsPreserved:true,
     uniqueIDs:true,groupedUndo:true,saveReload:true,compactFits:true},null,2));
-  console.log('Production surface building and axis-copy verified through UI: top/vertical/elevated runs, single/group copies, original preservation, undo/redo, save/reload and compact controls.');
+  console.log('Production surface building and axis-copy verified through UI: top/vertical/held air runs, single/group copies, original preservation, undo/redo, save/reload and compact controls.');
 } finally {await browser.close();}

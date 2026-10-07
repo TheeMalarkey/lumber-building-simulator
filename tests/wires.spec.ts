@@ -122,7 +122,7 @@ test('duplicates a single wired lever, and joins neon at a regular wire end',asy
 test('a rejected nudge preserves a connected endpoint and keeps move placement active',async({page})=>{
  await setup(page);await page.locator('#wire-done').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;const a={id:'a',item:'lever',wood:'oak',position:[-8,.75,0],rotation:[0,0,0]},b={...a,id:'b',position:[8,.75,0]};e.world.load([a,b],[12],[{id:'w',kind:'neon',color:'cyan',from:{piece:'a',port:'out'},to:{piece:'b',port:'out'},points:[]}]);e.view.sync(true);e.pickSelection('b');});
- await page.locator('[data-nudge="right"]').click();await expect(page.locator('#toast')).toContainText('16-stud');expect(await page.evaluate(()=>(window as any).timber.editor.world.pieces.get('b').position[0])).toBe(8);
+ await page.evaluate(()=>(window as any).timber.editor.nudge('right'));await expect(page.locator('#toast')).toContainText('16-stud');expect(await page.evaluate(()=>(window as any).timber.editor.world.pieces.get('b').position[0])).toBe(8);
  await page.locator('#move-tool').click();await click(page,[11,0,0]);expect(await page.evaluate(()=>(window as any).timber.editor.placing)).toBe(true);expect(await page.evaluate(()=>(window as any).timber.editor.world.pieces.get('b').position[0])).toBe(8);
 });
 test('undoing a starting component cancels its unfinished wire safely',async({page})=>{

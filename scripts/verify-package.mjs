@@ -18,7 +18,7 @@ const initial={cards:await page.locator('.catalog-card').count(),pieces:await pa
 await page.locator('#menu-tool').click();await page.locator('#new').click();await page.locator('#confirm-action').click();await page.locator('#build-tool').click();await page.locator('[data-item="smooth-wall"]').click();const b=await page.locator('#viewport>canvas').boundingBox();await page.mouse.click(b.x+b.width/2,b.y+b.height*.6);await page.waitForTimeout(1500);
 const placed=await page.locator('#piece-count').textContent();await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');const reloaded=await page.locator('#piece-count').textContent();
 await page.setViewportSize({width:1024,height:768});await page.screenshot({path:prefix==='package'?'artifacts/editor-compact.png':`artifacts/${prefix}-compact.png`});const fits=await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth);
-const oneStudGrid=await page.locator('#snap').textContent()==='1 stud' && await page.locator('#elevation').getAttribute('step')==='1';
+const oneStudControls=await page.locator('#nudge-buttons').getAttribute('aria-label')==='Move held placement by one stud' && await page.locator('#elevation,#build-mode,#path-fill').count()===0;
 await page.locator('#land-tool').click();
 const landSelector=await page.locator('[data-plot]').count()===25;
 await page.locator('[data-plot="13"]').click();
@@ -28,4 +28,4 @@ await page.locator('#walk-tool').click();
 const walkMode=await page.locator('#walk-tool').getAttribute('aria-pressed')==='true' && (await page.locator('#camera-hint').textContent()).includes('Jump');
 await page.keyboard.press('c');
 const freeMode=await page.locator('#walk-tool').getAttribute('aria-pressed')==='false';
-const result={target,errors,texturesLoaded,faviconLoaded,oneStudGrid,landSelector,landExpansion,walkMode,freeMode,initial,placed,reloaded,compactFits:fits};writeFileSync(`artifacts/${prefix}-check.json`,JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));await browser.close();if(!texturesLoaded||!faviconLoaded||!landSelector||!landExpansion||!walkMode||!freeMode||!oneStudGrid||errors.length||initial.cards!==102||!initial.collisionChecks||placed!=='1 pieces'||reloaded!=='1 pieces'||!fits)process.exitCode=1;
+const result={target,errors,texturesLoaded,faviconLoaded,oneStudControls,landSelector,landExpansion,walkMode,freeMode,initial,placed,reloaded,compactFits:fits};writeFileSync(`artifacts/${prefix}-check.json`,JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));await browser.close();if(!texturesLoaded||!faviconLoaded||!landSelector||!landExpansion||!walkMode||!freeMode||!oneStudControls||errors.length||initial.cards!==102||!initial.collisionChecks||placed!=='1 pieces'||reloaded!=='1 pieces'||!fits)process.exitCode=1;

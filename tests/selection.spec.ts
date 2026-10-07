@@ -32,6 +32,7 @@ async function elevatedPair(page:Page) {
 test('group rotate and tilt keep the assembly together and undo as whole actions',async({page})=>{
   await elevatedPair(page);const original=await pieces(page);
   await expect(page.locator('[data-nudge]')).toHaveCount(6);
+  await expect(page.locator('[data-nudge="up"]')).toBeHidden();
   await page.keyboard.press('r');
   const yawed=await pieces(page);expect(yawed.slice(0,2).map((p:any)=>p.position)).toEqual([[1,8,3],[-1,8,-3]]);
   await page.keyboard.press('t');const tilted=await pieces(page);
@@ -160,7 +161,8 @@ test("group placement rejects even one member outside plots or below ground", as
   const s=await fixture(page),original=await pieces(page);await selectPair(page,s);await page.keyboard.press("g");
   await page.mouse.click(s.outside.x,s.outside.y);
   expect(await pieces(page)).toEqual(original);await expect(page.locator("#toast")).toContainText("active plots");
-  await page.locator("#elevation").fill("-1");await page.mouse.click(s.copy.x,s.copy.y);
+  await page.mouse.move(s.copy.x,s.copy.y);await page.locator('#viewport>canvas').focus();await page.keyboard.press('l');
+  await page.locator('[data-nudge="down"]').click();await page.locator('#commit-preview').click();
   expect(await pieces(page)).toEqual(original);await expect(page.locator("#toast")).toContainText("below ground");
   expect(await page.evaluate(()=>(window as any).timber.editor.view.ghost.material.color.getHex())).toBe(0xe15d4f);
   await page.keyboard.press("Escape");expect(await pieces(page)).toEqual(original);

@@ -44,6 +44,8 @@ expect(steps.map(p=>p.position).sort((a,b)=>a[1]-b[1])).toEqual([[-5,1.5,4],[-5,
 await page.locator("#home").click();await page.waitForTimeout(5000);
 await page.screenshot({path:"artifacts/precision-building.png"});
 await page.setViewportSize({width:390,height:844});
+await expect(page.locator('#nudge-buttons')).toBeHidden();
+await page.locator('#move-tool').click();await page.locator('#hold-position').click();
 await expect(page.locator('[data-nudge="down"]')).toBeVisible();
 expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 expect(errors).toEqual([]);

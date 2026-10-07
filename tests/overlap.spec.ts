@@ -43,10 +43,10 @@ test('overlap mode applies to group turns and moves while retaining ground and p
   await page.locator('#overlap-toggle').check();await page.locator('#viewport>canvas').focus();await page.keyboard.press('r');
   expect((await pieces(page)).slice(0,2).map((p:any)=>p.position)).toEqual([[1,8,3],[-1,8,-3]]);
   await page.locator('#undo').click();expect(await pieces(page)).toEqual(before);
-  for(let i=0;i<8;i++)await page.locator('[data-nudge="down"]').click();
+  for(let i=0;i<8;i++)await page.evaluate(()=>(window as any).timber.editor.nudge('down'));
   const floor=await pieces(page);expect(floor.slice(0,2).map((p:any)=>p.position[1])).toEqual([2,2]);
   await expect(page.locator('#toast')).toContainText('below ground');
-  for(let i=0;i<25;i++)await page.locator('[data-nudge="right"]').click();
+  for(let i=0;i<25;i++)await page.evaluate(()=>(window as any).timber.editor.nudge('right'));
   const edge=await pieces(page);expect(edge.slice(0,2).map((p:any)=>p.position[0])).toEqual([13,19]);
   await expect(page.locator('#toast')).toContainText('active plots');await expect(page.locator('#overlap-toggle')).toBeChecked();
 });

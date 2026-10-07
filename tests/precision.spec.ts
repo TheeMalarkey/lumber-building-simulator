@@ -10,23 +10,30 @@ async function setup(page:any, group=false) {
     e.pickSelections(multi?["a","b"]:["a"]);
   },group);
 }
-test("six movement buttons nudge one piece in whole studs, keep fractional height, and undo",async({page})=>{
+test("six held movement buttons use whole studs, keep fractional height, and commit with undo",async({page})=>{
   await setup(page);
+  await expect(page.locator('[data-nudge="up"]')).toBeHidden();
+  await page.locator('#move-tool').click();await page.locator('#hold-position').click();
+  const preview=()=>page.evaluate(()=>(window as any).timber.editor.ghost.position);
+  const original=await positions(page);
   await page.locator('[data-nudge="up"]').click();
-  expect((await positions(page))[0].position).toEqual([-3,1.1,0]);
-  await page.locator('[data-nudge="forward"]').click();expect((await positions(page))[0].position).toEqual([-3,1.1,-1]);
-  await page.locator('[data-nudge="right"]').click();expect((await positions(page))[0].position).toEqual([-2,1.1,-1]);
+  expect(await preview()).toEqual([-3,1.1,0]);
+  await page.locator('[data-nudge="forward"]').click();expect(await preview()).toEqual([-3,1.1,-1]);
+  await page.locator('[data-nudge="right"]').click();expect(await preview()).toEqual([-2,1.1,-1]);
   await page.locator('[data-nudge="back"]').click();await page.locator('[data-nudge="left"]').click();await page.locator('[data-nudge="down"]').click();
-  expect((await positions(page))[0].position).toEqual([-3,.1,0]);
-  await page.locator('[data-nudge="down"]').click();await expect(page.locator('#toast')).toContainText('below ground');
-  await page.locator('#undo').click();expect((await positions(page))[0].position).toEqual([-3,1.1,0]);
+  expect(await preview()).toEqual([-3,.1,0]);expect(await positions(page)).toEqual(original);
+  await page.locator('[data-nudge="down"]').click();await page.locator('#commit-preview').click();
+  await expect(page.locator('#toast')).toContainText('below ground');expect(await positions(page)).toEqual(original);
+  await page.locator('[data-nudge="up"]').click();await page.locator('[data-nudge="up"]').click();
+  await page.locator('#commit-preview').click();expect((await positions(page))[0].position).toEqual([-3,1.1,0]);
+  await page.locator('#undo').click();expect(await positions(page)).toEqual(original);
   await expect(page.locator('[data-nudge]')).toHaveCount(6);
 });
 test("group nudges are atomic and reject an obstacle under either member",async({page})=>{
-  await setup(page,true);await page.locator('[data-nudge="up"]').click();
+  await setup(page,true);await page.evaluate(()=>(window as any).timber.editor.nudge('up'));
   expect((await positions(page)).map((p:any)=>p.position[1])).toEqual([1.1,1.1]);
   await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.execute([{before:null,after:{id:'obstacle',item:'tiny-tile',wood:'oak',position:[4,1.1,0],rotation:[0,0,0]}}]);});
-  const before=await positions(page);await page.locator('[data-nudge="right"]').click();
+  const before=await positions(page);await page.evaluate(()=>(window as any).timber.editor.nudge('right'));
   expect(await positions(page)).toEqual(before);await expect(page.locator('#toast')).toContainText('overlap');
   await page.locator('#undo').click();await page.locator('#undo').click();
   expect((await positions(page)).map((p:any)=>p.position[1])).toEqual([.1,.1]);
@@ -36,6 +43,7 @@ test("held previews can build up and over in the air without following the mouse
     const e=(window as any).timber.editor;e.choose('tiny-tile');e.pointer=[720,480];e.updateGhost();
   });
   const before=await positions(page);
+  await page.locator('#viewport>canvas').focus();await page.keyboard.press('l');
   await page.locator('[data-nudge="up"]').click();
   const preview=()=>page.evaluate(()=>(window as any).timber.editor.ghost.position);
   const raised=await preview();await page.locator('[data-nudge="forward"]').click();
@@ -74,6 +82,8 @@ test("walk input follows a wedge slope and precision controls fit compact screen
   expect(ramp.height).toBeLessThan(4);expect(ramp.z).toBeLessThan(2);expect(ramp.clear).toBe(true);
   await page.keyboard.press('c');await page.evaluate(()=>(window as any).timber.editor.pickSelection('ramp'));
   await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('[data-nudge="down"]')).toBeHidden();
+  await page.locator('#move-tool').click();await page.locator('#hold-position').click();
   await expect(page.locator('[data-nudge="down"]')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

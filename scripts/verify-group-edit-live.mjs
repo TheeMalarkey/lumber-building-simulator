@@ -55,7 +55,7 @@ await page.locator('#home').click();await page.waitForTimeout(1000);
 await expect(page.locator('#toast')).not.toHaveClass(/visible/);
 await page.screenshot({path:'artifacts/group-editing.png'});
 await page.setViewportSize({width:390,height:844});
-await expect(page.locator('[data-nudge]')).toHaveCount(6);await expect(page.locator('#wood-toggle')).toBeVisible();
+await expect(page.locator('#nudge-buttons')).toBeHidden();await expect(page.locator('#wood-toggle')).toBeVisible();
 expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 expect(errors).toEqual([]);
 mkdirSync('release/pages-verification',{recursive:true});

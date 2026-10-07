@@ -91,7 +91,6 @@
 .game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 .game-hud .overlap-option:has(input:checked), .game-hud .axis-copy-option:has(input:checked) { color: var(--hud-text); }
 .game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
-.game-hud #snap { font-size: 10px; }
 .game-hud .inspector section { padding: 0; border: 0; }
 .nudge-buttons { display: grid; grid-template-columns: repeat(3, 30px) 8px 30px; grid-template-rows: repeat(3, 30px); gap: 3px; }
 .nudge-buttons button { width: 30px; height: 30px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
@@ -103,12 +102,11 @@
 .nudge-buttons [data-nudge="up"] { grid-area: 1 / 5; }
 .nudge-buttons [data-nudge="down"] { grid-area: 3 / 5; }
 #hold-position { min-height: 33px; padding: 6px; border: 1px solid var(--hud-border); font-size: 11px; }
-#wire-nudge-slot:not(:empty) { display: flex; justify-content: center; margin-top: 10px; }
 .nudge-hint { font-size: 10px; color: var(--hud-muted); margin: 7px 0 0; }
 #preview-controls { display: flex; gap: 6px; }
 #hold-position { flex: 1; }
 #hold-position[aria-pressed="true"] { background: var(--hud-selected); }
-#selection-actions { display: flex; align-items: center; gap: 4px; }
+#selection-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .game-hud .primary-btn { margin: 0; flex: 1; width: auto; padding: 9px 7px; background: var(--hud-selected); color: #fff; font-size: 11px; }
 .game-hud .placement-bar { left: 16px; bottom: 88px; transform: none; gap: 12px; padding: 9px 12px; background: var(--hud-bg); color: #fff; border-radius: 4px; pointer-events: none; }
 .game-hud .placement-bar strong { display: none; }
@@ -136,13 +134,9 @@
   .hud-fps { right: 8px; }
 }
 
-.game-hud #elevation { color: var(--hud-text); background: var(--hud-field); border-color: var(--hud-border); }
 .game-hud .placement-bar > span { display: flex; }
 .game-hud #path-controls { display: grid; gap: 8px; }
 .game-hud select { color: var(--hud-text); background: #242424; border: 1px solid var(--hud-border); border-radius: 3px; padding: 6px; min-width: 0; font-size: 11px; }
-#path-controls select { margin-left: auto; width: 150px; max-width: 157px; }
-.game-hud #path-fill { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
-#path-controls .nudge-hint { margin: 0; line-height: 1.5; }
 #path-status { font-size: 10px; line-height: 1.5; margin: 0; color: var(--hud-text); }
 #path-status.invalid { color: #ffc0a3; }
 #path-actions { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -193,7 +187,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud #wire-colors button { border-color: #888; }
 .game-hud #wire-selection-panel { display: flex; flex-direction: column; max-height: calc(100dvh - 155px); overflow: hidden; }
 .wire-selection-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
-#wire-nudge-slot { flex-shrink: 0; }
 
 /* Help and confirmations share the same theme; only confirmations block the world.
    Settings and Land use dialog.show(), with no fullscreen backdrop or blur. */

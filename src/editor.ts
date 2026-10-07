@@ -215,7 +215,6 @@ export class Editor {
     }
     $("edit-panel").hidden = !(p || this.placing) || !$("build-panel").hidden;
     $("selection-actions").hidden = !p || this.placing;
-    $("elevation-row").hidden = !this.placing || this.held;
     $("preview-controls").hidden = !this.placing;
     $("hold-position").textContent = this.held ? "Release position (L)" : "Hold position (L)";
     $("hold-position").setAttribute("aria-pressed", String(this.held));
@@ -250,11 +249,9 @@ export class Editor {
       .forEach((b) =>
         b.classList.toggle("active", !mixedWood && b.dataset.wood === displayedWood),
       );
-    const wireOnly=!!wireCount&&!pieces.length&&!this.placing;
-    const pad=$("transform-section"), padParent=$(wireOnly ? "wire-nudge-slot" : "selection-footer");
-    if(pad.parentElement!==padParent)padParent.prepend(pad);
-    pad.hidden = !(p || this.placing || wireOnly);
-    $("selection-footer").hidden = !(p || this.placing);
+    const heldPlacement=this.placing&&this.held;
+    $("transform-section").hidden = !heldPlacement;
+    $("selection-footer").hidden = !(p&&!this.placing || heldPlacement);
     this.view.selectMany(pieces);
     this.syncGizmo();
     this.paths.syncUI();
@@ -378,10 +375,9 @@ export class Editor {
       if (this.pointer) {
         const hit = this.view.pick(...this.pointer, this.groupPlacement.ignore);
         if(this.groupPlacement.wires.length){
-          const preview=hit?placeAssemblyOnSurface({pieces:this.groupPlacement.source,wires:this.groupPlacement.wires},hit.point,hit.normal,this.world.pieces,snapMovement(Number($<HTMLInputElement>('elevation').value)||0)):{pieces:[],wires:[]};
+          const preview=hit?placeAssemblyOnSurface({pieces:this.groupPlacement.source,wires:this.groupPlacement.wires},hit.point,hit.normal,this.world.pieces):{pieces:[],wires:[]};
           this.groupPreview=preview.pieces;this.groupWirePreview=preview.wires;
-        }else this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal,
-          snapMovement(Number($<HTMLInputElement>("elevation").value) || 0)) : [];
+        }else this.groupPreview = hit ? placeSelectionOnSurface(this.groupPlacement.source, hit.point, hit.normal) : [];
       }
       const valid=!this.groupIssue();this.view.showGroupGhosts(this.groupPreview,valid);
       this.logicTools.showPreview(this.groupWirePreview,assemblyAnchors({pieces:this.groupPreview,wires:this.groupWirePreview},this.world.pieces),valid);
@@ -395,10 +391,6 @@ export class Editor {
       return;
     }
     const pos = snapBlueprintOnSurface(pick.point, pick.normal, this.item, this.rotation);
-    const elevation = snapMovement(
-      Number($<HTMLInputElement>("elevation").value) || 0,
-    );
-    pos[1] = round(pos[1] + elevation);
     this.ghost = {
       id: this.moving ?? "ghost",
       item: this.item,
@@ -724,7 +716,7 @@ export class Editor {
     this.setMode(false);
     const modal = this.prepareDialog();
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Zoom</span><span>Mouse wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run (Build mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>The Build catalog includes 100 building items and Wire / Neon Wire tools. Choose a wire in Build or use a circuit socket shortcut; click surfaces for bends, Backspace removes a bend, and Escape cancels. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Search blueprints</span><span><kbd>/</kbd></span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Zoom</span><span>Mouse wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run</span><span>Left drag · X / Y / Z</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>The Build catalog includes 100 building items and Wire / Neon Wire tools. Choose a wire in Build or use a circuit socket shortcut; click surfaces for bends, Backspace removes a bend, and Escape cancels. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }
@@ -937,12 +929,6 @@ export class Editor {
       this.inspect();
     };
     $("axis-copy-toggle").onchange=e=>{this.copyWithArrows=(e.target as HTMLInputElement).checked;this.inspect();};
-    $("elevation").oninput = () => this.updateGhost();
-    $("elevation").onchange = () => {
-      const input = $<HTMLInputElement>("elevation");
-      input.value = String(snapMovement(Number(input.value) || 0));
-      this.updateGhost();
-    };
     $("project-name").onchange = () => {
       this.dirty = true;
       this.world.revision++;

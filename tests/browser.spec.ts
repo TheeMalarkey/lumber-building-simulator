@@ -51,8 +51,9 @@ test("ground boundary blocks placement, moving, nudges, and tilting below the ma
       y: b.y + ((1 - v.y) * b.height) / 2,
     };
   });
-  await page.locator("#elevation").fill("-1");
   await page.mouse.move(point.x, point.y);
+  await page.locator('#viewport>canvas').focus();await page.keyboard.press('l');
+  await page.locator('[data-nudge="down"]').click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -60,11 +61,11 @@ test("ground boundary blocks placement, moving, nudges, and tilting below the ma
       ),
     )
     .toBe(0xe15d4f);
-  await page.mouse.click(point.x, point.y);
+  await page.locator('#commit-preview').click();
   await expect(page.locator("#piece-count")).toHaveText("0 pieces");
   await expect(page.locator("#toast")).toContainText("ground");
-  await page.locator("#elevation").fill("0");
-  await page.mouse.click(point.x, point.y);
+  await page.locator('[data-nudge="up"]').click();
+  await page.locator('#commit-preview').click();
   await expect(page.locator("#piece-count")).toHaveText("1 pieces");
   const original = await page.evaluate(() => {
     const e = (window as any).timber.editor;
@@ -74,12 +75,12 @@ test("ground boundary blocks placement, moving, nudges, and tilting below the ma
   });
   await page.keyboard.press('t');
   await expect(page.locator("#toast")).toContainText("ground");
-  await page.locator('[data-nudge="down"]').click();
+  await page.evaluate(() => (window as any).timber.editor.nudge('down'));
   await expect(page.locator("#toast")).toContainText("ground");
   expect(await page.evaluate(() => [...(window as any).timber.editor.world.pieces.values()])).toEqual([original]);
   await page.locator("#move-tool").click();
-  await page.locator("#elevation").fill("-1");
-  await page.mouse.click(point.x, point.y);
+  await page.locator('#hold-position').click();await page.locator('[data-nudge="down"]').click();
+  await page.locator('#commit-preview').click();
   await expect(page.locator("#toast")).toContainText("ground");
   expect(
     await page.evaluate(() => [
@@ -256,13 +257,11 @@ test("floor placement follows visible grid cells across rotation and origin shif
   );
   await page.screenshot({ path: "artifacts/grid-alignment.png" });
 });
-test("placement, arrow controls, and elevation move in whole studs", async ({
+test("placement and held arrow controls move in whole studs", async ({
   page,
 }) => {
   await page.goto("/");
   await page.waitForFunction(() => !!(window as any).timber);
-  await expect(page.locator("#snap")).toHaveText("1 stud");
-  await expect(page.locator("#elevation")).toHaveAttribute("step", "1");
   await page.evaluate(() => {
     const e = (window as any).timber.editor;
     e.world.load([
@@ -277,17 +276,19 @@ test("placement, arrow controls, and elevation move in whole studs", async ({
     e.pickSelection("tile");
   });
   const tilePosition = () => page.evaluate(() => (window as any).timber.editor.world.pieces.get("tile").position);
+  const previewPosition = () => page.evaluate(() => (window as any).timber.editor.ghost.position);
+  await expect(page.locator('[data-nudge="up"]')).toBeHidden();
+  await page.locator('#move-tool').click();await page.locator('#hold-position').click();
   await page.locator('[data-nudge="up"]').click();
-  expect(await tilePosition()).toEqual([0, 1.1, 0]);
+  expect(await previewPosition()).toEqual([0, 1.1, 0]);
   await page.locator('[data-nudge="down"]').click();
-  expect(await tilePosition()).toEqual([0, 0.1, 0]);
+  expect(await previewPosition()).toEqual([0, 0.1, 0]);
   for (let i = 0; i < 3; i++) await page.locator('[data-nudge="right"]').click();
+  expect(await previewPosition()).toEqual([3, 0.1, 0]);expect(await tilePosition()).toEqual([0, 0.1, 0]);
+  await page.locator('#commit-preview').click();
   expect(await tilePosition()).toEqual([3, 0.1, 0]);
   await openBuild(page);
   await page.locator('[data-item="tiny-tile"]').click();
-  await page.locator("#elevation").fill("1.7");
-  await page.locator("#elevation").press("Tab");
-  await expect(page.locator("#elevation")).toHaveValue("2");
   const samples = await page.evaluate(() => {
     const e = (window as any).timber.editor;
     e.world.load([]);
@@ -305,11 +306,11 @@ test("placement, arrow controls, and elevation move in whole studs", async ({
     }
   });
   expect(samples).toEqual([
-    [0.5, 2.1, 0.5],
-    [0.5, 2.1, 0.5],
-    [1.5, 2.1, 0.5],
-    [1.5, 2.1, 0.5],
-    [-0.5, 2.1, 0.5],
+    [0.5, 0.1, 0.5],
+    [0.5, 0.1, 0.5],
+    [1.5, 0.1, 0.5],
+    [1.5, 0.1, 0.5],
+    [-0.5, 0.1, 0.5],
   ]);
 });
 test("intersecting placement turns red and is blocked while stacking stays valid", async ({
@@ -339,8 +340,9 @@ test("intersecting placement turns red and is blocked while stacking stays valid
       y: b.y + ((1 - v.y) * b.height) / 2,
     };
   });
-  await page.locator("#elevation").fill("-8");
   await page.mouse.move(point.x, point.y);
+  await page.locator('#viewport>canvas').focus();await page.keyboard.press('l');
+  for (let i = 0; i < 8; i++) await page.locator('[data-nudge="down"]').click();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -348,11 +350,11 @@ test("intersecting placement turns red and is blocked while stacking stays valid
       ),
     )
     .toBe(0xe15d4f);
-  await page.mouse.click(point.x, point.y);
+  await page.locator('#commit-preview').click();
   await expect(page.locator("#piece-count")).toHaveText("1 pieces");
   await expect(page.locator("#toast")).toContainText("overlaps");
-  await page.locator("#elevation").fill("0");
-  await page.mouse.click(point.x, point.y);
+  for (let i = 0; i < 8; i++) await page.locator('[data-nudge="up"]').click();
+  await page.locator('#commit-preview').click();
   await expect(page.locator("#piece-count")).toHaveText("2 pieces");
   await expect(page.locator("#overlap")).toHaveCount(0);
 });
@@ -387,9 +389,9 @@ test("rotation and arrow movement cannot intersect another piece", async ({
       () => (window as any).timber.editor.world.pieces.get("a").rotation,
     ),
   ).toEqual([0, 0, 0]);
-  await page.locator('[data-nudge="back"]').click();
+  await page.evaluate(() => (window as any).timber.editor.nudge('back'));
   expect(await page.evaluate(() => (window as any).timber.editor.world.pieces.get("a").position)).toEqual([0, 4, 1]);
-  await page.locator('[data-nudge="back"]').click();
+  await page.evaluate(() => (window as any).timber.editor.nudge('back'));
   await expect(page.locator("#toast")).toContainText("overlap");
   expect(
     await page.evaluate(
@@ -502,7 +504,8 @@ test("place rotate recolor move delete undo and export preserve a real build", a
     };
   });
   await page.mouse.click(screen.x, screen.y);
-  await expect(page.locator("#transform-section")).toBeVisible();
+  await expect(page.locator("#edit-panel")).toBeVisible();
+  await expect(page.locator("#transform-section")).toBeHidden();
   await openWoods(page);
   await page.locator('[data-wood="walnut"]').click();
   await page.locator("#undo").click();
@@ -510,7 +513,8 @@ test("place rotate recolor move delete undo and export preserve a real build", a
   await page.keyboard.press("r");
   await openWoods(page);
   await page.locator('[data-wood="cherry"]').click();
-  await page.locator('[data-nudge="right"]').click();
+  await page.locator('#move-tool').click();await page.locator('#hold-position').click();
+  await page.locator('[data-nudge="right"]').click();await page.locator('#commit-preview').click();
   await canvas.focus();
   await page.keyboard.press("Control+z");
   const before = await page.evaluate(() =>
