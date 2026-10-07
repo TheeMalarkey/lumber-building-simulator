@@ -6,6 +6,7 @@ async function openWire(page,kind='wire') {
  if(!await page.locator('#build-panel').isVisible())await page.locator('#build-tool').click();
  await page.locator('#search').fill('');await page.locator('[data-category="Wires"]').click();
  await page.locator(`[data-wire-item="${kind}"]`).click();
+ await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
 }
 
 // Release acceptance uses only public controls, import/export and pixels.

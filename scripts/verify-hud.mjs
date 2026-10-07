@@ -8,6 +8,7 @@ await page.screenshot({path:"artifacts/hud-world.png"});
 await page.locator("#build-tool").click();
 await page.screenshot({path:"artifacts/hud-catalog.png"});
 await page.locator('[data-item="smooth-wall"]').click();
+await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
 await page.locator("#wood-toggle").click();
 await page.screenshot({path:"artifacts/hud-placement.png"});
 await page.setViewportSize({width:390,height:844});

@@ -6,6 +6,7 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('.catalog-card')).toHaveCount(12);
  await page.locator('[data-item="lever"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
+ await page.locator('#collapse').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([
   {id:'lever',item:'lever',position:[-6,.75,0],rotation:[0,0,0],wood:'oak'},
   {id:'gate',item:'signal-inverter',position:[0,.5,0],rotation:[0,0,0],wood:'oak'},
@@ -27,9 +28,9 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.locator('#undo').click();expect(await page.evaluate(()=>(window as any).timber.editor.world.wires)).toEqual(connected);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-circuit.png'});
- await page.setViewportSize({width:390,height:844});await openWire(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.setViewportSize({width:390,height:844});await openWire(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#collapse').click();
  await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
- await openWire(page);await page.locator('#build-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();
+ await openWire(page);await page.locator('#collapse').click();await page.locator('#wire-done').click();await expect(page.locator('#wiring-panel')).toBeHidden();
  expect(errors).toEqual([]);
 });
 test('walks onto a pressure plate to power a light, then walks off',async({page})=>{

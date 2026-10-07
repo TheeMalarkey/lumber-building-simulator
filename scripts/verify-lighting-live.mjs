@@ -14,11 +14,13 @@ try {
   await page.locator('#menu-tool').click();await page.locator('#file-input').setInputFiles({name:'lighting-check.timber',mimeType:'application/json',
     buffer:Buffer.from(JSON.stringify({version:1,name:'Lighting',pieces:fixture,plots:[12]}))});
   await page.locator('#confirm-action').click();if(await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();
-  await page.locator('#build-tool').click();await page.locator('[data-category="Lighting"]').click();
+  if(!await page.locator('#build-panel').isVisible()) await page.locator('#build-tool').click();
+  await page.locator('[data-category="Lighting"]').click();
   await expect(page.locator('#results-count')).toHaveText('5 items');
   await expect(page.locator('.catalog-card')).toHaveCount(5);
   await expect(page.locator('.card-name')).toHaveText(['Wall Light','Floodlight','Lamp','Floor Lamp','Worklight']);
   await page.locator('[data-item="lamp"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
+  await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
   const r=await page.locator('#viewport>canvas').boundingBox(),camera=new PerspectiveCamera(45,r.width/r.height,.1,4000);
   camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
   const screen=p=>{const v=new Vector3(...p).project(camera);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];};
@@ -46,7 +48,8 @@ try {
   await page.reload();await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
   expect((await exported()).pieces).toEqual(project.pieces);
   if(!await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();await page.locator('#settings').click();await page.locator('#night-preview').check();await page.locator('#close-modal').click();
-  await page.locator('#build-tool').click();await page.locator('[data-category="Lighting"]').click();
+  if(!await page.locator('#build-panel').isVisible()) await page.locator('#build-tool').click();
+  await page.locator('[data-category="Lighting"]').click();
   await expect(page.locator('#toast')).not.toHaveClass(/visible/);
   mkdirSync('release/pages-verification',{recursive:true});
   await page.screenshot({path:'release/pages-verification/lighting-live.png'});

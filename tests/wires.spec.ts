@@ -1,10 +1,15 @@
 import {test,expect,type Page} from '@playwright/test';
-import {openWire} from './ui-helpers';
+import {openWire as openCatalogWire} from './ui-helpers';
+
+async function startWireOnCanvas(page:Page,kind:'wire'|'neon'='wire') {
+ await openCatalogWire(page,kind);
+ await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
+}
 
 async function setup(page:Page){
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12]);e.pickSelection(null);e.view.sync(true);e.view.camera.camera.position.set(16,27,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
- await openWire(page);
+ await startWireOnCanvas(page);
 }
 async function xy(page:Page,p:number[]){return page.evaluate(async p=>{const {Vector3}=await import('/node_modules/three/build/three.module.js'),e=(window as any).timber.editor,rect=e.view.renderer.domElement.getBoundingClientRect();e.view.camera.camera.updateMatrixWorld();const v=new Vector3(...p).project(e.view.camera.camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];},p);}
 async function click(page:Page,p:number[]){const v=await xy(page,p);await page.mouse.click(v[0],v[1]);}
@@ -81,7 +86,7 @@ test('neon has its own budget and preserves chosen color on save/reload',async({
 test('routes up a wall, updates after Backspace, and rejects unowned ground',async({page})=>{
  await setup(page);await page.locator('#wire-done').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([{id:'wall',item:'fat-door',wood:'birch',position:[0,4,0],rotation:[0,0,0]}],[12]);e.view.sync(true);e.view.camera.camera.position.set(3,7,16);e.view.camera.controls.target.set(0,4,0);e.view.camera.controls.update();});
- await openWire(page);await click(page,[-1,1,.25]);await click(page,[-1,6,.25]);await click(page,[1,6,.25]);await page.keyboard.press('Backspace');
+ await startWireOnCanvas(page);await click(page,[-1,1,.25]);await click(page,[-1,6,.25]);await click(page,[1,6,.25]);await page.keyboard.press('Backspace');
  await expect(page.locator('#wire-status')).toContainText('1 surface points');await page.keyboard.press('Enter');
  const w=await page.evaluate(()=>(window as any).timber.editor.world.wires[0]);expect(w.from.point[2]).toBeCloseTo(.395);expect(w.to.point[1]).toBeCloseTo(6,1);expect(w.to.point[0]).toBeCloseTo(-1,1);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.view.camera.camera.position.set(30,26,38);e.view.camera.controls.target.set(12,0,0);e.view.camera.controls.update();});
@@ -114,7 +119,7 @@ test('duplicates a single wired lever, and joins neon at a regular wire end',asy
  await page.keyboard.press('Control+d');await click(page,[6,0,-3]);
  await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.pieces.size)).toBe(2);
  expect(await count(page)).toBe(4);expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.filter((w:any)=>w.kind==='neon'&&w.color==='green').length)).toBe(2);
- await openWire(page,'neon');await page.locator('[data-wire-color="red"]').click();
+ await startWireOnCanvas(page,'neon');await page.locator('[data-wire-color="red"]').click();
  await click(page,[-1.05,.18,3]);await click(page,[4,0,6]);await page.keyboard.press('Enter');
  await expect.poll(()=>page.evaluate(()=>{const e=(window as any).timber.editor;return e.view.logic.circuit.wireOn(e.world.wires.at(-1).id);})).toBe(true);
  expect(await count(page)).toBe(5);
@@ -136,7 +141,7 @@ test('blocks a crossing and uses Shift-click to continue over an existing wire',
  await setup(page);
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12],[{id:'host',kind:'neon',color:'cyan',from:{point:[-4,.155,0]},to:{point:[4,.155,0]},points:[]}]);e.view.sync(true);});
  // Loading a build closes the tool; reopen after the frame has observed it.
- await expect(page.locator('#wiring-panel')).toBeHidden();await openWire(page);
+ await expect(page.locator('#wiring-panel')).toBeHidden();await startWireOnCanvas(page);
  await click(page,[0,0,-4]);await click(page,[0,0,4]);
  await expect(page.locator('#wire-feedback')).toContainText('cannot pass through');
  expect(await count(page)).toBe(1);
@@ -151,7 +156,7 @@ test('blocks a crossing and uses Shift-click to continue over an existing wire',
 test('can build on a wire body without power, and connect power at its end cap',async({page})=>{
  await setup(page);await page.locator('#wire-done').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([{id:'l',item:'lever',wood:'oak',position:[-6,.75,0],rotation:[0,0,0],logicOn:true}],[12],[{id:'host',kind:'wire',from:{piece:'l',port:'out'},to:{point:[4,.18,0]},points:[]}]);e.view.sync(true);});
- await openWire(page,'neon');
+ await startWireOnCanvas(page,'neon');
  await click(page,[0,.18,0]);await click(page,[0,0,5]);await page.keyboard.press('Enter');
  expect(await count(page)).toBe(2);
  const from=await page.evaluate(()=>(window as any).timber.editor.world.wires[1].from.point);expect(from[1]).toBeGreaterThan(.42);
@@ -163,7 +168,7 @@ test('can build on a wire body without power, and connect power at its end cap',
 test('builds directly along another wire without sharing power through their bodies',async({page})=>{
  await setup(page);await page.locator('#wire-done').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([{id:'l',item:'lever',wood:'oak',position:[-6,.75,0],rotation:[0,0,0],logicOn:true}],[12],[{id:'host',kind:'wire',from:{piece:'l',port:'out'},to:{point:[4,.18,0]},points:[]}]);e.view.sync(true);e.view.camera.camera.position.set(6,4,8);e.view.camera.controls.target.set(0,.3,0);e.view.camera.controls.update();e.view.grid.visible=false;});
- await openWire(page);await click(page,[-2,.18,0]);await click(page,[2,.18,0]);
+ await startWireOnCanvas(page);await click(page,[-2,.18,0]);await click(page,[2,.18,0]);
  expect(await count(page)).toBe(2);
  await expect.poll(()=>page.evaluate(()=>{const e=(window as any).timber.editor;return e.view.logic.circuit.wireOn(e.world.wires[1].id);})).toBe(false);
  const placed=await page.evaluate(()=>(window as any).timber.editor.world.wires[1]);expect(placed.from.point[1]).toBeGreaterThan(.4);expect(placed.to.point[1]).toBeGreaterThan(.4);

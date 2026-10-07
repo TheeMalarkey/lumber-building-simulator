@@ -18,6 +18,7 @@ import { placeSelectionOnSurface, selectionBounds, selectInRectangle, translateS
 import { snapBlueprintOnSurface } from "./collision";
 import type { AxisDrag } from "./move-gizmo";
 import { PathBuilder } from "./path-builder";
+import { initFloatingCatalog } from "./floating-panel";
 import {selectedAssembly,assemblyAnchors,assemblyBounds,transformAssembly,rotateAssembly,placeAssemblyOnSurface,copyAssembly,assemblyIssue,selectWiresInRectangle,type Assembly} from './assembly';
 import type {Wire} from './logic-ports';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -180,7 +181,7 @@ export class Editor {
     const triggers = { "build-panel": "build-tool", "project-menu": "menu-tool", woods: "wood-toggle" };
     if (open) {
       this.closePopup(false);
-      for (const other of ["build-panel", "project-menu", "woods"] as const)
+      for (const other of ["project-menu", "woods"] as const)
         if (other !== id) this.panel(other, false);
     }
     $(id).hidden = !open;
@@ -188,8 +189,8 @@ export class Editor {
     $(triggers[id]).setAttribute("aria-expanded", String(open));
     $(triggers[id]).classList.toggle("active", open);
     if (id === "build-panel") {
-      $("edit-panel").hidden = open || !(this.placing || this.selected);
-      $("placement-bar").hidden = open || !this.placing;
+      this.inspect();
+      $("placement-bar").hidden = !this.placing;
     }
     if (open && id === "build-panel") this.view.renderer.domElement.focus({ preventScroll: true });
     if (!open && $(id).contains(document.activeElement))
@@ -213,7 +214,7 @@ export class Editor {
       this.wood = p.wood;
       this.rotation = [...p.rotation];
     }
-    $("edit-panel").hidden = !(p || this.placing) || !$("build-panel").hidden;
+    $("edit-panel").hidden = !(p || this.placing);
     $("selection-actions").hidden = !p || this.placing;
     $("preview-controls").hidden = !this.placing;
     $("hold-position").textContent = this.held ? "Release position (L)" : "Hold position (L)";
@@ -325,7 +326,6 @@ export class Editor {
   choose(id: string) {
     this.logicConfig={};this.logicTools.toggle(false);
     this.setMode(false);
-    this.panel("build-panel", false);
     this.item = id;
     this.lightOn = true;
     this.selected = null;
@@ -336,6 +336,7 @@ export class Editor {
     this.catalog();
     this.updateGhost();
     this.updateWorldUI();
+    this.view.renderer.domElement.focus({ preventScroll: true });
   }
   pickSelection(id: string | null) {
     this.pickSelections(id ? [id] : []);
@@ -814,6 +815,7 @@ export class Editor {
     $("close-modal").onclick = () => this.closePopup();
   }
   bind() {
+    initFloatingCatalog($("build-panel"));
     // Home previews the view; changing tools closes a nonmodal popup.
     document.querySelectorAll(".build-toolbar,.view-controls").forEach(toolbar => toolbar.addEventListener("click", e => {
       const tool = (e.target as HTMLElement).closest<HTMLButtonElement>("button");
@@ -883,7 +885,7 @@ export class Editor {
         this.world.redo();
       },
       home: () => this.view.camera.home(),
-      "build-tool": () => {if(this.logicTools.wiring)this.logicTools.toggle(false);this.panel("build-panel", !!$("build-panel").hidden);},
+      "build-tool": () => this.panel("build-panel", !!$("build-panel").hidden),
       "menu-tool": () => this.panel("project-menu", !!$("project-menu").hidden),
       "wood-toggle": () => this.panel("woods", !!$("woods").hidden),
       "close-edit": () => this.pickSelection(null),
@@ -906,7 +908,6 @@ export class Editor {
     for (const [id, action] of Object.entries(actions))
       $(id).onclick = () => {
         if ($(id).closest("#project-menu")) this.panel("project-menu", false);
-        if (["land-tool", "walk-tool", "select-tool"].includes(id)) this.panel("build-panel", false);
         void action();
       };
     $("nudge-buttons").onclick = e => {

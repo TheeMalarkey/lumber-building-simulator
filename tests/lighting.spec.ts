@@ -1,8 +1,9 @@
 import {expect,test} from '@playwright/test';
+import {openBuild} from './ui-helpers';
 test('lighting catalog, grouped switching, single copy, saved state and night preview work',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
- await page.locator('#build-tool').click();await page.locator('[data-category="Lighting"]').click();await expect(page.locator('.catalog-card')).toHaveCount(5);
+ await openBuild(page);await page.locator('[data-category="Lighting"]').click();await expect(page.locator('.catalog-card')).toHaveCount(5);
  await page.locator('[data-item="lamp"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
  await page.evaluate(()=>{
   const e=(window as any).timber.editor;
@@ -46,7 +47,7 @@ test('lighting catalog, grouped switching, single copy, saved state and night pr
  });
  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
  await page.screenshot({path:'artifacts/worklight-detail.png'});
- await page.setViewportSize({width:390,height:844});await page.locator('#build-tool').click();await page.locator('[data-category="Lighting"]').click();
+ await page.setViewportSize({width:390,height:844});await openBuild(page);await page.locator('[data-category="Lighting"]').click();
  await expect(page.locator('.catalog-card')).toHaveCount(5);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  expect(errors).toEqual([]);
 });

@@ -13,19 +13,33 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await page.locator("#search").click();
   await page.locator("#search").fill("smooth wall");
   await page.locator('[data-item="smooth-wall"]').click();
-  await expect(page.locator("#build-panel")).toBeHidden();
+  await expect(page.locator("#build-panel")).toBeVisible();
   await expect(page.locator("#edit-panel")).toBeVisible();
   await expect(page.locator("#placement-bar")).toBeVisible();
+  await expect(canvas).toBeFocused();
+  await page.keyboard.press("r");
+  expect(await page.evaluate(() => (window as any).timber.editor.rotation)).toEqual([0, 1, 0]);
+  await page.keyboard.press("t");
+  expect(await page.evaluate(() => (window as any).timber.editor.rotation)).not.toEqual([0, 1, 0]);
+  await expect(page.locator("#build-panel")).toBeVisible();
   expect(await canvas.boundingBox()).toEqual(bounds);
   await page.locator("#wood-toggle").click();
   await expect(page.locator("#woods")).toBeVisible();
   await page.locator('[data-wood="cherry"]').click();
   await expect(page.locator("#woods")).toBeHidden();
   await expect(page.locator("#wood-toggle")).toHaveAttribute("aria-label", "Wood finish: Cherry");
+  await expect(page.locator("#build-panel")).toBeVisible();
   await page.keyboard.press("b");
-  await page.keyboard.press("Escape");
   await expect(page.locator("#build-panel")).toBeHidden();
   await expect(page.locator("#edit-panel")).toBeVisible();
+  expect(await page.evaluate(() => (window as any).timber.editor.placing)).toBe(true);
+  await page.locator("#build-tool").click();
+  await expect(page.locator("#build-panel")).toBeVisible();
+  await page.keyboard.press("b");
+  await expect(page.locator("#build-panel")).toBeHidden();
+  await page.locator("#build-tool").click();
+  await page.locator("#collapse").click();
+  await expect(page.locator("#build-panel")).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(page.locator("#edit-panel")).toBeHidden();
   await expect(page.locator("#placement-bar")).toBeHidden();
@@ -65,6 +79,111 @@ test("opening Build keeps movement active until the search bar is clicked", asyn
       await page.keyboard.press('w');await expect(search).toHaveValue('');
       await page.keyboard.press('Escape');
     }
+  }
+});
+
+test("catalog stays open while choosing and placing blueprints and wires", async ({ page }) => {
+  await page.goto('/');await page.waitForFunction(() => !!(window as any).timber);
+  await page.evaluate(() => {
+    const e=(window as any).timber.editor;e.world.load([],[12]);e.pickSelection(null);
+    e.view.camera.controls.enableDamping=false;e.view.camera.home();
+  });
+  const catalog=page.locator('#build-panel'),canvas=page.locator('#viewport>canvas');
+  await page.locator('#build-tool').click();
+  await page.locator('[data-item="small-floor"]').click();
+  await expect(catalog).toBeVisible();await expect(canvas).toBeFocused();
+  await expect(page.locator('#edit-panel')).toBeVisible();
+  const point=await page.evaluate(() => {
+    const c=(window as any).timber.editor.view.camera.camera;
+    const v=c.position.clone().fromArray([4,.1,0]).project(c);
+    return {x:(v.x+1)*innerWidth/2,y:(1-v.y)*innerHeight/2};
+  });
+  await page.mouse.move(point.x,point.y);await page.mouse.click(point.x,point.y);
+  await expect(page.locator('#piece-count')).toHaveText('1 pieces');
+  await expect(catalog).toBeVisible();
+  await page.locator('[data-item="smooth-wall"]').click();
+  await expect(catalog).toBeVisible();
+  expect(await page.evaluate(() => (window as any).timber.editor.item)).toBe('smooth-wall');
+  await page.locator('#build-tool').click();await expect(catalog).toBeHidden();
+  expect(await page.evaluate(() => (window as any).timber.editor.placing)).toBe(true);
+  await page.keyboard.press('b');await expect(catalog).toBeVisible();
+  await page.locator('#collapse').click();await expect(catalog).toBeHidden();
+  await openWire(page);await expect(catalog).toBeVisible();
+  await page.locator('[data-wire-item="neon"]').click();await expect(catalog).toBeVisible();
+  await expect(page.locator('#wire-length')).toHaveText('0.00 / 16 studs');
+  await page.locator('#build-tool').click();await expect(catalog).toBeHidden();
+  expect(await page.evaluate(() => (window as any).timber.editor.logicTools.wiring)).toBe(true);
+  await page.locator('#build-tool').click();await expect(catalog).toBeVisible();
+  await page.locator('#select-tool').click();await expect(catalog).toBeVisible();
+  await page.locator('#menu-tool').click();await expect(catalog).toBeVisible();
+});
+
+test("catalog drag and resize preserve layout and never build or move the camera", async ({ page }) => {
+  await page.goto('/');await page.waitForFunction(() => !!(window as any).timber);
+  await page.evaluate(() => {
+    const e=(window as any).timber.editor;e.view.camera.controls.enableDamping=false;e.view.camera.home();
+  });
+  await page.locator('#build-tool').click();
+  const catalog=page.locator('#build-panel');
+  const before=(await catalog.boundingBox())!;
+  const state=await page.evaluate(() => {
+    const e=(window as any).timber.editor;
+    return {position:e.view.camera.camera.position.toArray(),pieces:e.world.pieces.size};
+  });
+  const grip=await page.getByRole('button',{name:'Move build catalog',exact:true}).boundingBox();
+  expect(grip).not.toBeNull();
+  await page.mouse.move(grip!.x+grip!.width/2,grip!.y+grip!.height/2);
+  await page.mouse.down();await page.mouse.move(grip!.x+grip!.width/2+140,grip!.y+grip!.height/2-110,{steps:5});await page.mouse.up();
+  const moved=(await catalog.boundingBox())!;
+  expect(moved.x).toBeCloseTo(before.x+140,0);expect(moved.y).toBeCloseTo(before.y-110,0);
+  const resize=await page.getByRole('button',{name:'Resize build catalog',exact:true}).boundingBox();
+  await page.mouse.move(resize!.x+resize!.width/2,resize!.y+resize!.height/2);
+  await page.mouse.down();await page.mouse.move(resize!.x+resize!.width/2+160,resize!.y+resize!.height/2-120,{steps:5});await page.mouse.up();
+  const resized=(await catalog.boundingBox())!;
+  expect(resized.width).toBeCloseTo(moved.width+160,0);expect(resized.height).toBeCloseTo(moved.height-120,0);
+  const cancelGrip=(await page.locator('#catalog-move').boundingBox())!;
+  await page.mouse.move(cancelGrip.x+cancelGrip.width/2,cancelGrip.y+cancelGrip.height/2);
+  await page.mouse.down();await page.mouse.move(cancelGrip.x+cancelGrip.width/2+35,cancelGrip.y+cancelGrip.height/2+30,{steps:3});
+  await page.keyboard.press('Escape');await page.mouse.up();
+  await expect(catalog).toBeVisible();expect(await catalog.boundingBox()).toEqual(resized);
+  const after=await page.evaluate(() => {
+    const e=(window as any).timber.editor;
+    return {position:e.view.camera.camera.position.toArray(),pieces:e.world.pieces.size};
+  });
+  expect(after).toEqual(state);
+  await page.locator('#collapse').click();await page.locator('#build-tool').click();
+  expect(await catalog.boundingBox()).toEqual(resized);
+  await page.reload();await page.waitForFunction(() => !!(window as any).timber);await page.locator('#build-tool').click();
+  expect(await catalog.boundingBox()).toEqual(resized);
+  await page.locator('#catalog-resize').focus();await page.keyboard.press('ArrowRight');
+  const keyboardSize=(await catalog.boundingBox())!;expect(keyboardSize.width).toBeCloseTo(resized.width+8,0);
+  await page.setViewportSize({width:390,height:844});
+  const compact=(await catalog.boundingBox())!;
+  expect(compact.x).toBeGreaterThanOrEqual(8);expect(compact.x+compact.width).toBeLessThanOrEqual(382);
+  expect(compact.y).toBeGreaterThanOrEqual(8);expect(compact.y+compact.height).toBeLessThanOrEqual(836);
+  await page.locator('.catalog-card').last().scrollIntoViewIfNeeded();
+  await expect(page.locator('.catalog-card').last()).toBeInViewport();
+  await page.setViewportSize({width:1440,height:960});expect(await catalog.boundingBox()).toEqual(keyboardSize);
+});
+
+test("catalog resize handle stays usable beside blueprint and wire controls on phones", async ({ page }) => {
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/');await page.waitForFunction(() => !!(window as any).timber);
+  for(const wiring of [false,true]) {
+    await page.evaluate(() => localStorage.removeItem('timber-catalog-layout'));
+    await page.reload();await page.waitForFunction(() => !!(window as any).timber);
+    await page.locator('#build-tool').click();
+    if(wiring) {
+      await page.locator('[data-category="Wires"]').click();
+      await page.locator('[data-wire-item="wire"]').click();
+    } else await page.locator('[data-item="small-floor"]').click();
+    const before=(await page.locator('#build-panel').boundingBox())!;
+    const handle=(await page.locator('#catalog-resize').boundingBox())!;
+    await page.mouse.move(handle.x+handle.width/2,handle.y+handle.height/2);await page.mouse.down();
+    await page.mouse.move(handle.x+handle.width/2-40,handle.y+handle.height/2-80,{steps:3});await page.mouse.up();
+    const after=(await page.locator('#build-panel').boundingBox())!;
+    expect(after.width).toBeCloseTo(before.width-40,0);expect(after.height).toBeCloseTo(before.height-80,0);
+    expect(await page.evaluate(() => (window as any).timber.editor.logicTools.wiring)).toBe(wiring);
   }
 });
 

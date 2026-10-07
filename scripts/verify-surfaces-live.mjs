@@ -24,7 +24,10 @@ async function view() {
   camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
 }
 const screen=p=>{const v=new Vector3(...p).project(camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];};
-async function choose(item) {await page.locator('#build-tool').click();await page.locator(`[data-item="${item}"]`).click();}
+async function choose(item) {
+  if(!await page.locator('#build-panel').isVisible()) await page.locator('#build-tool').click();
+  await page.locator(`[data-item="${item}"]`).click();
+}
 async function drag(from,to) {
   await page.mouse.move(...screen(from));
   await page.mouse.down();await page.mouse.move(...screen(to),{steps:10});await page.mouse.up();

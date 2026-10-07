@@ -47,6 +47,7 @@ export class LogicTools {
   });
   window.addEventListener('keydown',event=>{
    if((event.target as HTMLElement).matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+   if(event.code==='Escape'&&!$('build-panel').hidden)return;
    if(this.wiring&&['Escape','Backspace','Delete','Enter'].includes(event.code)){
     event.preventDefault();event.stopImmediatePropagation();
     if(event.code==='Escape'){if(this.start)this.cancel();else this.toggle(false);}
@@ -67,7 +68,7 @@ export class LogicTools {
  }
  selectAt(x:number,y:number){
   const id=this.pickWireAt(x,y);if(!id)return false;
-  this.e.pickSelections([],[id]);this.e.panel('build-panel',false);return true;
+  this.e.pickSelections([],[id]);return true;
  }
  showPreview(wires:Wire[],pieces:Map<string,Piece>,valid=true){
   if(!wires.length){if(this.previewView)this.previewView.root.visible=false;this.previewWires=undefined;return;}
@@ -101,7 +102,7 @@ export class LogicTools {
   this.e.view.renderer.domElement.focus({preventScroll:true});
  }
  toggle(value=!this.wiring){
-  if(value){this.e.pickSelection(null);this.e.panel('build-panel',false);this.e.panel('project-menu',false);}
+  if(value){this.e.pickSelection(null);this.e.panel('project-menu',false);}
   this.wiring=value;this.clearSelection();this.cancel();
   $('select-tool').classList.toggle('active',!value);
   this.e.view.logic.showSockets=value;this.e.view.logic.refresh();$('wiring-panel').hidden=!value;this.status();this.e.catalog();

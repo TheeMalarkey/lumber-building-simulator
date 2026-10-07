@@ -16,7 +16,10 @@ try {
   const camera=new PerspectiveCamera(45,1440/960,.1,4000);
   camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
   const screen=p=>{const v=new Vector3(...p).project(camera);return [(v.x+1)*720,(1-v.y)*480];};
-  async function choose() {await page.locator('#build-tool').click();await page.locator('[data-item="small-floor"]').click();}
+  async function choose() {
+    if(!await page.locator('#build-panel').isVisible()) await page.locator('#build-tool').click();
+    await page.locator('[data-item="small-floor"]').click();
+  }
   async function drag(from,to) {
     await page.mouse.move(...screen(from));
     await page.mouse.down();await page.mouse.move(...screen(to),{steps:10});await page.mouse.up();

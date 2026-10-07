@@ -456,9 +456,10 @@ test("catalog cards stay readable and every category is reachable", async ({
   await page.waitForFunction(() => !!(window as any).timber);
   await openBuild(page);
   await expect(page.locator(".catalog-card")).toHaveCount(102);
-  expect(
-    (await page.locator(".catalog-card").first().boundingBox())!.height,
-  ).toBeGreaterThan(120);
+  const card = (await page.locator(".catalog-card").first().boundingBox())!;
+  expect(card.height).toBeGreaterThanOrEqual(96);
+  expect(card.height).toBeLessThanOrEqual(112);
+  await expect(page.locator('.catalog-card img').first()).toBeVisible();
   await page.getByRole("button", { name: "Floors", exact: true }).click();
   await expect(page.locator(".catalog-card")).toHaveCount(8);
   await page.getByRole("button", { name: "All", exact: true }).click();

@@ -6,6 +6,7 @@ async function openWire(page,kind='wire') {
  if(!await page.locator('#build-panel').isVisible())await page.locator('#build-tool').click();
  await page.locator('#search').fill('');await page.locator('[data-category="Wires"]').click();
  await page.locator(`[data-wire-item="${kind}"]`).click();
+ await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
 }
 
 const target=process.env.TIMBER_URL||'http://127.0.0.1:5179/';
@@ -22,6 +23,7 @@ try{
  await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#results-count')).toHaveText('12 items');await expect(page.locator('.catalog-card')).toHaveCount(12);
  for(const [id,size] of [['signal-delay','2 × 2 × 2'],['signal-sustain','2 × 2 × 2'],['signal-inverter','2 × 1 × 1']])await expect(page.locator(`[data-item="${id}"] .card-size`)).toHaveText(size);
  await page.locator('#select-tool').click();
+ await page.getByRole('button',{name:'Close blueprint library',exact:true}).click();
  const rect=await page.locator('#viewport>canvas').boundingBox(),camera=new PerspectiveCamera(45,rect.width/rect.height,.1,4000);camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();
  const xy=p=>{const v=new Vector3(...p).project(camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];};
  const select=async(position,name)=>{await page.mouse.click(...xy(position));await expect(page.locator('#piece-name')).toHaveText(name);};

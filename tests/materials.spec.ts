@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { openBuild } from "./ui-helpers";
 
 test('all nine furnishings save with fixed finishes and seating supports group copy and rotation',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
-  await page.locator('#build-tool').click();await page.locator('[data-category="Store furniture"]').click();
+  await openBuild(page);await page.locator('[data-category="Store furniture"]').click();
   await expect(page.locator('.catalog-card')).toHaveCount(9);
   await expect(page.locator('[data-category="Store furniture"]')).toHaveClass(/active/);
   await expect(page.locator('[data-item="armchair"] .card-size')).toContainText('≈');
@@ -40,7 +41,7 @@ test('all nine furnishings save with fixed finishes and seating supports group c
     e.world.load([...e.world.pieces.values()].filter((p:any)=>p.id.startsWith('f')),[12]);
     e.view.sync(true);e.view.camera.camera.position.set(27,23,32);e.view.camera.controls.target.set(-2,1,0);e.view.camera.controls.update();
   });
-  await page.locator('#build-tool').click();await page.locator('[data-category="Store furniture"]').click();
+  await openBuild(page);await page.locator('[data-category="Store furniture"]').click();
   await expect(page.locator('.catalog-card')).toHaveCount(9);
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
   await page.screenshot({path:'artifacts/store-furniture.png'});
@@ -71,7 +72,7 @@ test('glass shares a fixed translucent finish and keeps opaque door hardware',as
 
 test('glass catalog and mixed selections preserve fixed finishes through editing and saves',async({page})=>{
   await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
-  await page.locator('#build-tool').click();await page.locator('[data-category="Glass"]').click();
+  await openBuild(page);await page.locator('[data-category="Glass"]').click();
   await expect(page.locator('.catalog-card')).toHaveCount(5);await page.locator('[data-item="glass-pane"]').click();
   await expect(page.locator('#wood-picker')).toBeHidden();
   await page.evaluate(()=>{
