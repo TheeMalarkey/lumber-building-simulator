@@ -9,7 +9,8 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   for (const id of ["build-panel", "edit-panel", "project-menu", "woods"])
     await expect(page.locator("#" + id)).toBeHidden();
   await page.keyboard.press("b");
-  await expect(page.locator("#search")).toBeFocused();
+  await expect(canvas).toBeFocused();
+  await page.locator("#search").click();
   await page.locator("#search").fill("smooth wall");
   await page.locator('[data-item="smooth-wall"]').click();
   await expect(page.locator("#build-panel")).toBeHidden();
@@ -32,6 +33,39 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await page.locator("#help").click();
   await expect(page.locator("#modal")).toBeVisible();
   await expect(page.locator("#project-menu")).toBeHidden();
+});
+
+test("opening Build keeps movement active until the search bar is clicked", async ({page}) => {
+  await page.goto('/');await page.waitForFunction(() => !!(window as any).timber);
+  await page.evaluate(() => {
+    const e=(window as any).timber.editor;e.world.load([],[12]);e.pickSelection(null);
+    e.view.camera.controls.enableDamping=false;e.view.camera.home();
+  });
+  const canvas=page.locator('#viewport>canvas'),search=page.locator('#search');
+  const position=() => page.evaluate(() => {
+    const c=(window as any).timber.editor.view.camera;
+    return (c.walking ? c.walker.position : c.camera.position).toArray();
+  });
+  for(const walking of [false,true]) {
+    await page.evaluate(walking => (window as any).timber.editor.view.camera.setWalking(walking),walking);
+    await page.locator('#build-tool').click();
+    await expect(canvas).toBeFocused();await expect(search).not.toBeFocused();
+    const before=await position();
+    await page.keyboard.down('w');
+    await expect.poll(async () => {
+      const after=await position();return Math.hypot(...after.map((n:number,i:number)=>n-before[i]));
+    }).toBeGreaterThan(.5);
+    await page.keyboard.up('w');await expect(search).toHaveValue('');
+    await search.click();await page.waitForTimeout(80);
+    const stationary=await position();await page.keyboard.type('wasd');await page.waitForTimeout(120);
+    await expect(search).toHaveValue('wasd');expect(await position()).toEqual(stationary);
+    await search.fill('');await page.keyboard.press('Escape');
+    for(const key of ['b','/']) {
+      await page.keyboard.press(key);await expect(canvas).toBeFocused();
+      await page.keyboard.press('w');await expect(search).toHaveValue('');
+      await page.keyboard.press('Escape');
+    }
+  }
 });
 
 test("selected inspector keeps the header palette and reveals the arrow pad only for held previews", async ({ page }) => {
