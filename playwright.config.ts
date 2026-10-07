@@ -7,6 +7,8 @@ export default defineConfig({
     "browser.spec.ts",
     "camera.spec.ts",
     "wire-selection.spec.ts",
+    "wire-ui.spec.ts",
+    "wire-relocation.spec.ts",
     "hud.spec.ts",
     "persistence.spec.ts",
     "materials.spec.ts",

@@ -14,7 +14,7 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  ],[12]);e.view.sync(true);e.pickSelection('lever');e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  const socket=async(id:string,port:string)=>page.evaluate(async({id,port})=>{const {Vector3}=await import('/node_modules/three/build/three.module.js');const {portPosition}=await import('/src/logic-ports.ts');const e=(window as any).timber.editor,rect=e.view.renderer.domElement.getBoundingClientRect(),v=new Vector3(...portPosition(e.world.pieces.get(id),port)).project(e.view.camera.camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];},{id,port});
  await page.locator('[data-port="out"]').click();let xy=await socket('gate','in');await page.mouse.click(xy[0],xy[1]);
- xy=await socket('gate','out');await page.mouse.click(xy[0],xy[1]);xy=await socket('light','in');await page.mouse.click(xy[0],xy[1]);await page.locator('#wire-done').click();
+ xy=await socket('gate','out');await page.mouse.click(xy[0],xy[1]);xy=await socket('light','in');await page.mouse.click(xy[0],xy[1]);await page.locator('#select-tool').click();
  await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.wires.length)).toBe(2);
  await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.world.lightStates.get('light'))).toBe(true);
  await page.evaluate(()=>(window as any).timber.editor.pickSelection('lever'));await page.locator('#logic-action').click();
@@ -29,8 +29,8 @@ test('builds a visible wired lever circuit, operates lights and persists edits',
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.pickSelection(null);e.view.camera.camera.position.set(14,13,19);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  await page.waitForTimeout(1000);await page.screenshot({path:'artifacts/logic-circuit.png'});
  await page.setViewportSize({width:390,height:844});await openWire(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.locator('#collapse').click();
- await page.locator('#select-tool').click();await expect(page.locator('#wiring-panel')).toBeHidden();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
- await openWire(page);await page.locator('#collapse').click();await page.locator('#wire-done').click();await expect(page.locator('#wiring-panel')).toBeHidden();
+ await page.locator('#select-tool').click();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
+ await openWire(page);await page.locator('#collapse').click();await page.locator('#select-tool').click();expect(await page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
  expect(errors).toEqual([]);
 });
 test('walks onto a pressure plate to power a light, then walks off',async({page})=>{

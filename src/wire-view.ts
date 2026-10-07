@@ -72,7 +72,7 @@ export class WireView {
   mesh.instanceColor=new T.InstancedBufferAttribute(new Float32Array(capacity*3).fill(1),3);
   mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);this.root.add(mesh);return mesh;
  }
- rebuild(wires:Wire[],pieces:Map<string,Piece>){
+  rebuild(wires:Wire[],pieces:Map<string,Piece>,options:{ends?:boolean}={}){
   this.tubeParts=[];this.jointParts=[];this.glowParts=[];this.buckets.clear();
   const cylinder=(wire:Wire,a:T.Vector3,b:T.Vector3,r:number,parts=this.tubeParts)=>{
    const d=b.clone().sub(a),len=d.length();if(len<1e-6)return;
@@ -81,8 +81,10 @@ export class WireView {
   for(const wire of wires){
    const path=wirePath(wire,pieces).map(p=>new T.Vector3(...p)).filter((p,i,all)=>!i||p.distanceToSquared(all[i-1])>1e-10);
    if(path.length<2)continue;
-   for(const part of wireParts(wire,path.map(p=>p.toArray())))
-    (part.kind==='bend'?this.jointParts:this.tubeParts).push({wire,matrix:wirePartMatrix(part)});
+    for(const part of wireParts(wire,path.map(p=>p.toArray()))){
+     if(options.ends===false&&part.kind==='collar')continue;
+     (part.kind==='bend'?this.jointParts:this.tubeParts).push({wire,matrix:wirePartMatrix(part)});
+    }
    for(let i=1;i<path.length;i++){
     const a=path[i-1],b=path[i];
     if(wireGlows(wire)){
@@ -124,6 +126,22 @@ export class WireView {
   this.material.transparent=true;this.material.opacity=.55;this.material.depthWrite=false;
   this.selectionColor.setHex(valid?0x93c46e:0xff6654);this.selectMany(this.tubeParts.map(p=>p.wire.id));this.paint(()=>false);
  }
+  /** Opaque unfinished wire body; neon emission uses its chosen color without
+   * requiring the point-light pool. Repaint explicitly even when IDs match. */
+  draft(valid:boolean){
+   if(this.material.transparent)this.material.needsUpdate=true;
+   this.material.transparent=false;this.material.opacity=1;this.material.depthWrite=true;
+   this.selected.clear();
+   const neon=new Set(this.tubeParts.filter(p=>p.wire.kind==='neon').map(p=>p.wire.id));
+   this.paint(id=>neon.has(id));
+   if(valid)return;
+   const color=new T.Color(),tint=new T.Color(0xff6654);
+   for(const mesh of [this.tubes,this.joints,this.glow]){
+    if(!mesh)continue;
+    for(let i=0;i<mesh.count;i++){mesh.getColorAt(i,color);mesh.setColorAt(i,color.lerp(tint,.8));}
+    if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
+   }
+  }
  /** Test the actual parts in build coordinates, independent of render-origin rebasing. */
  pick(raycaster:T.Raycaster){
   let best:{id:string;distance:number}|null=null;

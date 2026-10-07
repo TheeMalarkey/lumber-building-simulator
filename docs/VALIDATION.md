@@ -1,6 +1,6 @@
-# Validation — 2026-10-04
+# Validation — 2026-10-06
 
-This is a cumulative validation record. Later sections supersede earlier control descriptions; the direct-drag and held-control revision at the end is awaiting validation.
+This is a cumulative validation record. Later sections supersede earlier control descriptions.
 
 ## Implemented and checked
 
@@ -260,3 +260,11 @@ The icon pad appears only while a placement is held, including held move/copy pr
 All 208 core cases, the production build and 85 distinct affected browser scenarios pass. One stale selected-pad assertion was corrected and its scenario rerun; the remaining affected cases passed in their first batch. New checks cover single clicks with pointer jitter, one-action history, plain X/Y/Z runs, diagonal pointer projection, tops and vertical sides, held air runs, failed drag projection, cancellation, invalid-draft retries and held-only controls. Existing checks retain collision, ground, plot, selection, wire, copy and history validation.
 
 Separate production UI checks pass without the development API for click/drag, axis-only spacing, land rejection, undo/redo, save/reload, blueprint tops, vertical sides, held air runs, single/group axis copies, palette names, R/T and held-only pads at desktop, portrait and landscape viewport sizes. The refreshed six-view gallery and PDF were visually inspected. These viewport checks do not establish physical-phone acceptance.
+
+## Compact wire placement and relocation — 2026-10-06
+
+The wire placement and wire selection panels have been replaced by a small neon palette on the right. A non-interactive label follows the route's arc-length midpoint and displays length/max, for example `4.8/20`. Placement uses the shared tube and bend geometry with opaque wire materials; completed end collars are omitted until commit. Existing group-move previews retain their finished ends. Preview instance batches reuse their capacity as the route changes.
+
+Moving one selected wire starts a new route while retaining its original record until commit. Its rendered original is hidden from picking and snapping; successful replacement keeps its ID, color and optional frame in one history entry. Cancel and project replacement restore visible wires safely. Multiple-wire selections retain whole-route movement, and Ctrl+D retains copying. Copy with arrows remains a blueprint control and cannot turn wire-only group arrow drags into copies.
+
+Verification: 222 core tests passed, including 14 new rendering/visibility checks. Focused browser runs covered 54 cases; the final 18-case run passed after the single-wire movement revision. These include midpoint projection through bends and camera changes, regular/neon preview materials, end collars on completion, keyboard and mouse palette use, selected-neon color history, phone layout, reroute commit/cancel/undo/redo, same-ID project loading during pickup, and wired-group copying/deletion. The GitHub Pages path build passed. Three production-preview scripts also passed through public controls, including restored circuit power after reroute undo, with no debug API or page/console/WebGL errors. These are automated Chrome checks; no physical phone acceptance is claimed.

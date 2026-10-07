@@ -21,6 +21,7 @@ export class LogicView {
  private material=new T.MeshBasicMaterial({color:0xffffff});
  private socketMaterial=new T.MeshBasicMaterial({color:0xffffff,depthWrite:false});
  private topology='';
+ private hiddenWires=new Set<string>();
  wireIds:string[]=[];
  constructor(private world:World){this.root.name='Logic wires and signals';this.root.add(this.wires.root,this.timerFaces.root);}
  /** Limit overlays to the timer instances in resident housing batches. */
@@ -66,6 +67,13 @@ export class LogicView {
   this.paint();
  }
  refresh(){this.version=-1;this.paint();}
+ /** Hide edited routes from rendering and mesh picking while their world
+  * records and live circuit connections remain intact. */
+ hideWires(ids:Iterable<string>){
+  const hidden=new Set(ids);
+  if(hidden.size===this.hiddenWires.size&&[...hidden].every(id=>this.hiddenWires.has(id)))return;
+  this.hiddenWires=hidden;this.topology='';this.refresh();
+ }
  private mesh(old:T.InstancedMesh|undefined,g:T.BufferGeometry,count:number){
   if(old&&old.instanceMatrix.count>=count){old.count=count;old.geometry=g;return old;}
   if(old){this.root.remove(old);old.dispose();}
@@ -75,8 +83,9 @@ export class LogicView {
   const m=new T.Matrix4(),q=new T.Quaternion(),color=new T.Color();
   const topology=this.world.generation+':'+this.circuit.topologyBuilds;
   if(topology!==this.topology){
-   this.topology=topology;this.wires.rebuild(this.world.wires,this.world.pieces);
-   this.wireIds=this.world.wires.flatMap(w=>wirePath(w,this.world.pieces).slice(1).map(()=>w.id));
+   const visible=this.world.wires.filter(w=>!this.hiddenWires.has(w.id));
+   this.topology=topology;this.wires.rebuild(visible,this.world.pieces);
+   this.wireIds=visible.flatMap(w=>wirePath(w,this.world.pieces).slice(1).map(()=>w.id));
   }
   this.wires.paint(id=>this.circuit.wireOn(id));
   const ports:{p:Vec3;normal:T.Vector3;color:number;lighting:boolean;radius:number}[]=[];

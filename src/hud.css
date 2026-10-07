@@ -96,7 +96,7 @@
 .game-hud .setting-row input { width: 65px; padding: 5px; height: 30px; text-align: center; margin-left: auto; }
 .game-hud #overlap-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 .game-hud .overlap-option:has(input:checked), .game-hud .axis-copy-option:has(input:checked) { color: var(--hud-text); }
-.game-hud #axis-copy-toggle, .game-hud #wire-axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
+.game-hud #axis-copy-toggle { width: 16px; height: 16px; padding: 0; accent-color: var(--hud-active); }
 .game-hud .inspector section { padding: 0; border: 0; }
 .nudge-buttons { display: grid; grid-template-columns: repeat(3, 30px) 8px 30px; grid-template-rows: repeat(3, 30px); gap: 3px; }
 .nudge-buttons button { width: 30px; height: 30px; display: grid; place-items: center; padding: 5px; border: 1px solid var(--hud-border); background: var(--hud-field); }
@@ -114,9 +114,8 @@
 #hold-position[aria-pressed="true"] { background: var(--hud-selected); }
 #selection-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .game-hud .primary-btn { margin: 0; flex: 1; width: auto; padding: 9px 7px; background: var(--hud-selected); color: #fff; font-size: 11px; }
-.game-hud .placement-bar { left: 16px; bottom: 88px; transform: none; gap: 12px; padding: 9px 12px; background: var(--hud-bg); color: #fff; border-radius: 4px; pointer-events: none; }
-.game-hud .placement-bar strong { display: none; }
-.game-hud .placement-bar > span { color: var(--hud-text); font-size: 10px; }
+/* Keep the placement state hooks available without a second instruction panel. */
+.game-hud .placement-bar { display: none !important; }
 .game-hud #toast { bottom: 140px; max-width: min(480px, calc(100vw - 32px)); background: var(--hud-bg); color: #fff; border: 1px solid var(--hud-border); pointer-events: none; }
 @media (max-width: 1050px) {
   .build-toolbar kbd { display: none; }
@@ -134,13 +133,10 @@
   .build-toolbar .icon-btn { width: 27px; }
   .game-hud .catalog-panel { left: 8px; width: calc(100% - 16px); bottom: 82px; height: min(580px, calc(100dvh - 145px)); }
   .game-hud .inspector { right: 8px; bottom: 82px; width: 245px; max-height: calc(100dvh - 145px); }
-  .game-hud .placement-bar { left: 8px; bottom: 82px; padding: 7px 9px; gap: 8px; }
-  .game-hud .placement-bar > span { font-size: 9px; }
   .hud-status { left: 8px; }
   .hud-fps { right: 8px; }
 }
 
-.game-hud .placement-bar > span { display: flex; }
 .game-hud #path-controls { display: grid; gap: 8px; }
 .game-hud select { color: var(--hud-text); background: #242424; border: 1px solid var(--hud-border); border-radius: 3px; padding: 6px; min-width: 0; font-size: 11px; }
 #path-status { font-size: 10px; line-height: 1.5; margin: 0; color: var(--hud-text); }
@@ -155,7 +151,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   outline-offset: 3px;
 }
 .game-hud { scrollbar-color: #888 transparent; }
-.game-hud :is(.hud-panel, .build-toolbar, .placement-bar, #toast, #logic-hover),
+.game-hud :is(.hud-panel, .build-toolbar, #toast, #logic-hover, #wire-length-label),
 .game-hud .hud-corner > button, .game-hud .view-controls .icon-btn {
   background: var(--hud-bg);
   border: 1px solid var(--hud-border);
@@ -173,25 +169,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud .card-add { color: var(--hud-muted); }
 .game-hud input[type="checkbox"], .game-hud progress { accent-color: var(--hud-active); }
 .game-hud .logic-ports button { border-color: var(--hud-border); }
-.game-hud .wire-types button, .game-hud .wire-actions button {
-  background: #ffffff08;
-  border: 1px solid var(--hud-border);
-  color: var(--hud-text);
-}
-.game-hud .wire-types [aria-pressed="true"] {
-  background: var(--hud-selected);
-  border-color: var(--hud-active);
-}
-.game-hud .wire-actions button:hover:not(:disabled), .game-hud .wire-types button:hover:not(:disabled) {
-  background: var(--hud-hover);
-}
-.game-hud :is(#wiring-panel p, #wire-selection-panel p, .wire-types small, #logic-hover-click) { color: var(--hud-muted); }
+.game-hud #logic-hover-click { color: var(--hud-muted); }
 .game-hud #logic-hover { color: var(--hud-text); }
 .game-hud #logic-hover kbd { color: var(--hud-text); border-color: var(--hud-border); }
 .game-hud #selection-marquee { border-color: var(--hud-active); background: #ffffff22; }
-.game-hud #wire-colors button { border-color: #888; }
-.game-hud #wire-selection-panel { display: flex; flex-direction: column; max-height: calc(100dvh - 155px); overflow: hidden; }
-.wire-selection-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.game-hud #wire-palette-panel { right: 16px; bottom: 84px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding: 6px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 155px); }
+.game-hud #wire-palette-panel.with-inspector { top: 64px; bottom: auto; }
+.game-hud #wire-color-toggle { border: 1px solid var(--hud-border); background: var(--hud-field); padding: 5px; }
+.game-hud #wire-color-toggle[aria-expanded="true"] { background: var(--hud-selected); }
+.game-hud #wire-color-toggle svg { width: 20px; height: 20px; }
+.game-hud #wire-colors { display: grid; grid-template-columns: repeat(3, 32px); gap: 6px; padding: 3px; overflow: auto; scrollbar-width: thin; }
+.game-hud #wire-colors button { width: 32px; height: 32px; flex-shrink: 0; padding: 0; background: var(--wire-color); border: 2px solid #888; border-radius: 4px; }
+.game-hud #wire-colors button:hover:not(:disabled) { background: var(--wire-color); border-color: #fff9; }
+.game-hud #wire-colors button[aria-pressed="true"] { border-color: var(--hud-text); outline: 1px solid var(--hud-active); outline-offset: 2px; }
+.game-hud #wire-length-label { position: absolute; z-index: 15; transform: translate(-50%, -50%); margin-top: 0; padding: 6px 8px; font-size: 11px; font-variant-numeric: tabular-nums; line-height: 1.3; white-space: nowrap; pointer-events: none; }
+.game-hud #wire-length-label.wire-invalid { color: #ffc0a3; }
+@media (max-width: 650px) {
+  .game-hud #wire-palette-panel { right: 8px; bottom: 82px; }
+  .game-hud #wire-palette-panel.with-inspector { top: 56px; bottom: auto; }
+}
 
 /* Help and confirmations share the same theme; only confirmations block the world.
    Settings and Land use dialog.show(), with no fullscreen backdrop or blur. */

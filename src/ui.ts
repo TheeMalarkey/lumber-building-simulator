@@ -55,6 +55,7 @@ export function shell() {
 <div class="placement-bar" id="placement-bar" hidden><strong id="placing-name"></strong><span id="placing-instruction">Click to place · Drag a straight run</span><span id="placement-rotate"><kbd>R</kbd> Rotate</span><span id="placement-tilt"><kbd>T</kbd> Tilt</span><span id="placing-hold"><kbd>L</kbd> Hold</span><span><kbd>Esc</kbd> Cancel</span></div>
 <div id="selection-marquee" hidden aria-hidden="true"></div>
 <div id="logic-hover" role="status" hidden><kbd>E</kbd><span id="logic-hover-click" hidden>or click</span><span id="logic-hover-label"></span></div>
+<div id="wire-length-label" role="status" aria-live="off" hidden></div>
 <div id="camera-hint" hidden></div><div id="toast" role="status"></div>
 </section>
 <div class="hud-corner"><button id="menu-tool" aria-label="Project menu" class="hud-tool" aria-expanded="false" aria-controls="project-menu">${icon("cube")}<strong>TIMBER</strong>${icon("chevron")}</button><span id="save-state" class="save-state">Local workspace</span></div>
@@ -87,13 +88,7 @@ export function shell() {
 <div id="selection-footer" class="selection-footer" hidden><section id="transform-section" hidden><div id="nudge-buttons" class="nudge-buttons" role="group" aria-label="Move held placement by one stud">${["left","up","forward","right","down","back"].map(d=>`<button data-nudge="${d}" title="Move ${d} one stud" aria-label="Move ${d} one stud">${icon(d)}</button>`).join("")}</div></section><div id="selection-actions">${button("duplicate-tool","copy","Duplicate (Ctrl+D)")}${button("delete-tool","trash","Delete selection (Delete)")}</div></div>
 </aside>
 <nav class="build-toolbar" aria-label="Building tools">${tool("build-tool","cube","Build","B")}${tool("select-tool","arrow","Select","V")}${tool("move-tool","move","Move","G")}</nav>
-<aside id="wire-selection-panel" class="hud-panel" hidden aria-label="Selected wires"><div class="wire-selection-body"><strong id="wire-selection-name"></strong><p id="wire-selection-length"></p><div class="wire-actions"><button id="move-wires">Move</button><button id="copy-wires">Duplicate</button><button id="delete-wire">Delete wire</button><button id="close-wire-selection">Done</button></div><label class="setting-row axis-copy-option"><span>Copy with arrows</span><input id="wire-axis-copy-toggle" type="checkbox" aria-label="Copy wires with axis arrows"></label></div></aside>
-<aside id="wiring-panel" class="hud-panel" hidden aria-label="Wire placement">
-<div class="wire-types" role="group" aria-label="Wire type"><button data-wire-kind="wire" aria-pressed="true">Wire <small>20 studs</small></button><button data-wire-kind="neon" aria-pressed="false">Neon <small>16 studs</small></button></div>
-<div id="wire-colors" role="group" aria-label="Neon color" hidden></div>
-<strong id="wire-status"></strong><div class="wire-meter"><span id="wire-length">0 / 20 studs</span><progress id="wire-budget" max="20" value="0" aria-label="Wire length used"></progress></div>
-<p id="wire-feedback" aria-live="polite"></p><p>Click a surface to start or add a bend. Click a socket or wire to finish. <b>Only touching end caps share power.</b> <b>Shift-click a wire</b> to bend over it and keep building. <b>Enter</b> finishes at the last point. <b>Backspace</b> undoes a point · <b>Esc</b> cancels. In <b>Select</b>, Ctrl-click or Ctrl-drag groups of wires and blueprints to move, copy or delete them.</p>
-<div class="wire-actions"><button id="wire-finish" disabled>Finish wire</button><button id="wire-done">Done</button><button id="wire-remove" hidden>Delete selected wire</button></div><p id="wire-count"></p></aside>
+<aside id="wire-palette-panel" class="hud-panel" hidden aria-label="Neon wire colors"><button id="wire-color-toggle" class="icon-btn" type="button" aria-label="Neon wire colors" title="Neon wire colors" aria-expanded="false" aria-controls="wire-colors">${icon("palette")}</button><div id="wire-colors" role="group" aria-label="Neon wire colors" hidden></div></aside>
 <div class="hud-status"><span id="selection-count" hidden aria-live="polite"></span><span id="piece-count">0 pieces</span><span id="plot-status">1 / 25 plots</span></div><span id="fps" class="hud-fps">— FPS</span>
 <div id="wood-tooltip" role="tooltip" hidden></div>
 <div id="welcome-note" hidden><button id="blank-start">Start a new build</button><button id="dismiss-welcome">Dismiss</button></div>

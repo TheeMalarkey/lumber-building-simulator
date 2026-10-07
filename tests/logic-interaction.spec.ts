@@ -146,7 +146,7 @@ test('building, wiring, camera drags and UI controls retain their normal input',
   await page.mouse.move(...await point(page,[2,.5,0]));await expect(page.locator('#logic-hover')).toBeHidden();
   await page.mouse.click(...await point(page,[2,.5,0]));
   expect(await page.evaluate(()=>(window as any).timber.editor.view.logic.circuit.output('button'))).toBe(false);
-  await page.locator('#wire-done').click();
+  await page.locator('#select-tool').click();
   await openBuild(page);await page.locator('[data-category="Logic"]').click();await page.locator('[data-item="button"]').click();await page.locator('#collapse').click();
   await page.mouse.move(...await point(page,[2,.5,0]));await expect(page.locator('#logic-hover')).toBeHidden();
   await page.locator('#select-tool').click();

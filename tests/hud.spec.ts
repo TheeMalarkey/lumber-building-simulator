@@ -15,7 +15,7 @@ test("compact HUD keeps the world full screen and reveals only relevant controls
   await page.locator('[data-item="smooth-wall"]').click();
   await expect(page.locator("#build-panel")).toBeVisible();
   await expect(page.locator("#edit-panel")).toBeVisible();
-  await expect(page.locator("#placement-bar")).toBeVisible();
+  await expect(page.locator("#placement-bar")).toBeHidden();
   await expect(canvas).toBeFocused();
   await page.keyboard.press("r");
   expect(await page.evaluate(() => (window as any).timber.editor.rotation)).toEqual([0, 1, 0]);
@@ -110,7 +110,9 @@ test("catalog stays open while choosing and placing blueprints and wires", async
   await page.locator('#collapse').click();await expect(catalog).toBeHidden();
   await openWire(page);await expect(catalog).toBeVisible();
   await page.locator('[data-wire-item="neon"]').click();await expect(catalog).toBeVisible();
-  await expect(page.locator('#wire-length')).toHaveText('0.00 / 16 studs');
+  await expect(page.locator('#wire-palette-panel')).toBeVisible();
+  await expect(page.locator('#wire-length-label')).toBeHidden();
+  expect(await page.evaluate(() => (window as any).timber.editor.logicTools.selectedKind)).toBe('neon');
   await page.locator('#build-tool').click();await expect(catalog).toBeHidden();
   expect(await page.evaluate(() => (window as any).timber.editor.logicTools.wiring)).toBe(true);
   await page.locator('#build-tool').click();await expect(catalog).toBeVisible();
@@ -324,7 +326,7 @@ test("popup switching and close controls keep destructive confirmations modal", 
   await page.locator("#land-tool").click();
   await openWire(page);
   await expect(page.locator("#modal")).toBeHidden();
-  await expect(page.locator("#wiring-panel")).toBeVisible();
+  expect(await page.evaluate(() => (window as any).timber.editor.logicTools.wiring)).toBe(true);
   await page.locator("#select-tool").click();
   await page.locator("#menu-tool").click();
   await page.locator("#settings").click();
@@ -348,12 +350,17 @@ test("compact toolbars keep wire building and land controls accessible", async (
   expect(await page.locator('.build-toolbar>button').evaluateAll(buttons => buttons.map(b => b.id))).toEqual(['build-tool','select-tool','move-tool']);
   expect(await page.locator('.view-controls>button').evaluateAll(buttons => buttons.map(b => b.id))).toEqual(['home','walk-tool','land-tool','undo','redo']);
   await openWire(page);
-  await expect(page.locator('#wiring-panel')).toBeVisible();
-  await expect(page.locator('#wire-length')).toHaveText('0.00 / 20 studs');
+  expect(await page.evaluate(() => (window as any).timber.editor.logicTools.selectedKind)).toBe('wire');
+  await expect(page.locator('#wire-palette-panel')).toBeHidden();
+  await expect(page.locator('#wire-length-label')).toBeHidden();
   await openWire(page, 'neon');
-  await expect(page.locator('#wire-length')).toHaveText('0.00 / 16 studs');
+  expect(await page.evaluate(() => (window as any).timber.editor.logicTools.selectedKind)).toBe('neon');
+  await expect(page.locator('#wire-length-label')).toBeHidden();
+  await expect(page.locator('#wire-colors')).toBeHidden();
+  await page.locator('#wire-color-toggle').click();
   await expect(page.locator('#wire-colors')).toBeVisible();
-  await page.locator('#wire-done').click();
+  await page.locator('#select-tool').click();
+  await expect(page.locator('#wire-palette-panel')).toBeHidden();
   for (const [width,height] of [[1440,960],[390,844],[320,640]]) {
     await page.setViewportSize({width,height});
     const top = (await page.locator('.view-controls').boundingBox())!;

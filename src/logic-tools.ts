@@ -1,7 +1,7 @@
-import {Vector3,Line,BufferGeometry,LineBasicMaterial,Float32BufferAttribute} from 'three';
+import {Vector3} from 'three';
 import {ITEMS,type Vec3} from './catalog';
 import {portsFor,portPosition,wirePath,endpointPosition,type Endpoint,type Wire} from './logic-ports';
-import {NEON_COLORS,wireCollarRadius,wireColor,wireLength,wireLimit,wireRouteIssue,type NeonColor,type WireStyle} from './wire-design';
+import {NEON_COLORS,wireCollarRadius,wireLength,wireLimit,wireRouteIssue,type NeonColor,type WireStyle} from './wire-design';
 import type {Editor} from './editor';
 import {LogicInteraction} from './logic-interaction';
 import type {WireSurface} from './wire-shape';
@@ -10,27 +10,29 @@ import type {Piece} from './world';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
- wiring=false;private start:Endpoint|null=null;private bends:Vec3[]=[];private selectedWire:string|null=null;
+ wiring=false;private start:Endpoint|null=null;private bends:Vec3[]=[];
  private down:number[]|null=null;private previousStatus='';private generation=-1;private revision=-1;
- private guide=new Line(new BufferGeometry(),new LineBasicMaterial({color:0xf2bc72,depthTest:true}));
  private style:WireStyle={kind:'wire'};private pointer:[number,number]|null=null;private previewKey='';private previewEnd:Endpoint|null=null;
  private previewId=crypto.randomUUID();private previewIssue:string|null=null;
  private startSurface?:WireSurface;
  private previewPath:Vec3[]=[];
  private interaction:LogicInteraction;
  private previewView?:WireView;private previewWires?:Wire[];private previewValid?:boolean;private previewRevision=-1;
+ private draftView?:WireView;private paletteContext='';
+ private movingWire:Wire|null=null;
+ private labelPoint=new Vector3();
  constructor(private e:Editor){
   this.interaction=new LogicInteraction(e,()=>!this.wiring,id=>this.activate(id));
-  e.view.worldRoot.add(this.guide);this.guide.visible=false;
-  $('wire-done').onclick=()=>this.toggle(false);
-  $('wire-finish').onclick=()=>this.finishSurface();
-  document.querySelectorAll<HTMLButtonElement>('[data-wire-kind]').forEach(b=>b.onclick=()=>{if(this.start)return;this.style=b.dataset.wireKind==='neon'?{kind:'neon',color:this.style.color??'white'}:{kind:'wire'};this.status();});
-  $('wire-colors').replaceChildren(...Object.entries(NEON_COLORS).map(([id,c])=>{const b=document.createElement('button');b.dataset.wireColor=id;b.title=c.label+(id==='pink'?' · Bright Gift':'')+' neon';b.setAttribute('aria-label',b.title);b.style.setProperty('--wire-color','#'+c.hex.toString(16).padStart(6,'0'));b.onclick=()=>{if(this.start)return;this.style={kind:'neon',color:id as NeonColor};this.status();};return b;}));
-  $('wire-remove').onclick=()=>this.removeSelected();
-  $('delete-wire').onclick=()=>e.remove();
-  $('close-wire-selection').onclick=()=>e.pickSelection(null);
-  $('copy-wires').onclick=()=>e.move(true);$('move-wires').onclick=()=>e.move();
-  $('wire-axis-copy-toggle').onchange=event=>{e.copyWithArrows=(event.target as HTMLInputElement).checked;e.inspect();};
+  $('wire-color-toggle').onclick=()=>this.colorPopup(!!$('wire-colors').hidden);
+  $('wire-colors').replaceChildren(...Object.entries(NEON_COLORS).map(([id,c])=>{
+   const b=document.createElement('button');b.dataset.wireColor=id;b.title=c.label+' neon';b.setAttribute('aria-label',b.title);b.style.setProperty('--wire-color','#'+c.hex.toString(16).padStart(6,'0'));
+   b.onclick=()=>{
+    if(this.wiring){this.style={kind:'neon',color:id as NeonColor};this.previewKey='';}
+    else {const selected=this.e.wireSelection;this.e.world.execute([],this.e.world.wires.map(w=>selected.has(w.id)&&w.kind==='neon'?{...w,color:id as NeonColor}:w));}
+    this.colorPopup(false);this.status();this.e.inspect();canvas.focus({preventScroll:true});
+   };return b;
+  }));
+  document.addEventListener('pointerdown',event=>{if(!$('wire-palette-panel').contains(event.target as Node))this.colorPopup(false);},true);
   $('logic-action').onclick=()=>this.activate();
   $('logic-timing').onchange=()=>{const p=e.selectedPieces[0];if(!p)return;e.world.execute([{before:p,after:{...p,timing:Number(($('logic-timing') as HTMLSelectElement).value)}}]);this.inspect();};
   $('logic-ports').onclick=event=>{const port=(event.target as HTMLElement).closest<HTMLButtonElement>('[data-port]')?.dataset.port;if(port&&e.selected)this.begin({piece:e.selected,port});};
@@ -47,18 +49,20 @@ export class LogicTools {
   });
   window.addEventListener('keydown',event=>{
    if((event.target as HTMLElement).matches('input,select,textarea')||document.querySelector('dialog[open]'))return;
+   if(event.code==='Escape'&&!$('wire-colors').hidden){event.preventDefault();event.stopImmediatePropagation();this.colorPopup(false);canvas.focus({preventScroll:true});return;}
+   if(event.code==='Enter'&&$('wire-palette-panel').contains(event.target as Node))return;
    if(event.code==='Escape'&&!$('build-panel').hidden)return;
    if(this.wiring&&['Escape','Backspace','Delete','Enter'].includes(event.code)){
     event.preventDefault();event.stopImmediatePropagation();
-    if(event.code==='Escape'){if(this.start)this.cancel();else this.toggle(false);}
-    else if(event.code==='Backspace'&&this.start){if(this.bends.length){this.bends.pop();this.previewKey='';this.status();}else this.cancel();}
+    if(event.code==='Escape'){if(this.movingWire)this.toggle(false);else if(this.start)this.cancel();else this.toggle(false);}
+    else if(event.code==='Backspace'&&this.start){if(this.bends.length){this.bends.pop();this.previewKey='';this.status();}else this.cancel(!!this.movingWire);}
     else if(event.code==='Enter')this.finishSurface();
-    else if(event.code==='Delete')$('wire-remove').click();return;
+    else if(event.code==='Delete'&&this.start){if(this.movingWire)this.toggle(false);else this.cancel();}return;
    }
   },true);
  }
  private surfacePoint(point:Vec3,normal:Vec3):Vec3{return point.map((v,i)=>v+normal[i]*(wireCollarRadius(this.style)+.005)) as Vec3;}
- clearSelection(){this.selectedWire=null;this.e.wireSelection.clear();this.e.view.logic.wires.select(null);$('wire-selection-panel').hidden=true;}
+ clearSelection(){this.e.wireSelection.clear();this.e.view.logic.wires.select(null);this.colorPopup(false);this.colorUI();}
  pickWireAt(x:number,y:number){
   const hit=this.e.view.pick(x,y),wire=this.e.view.logic.wires.pick(this.e.view.raycaster);
   // An actual visible surface wins over the screen-space placement snap radius.
@@ -79,35 +83,45 @@ export class LogicTools {
   this.previewView.rebuild(wires,pieces);this.previewView.preview(valid);
  }
  private selectionUI(){
-  const wires=this.e.selectedWires;this.e.view.logic.wires.selectMany(this.e.placing?[]:this.e.wireSelection);
-  $('wire-selection-panel').hidden=this.wiring||!wires.length||!!this.e.selectedPieces.length||this.e.placing;
-  if(!wires.length)return;
-  $('wire-selection-name').textContent=wires.length>1?`${wires.length} wires selected`:(wires[0].kind==='neon'?NEON_COLORS[wires[0].color??'white'].label+' neon':'Wire')+' selected';
-  const length=wires.reduce((sum,w)=>sum+wireLength(wirePath(w,this.e.world.pieces)),0);
-  $('wire-selection-length').textContent=`${length.toFixed(2)} studs · Ctrl-click or Ctrl-drag to select more`;
-  $('delete-wire').textContent=wires.length>1?'Delete wires':'Delete wire';
-  ($('wire-axis-copy-toggle') as HTMLInputElement).checked=this.e.copyWithArrows;
+  this.e.view.logic.wires.selectMany(this.e.placing?[]:this.e.wireSelection);this.colorUI();
  }
- private removeSelected(){
-  if(!this.selectedWire)return;
-  const id=this.selectedWire;this.clearSelection();this.cancel();
-  this.e.world.execute([],this.e.world.wires.filter(w=>w.id!==id));
-  this.e.view.renderer.domElement.focus({preventScroll:true});this.status();
+ private colorPopup(open:boolean){
+  $('wire-colors').hidden=!open;$('wire-color-toggle').setAttribute('aria-expanded',String(open));
  }
- private cancel(){this.start=null;this.bends=[];this.startSurface=undefined;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.guide.visible=false;this.status();}
+ private colorUI(){
+  const neon=this.wiring||this.e.placing?[]:this.e.selectedWires.filter(w=>w.kind==='neon'),panel=$('wire-palette-panel');
+  const context=this.wiring?this.style.kind??'wire':!this.e.placing&&neon.length?JSON.stringify([[...this.e.selection].sort(),[...this.e.wireSelection].sort()]):'';
+  if(context!==this.paletteContext){this.paletteContext=context;this.colorPopup(false);}
+  panel.hidden=this.wiring?this.style.kind!=='neon':this.e.placing||!neon.length;
+  panel.classList.toggle('with-inspector',!$('edit-panel').hidden);
+  const colors=this.wiring?[this.style.color??'white']:neon.map(w=>w.color??'white'),color=colors[0]??'white',mixed=new Set(colors).size>1;
+  const label=`Neon color: ${mixed?'Mixed colors':NEON_COLORS[color].label}`,toggle=$('wire-color-toggle');
+  toggle.title=label;toggle.setAttribute('aria-label',label);
+  document.querySelectorAll<HTMLButtonElement>('[data-wire-color]').forEach(b=>b.setAttribute('aria-pressed',String(!mixed&&b.dataset.wireColor===color)));
+ }
+ private cancel(keepMoving=false){
+  if(!keepMoving&&this.movingWire){this.movingWire=null;this.e.view.logic.hideWires([]);}
+  this.start=null;this.bends=[];this.startSurface=undefined;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';if(this.draftView)this.draftView.root.visible=false;this.status();
+ }
  get selectedKind(){return this.wiring?this.style.kind:null;}
  chooseWire(kind:'wire'|'neon'){
   this.style=kind==='neon'?{kind,color:this.style.color??'white'}:{kind};
   this.toggle(true);
   this.e.view.renderer.domElement.focus({preventScroll:true});
  }
+ relocate(wire:Wire){
+  this.toggle(true);this.movingWire=structuredClone(wire);
+  this.style=wire.kind==='neon'?{kind:'neon',color:wire.color??'white'}:{kind:'wire'};
+  this.e.view.logic.hideWires([wire.id]);this.status();this.e.catalog();this.e.updateWorldUI();
+  this.e.view.renderer.domElement.focus({preventScroll:true});
+ }
  toggle(value=!this.wiring){
   if(value){this.e.pickSelection(null);this.e.panel('project-menu',false);}
   this.wiring=value;this.clearSelection();this.cancel();
   $('select-tool').classList.toggle('active',!value);
-  this.e.view.logic.showSockets=value;this.e.view.logic.refresh();$('wiring-panel').hidden=!value;this.status();this.e.catalog();
+  this.e.view.logic.showSockets=value;this.e.view.logic.refresh();this.status();this.e.catalog();
  }
- begin(endpoint:Endpoint,surface?:WireSurface){if(!this.wiring)this.toggle(true);this.start=endpoint;this.startSurface=surface;this.bends=[];this.selectedWire=null;this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.status();}
+ begin(endpoint:Endpoint,surface?:WireSurface){if(!this.wiring)this.toggle(true);this.start=endpoint;this.startSurface=surface;this.bends=[];this.previewEnd=null;this.previewPath=[];this.previewIssue=null;this.previewKey='';this.status();}
  private visible(point:Vec3,owner?:string){
   const c=this.e.view.camera.camera,rect=this.e.view.renderer.domElement.getBoundingClientRect(),p=new Vector3(...point),v=p.clone().project(c);
   const hit=this.e.view.pick(rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2);
@@ -125,7 +139,7 @@ export class LogicTools {
  }
  private hitWire(x:number,y:number){
   const rect=this.e.view.renderer.domElement.getBoundingClientRect(),camera=this.e.view.camera.camera;let best=9*9,result:{id:string;point:Vec3}|null=null;
-  for(const wire of this.e.world.wires){const path=wirePath(wire,this.e.world.pieces);
+  for(const wire of this.e.world.wires){if(wire.id===this.movingWire?.id)continue;const path=wirePath(wire,this.e.world.pieces);
    for(let i=1;i<path.length;i++){const a=new Vector3(...path[i-1]),b=new Vector3(...path[i]),p=a.clone().project(camera),q=b.clone().project(camera);if(p.z>1||q.z>1||p.z< -1||q.z< -1)continue;
     const ax=rect.x+(p.x+1)*rect.width/2,ay=rect.y+(1-p.y)*rect.height/2,bx=rect.x+(q.x+1)*rect.width/2,by=rect.y+(1-q.y)*rect.height/2;
     const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1))),dist=(ax+t*dx-x)**2+(ay+t*dy-y)**2;
@@ -141,11 +155,11 @@ export class LogicTools {
  }
  private candidate(to:Endpoint,points=this.bends,surface?:WireSurface):Wire{
   const path=this.e.world.wireCollisions.snapEnds(this.style,[endpointPosition(this.start!,this.e.world.pieces),...points,endpointPosition(to,this.e.world.pieces)],this.startSurface,surface);
-  return {id:this.previewId,...this.style,from:this.startSurface?{point:path[0]}:this.start!,to:surface?{point:path.at(-1)!}:to,points};
+  return {id:this.movingWire?.id??this.previewId,...this.style,...(this.movingWire?.frame?{frame:this.movingWire.frame}:{}),from:this.startSurface?{point:path[0]}:this.start!,to:surface?{point:path.at(-1)!}:to,points};
  }
  private click(x:number,y:number,shift=false){
   const port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y);
-  if(!this.start){if(port)this.begin(port);else if(wire){this.begin({point:this.junction(wire)},wire);this.selectedWire=wire.id;this.status();}else{const hit=this.e.view.pick(x,y);if(hit){const point=this.surfacePoint(hit.point,hit.normal),issue=wireRouteIssue([point],this.style,this.e.world.plots);if(issue)this.e.toast(issue);else this.begin({point});}}return;}
+  if(!this.start){if(port)this.begin(port);else if(wire)this.begin({point:this.junction(wire)},wire);else{const hit=this.e.view.pick(x,y);if(hit){const point=this.surfacePoint(hit.point,hit.normal),issue=wireRouteIssue([point],this.style,this.e.world.plots);if(issue)this.e.toast(issue);else this.begin({point});}}return;}
   if(wire&&shift){this.addBend(this.junction(wire),wire);return;}
   const end=port??(wire?{point:this.junction(wire)}:null);
   if(end){this.commit(end,this.bends,wire??undefined);return;}
@@ -161,31 +175,38 @@ export class LogicTools {
  private finishSurface(){if(this.start&&this.bends.length)this.commit({point:this.bends.at(-1)!},this.bends.slice(0,-1));}
  private commit(to:Endpoint,points:Vec3[],surface?:WireSurface){
   if(!this.start)return;
-  const wire={...structuredClone(this.candidate(to,points,surface)),id:crypto.randomUUID()},path=wirePath(wire,this.e.world.pieces),issue=this.e.world.wirePlacementIssue(wire);
+  const movedId=this.movingWire?.id,wire={...structuredClone(this.candidate(to,points,surface)),id:movedId??crypto.randomUUID()},path=wirePath(wire,this.e.world.pieces),issue=this.e.world.wirePlacementIssue(wire);
   if(issue){this.preview(to,surface);this.e.toast(issue);return;}if(wireLength(path)<.03){this.e.toast('Choose a different end point.');return;}
-  if(this.e.world.execute([],[...this.e.world.wires,wire])){this.selectedWire=null;this.cancel();}
+  const wires=movedId?this.e.world.wires.map(w=>w.id===movedId?wire:w):[...this.e.world.wires,wire];
+  if(this.e.world.execute([],wires)){if(movedId){this.toggle(false);this.e.pickSelections([],[movedId]);}else this.cancel();}
  }
  private preview(to:Endpoint,surface?:WireSurface){
   if(!this.start)return;this.previewEnd=to;
-  const wire=this.candidate(to,this.bends,surface),path=wirePath(wire,this.e.world.pieces),count=path.length;
+  const wire=this.candidate(to,this.bends,surface),path=wirePath(wire,this.e.world.pieces);
   this.previewPath=path;
-  let positions=this.guide.geometry.getAttribute('position');
-  if(!positions||positions.count<count){this.guide.geometry.dispose();this.guide.geometry=new BufferGeometry();positions=new Float32BufferAttribute(new Float32Array(Math.max(16,count*2)*3),3);this.guide.geometry.setAttribute('position',positions);}
-  path.forEach((p,i)=>positions.setXYZ(i,...p));positions.needsUpdate=true;this.guide.geometry.setDrawRange(0,count);this.guide.frustumCulled=false;this.guide.visible=true;
   this.previewIssue=this.e.world.wirePlacementIssue(wire);
-  this.guide.material.color.setHex(this.previewIssue?0xff705b:this.style.kind==='neon'?wireColor(this.style,true):0x99dcff);this.status();
+  if(!this.draftView){this.draftView=new WireView();this.draftView.root.name='Wire placement preview';this.draftView.root.remove(...this.draftView.lights);this.e.view.worldRoot.add(this.draftView.root);}
+  this.draftView.root.visible=true;this.draftView.rebuild([wire],this.e.world.pieces,{ends:false});this.draftView.draft(!this.previewIssue);this.status();
  }
  private status(){
-  $('wire-status').textContent=this.start?`${this.style.kind==='neon'?NEON_COLORS[this.style.color??'white'].label+' neon':'Wire'} · ${this.bends.length} surface points`:'Click a surface, socket or wire';
+  this.colorUI();this.lengthUI();
+ }
+ private lengthUI(){
   const path=this.start?(this.previewEnd?this.previewPath:[endpointPosition(this.start,this.e.world.pieces),...this.bends]):[],length=wireLength(path),limit=wireLimit(this.style),issue=this.previewIssue??(path.length?wireRouteIssue(path,this.style,this.e.world.plots):null);
-  $('wire-length').textContent=`${length.toFixed(2)} / ${limit} studs`;$('wire-length').classList.toggle('wire-invalid',!!issue);
-  const meter=$('wire-budget') as HTMLProgressElement;meter.max=limit;meter.value=Math.min(length,limit);
-  $('wire-feedback').textContent=issue??'';$('wire-feedback').classList.toggle('wire-invalid',!!issue);
-  ($('wire-finish') as HTMLButtonElement).disabled=!this.start||!this.bends.length;
-  $('wire-colors').hidden=this.style.kind!=='neon';
-  document.querySelectorAll<HTMLButtonElement>('[data-wire-kind]').forEach(b=>{b.disabled=!!this.start;b.setAttribute('aria-pressed',String(b.dataset.wireKind===this.style.kind));});
-  document.querySelectorAll<HTMLButtonElement>('[data-wire-color]').forEach(b=>{b.disabled=!!this.start;b.setAttribute('aria-pressed',String(b.dataset.wireColor===this.style.color));});
-  $('wire-remove').hidden=!this.selectedWire;$('wire-count').textContent=`${this.e.world.wires.length} wires · route on or over other wires`;
+  const label=$('wire-length-label');label.hidden=!this.wiring||!this.start||length<.03;
+  if(label.hidden)return;
+  const text=`${length.toFixed(1)}/${limit}`;if(label.textContent!==text)label.textContent=text;
+  label.classList.toggle('wire-invalid',!!issue);label.title=issue??'';label.setAttribute('aria-label',`${length.toFixed(1)} of ${limit} studs${issue?': '+issue:''}`);
+  // Center on half the route's length, including its bends and vertical sections.
+  let remaining=length*.5;
+  for(let i=1;i<path.length;i++){
+   const a=path[i-1],b=path[i],segment=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);
+   if(remaining<=segment||i===path.length-1){this.labelPoint.set(...a).lerp(new Vector3(...b),segment?remaining/segment:0);break;}remaining-=segment;
+  }
+  const camera=this.e.view.camera.camera;camera.updateMatrixWorld();this.labelPoint.project(camera);
+  if(this.labelPoint.z< -1||this.labelPoint.z>1||Math.abs(this.labelPoint.x)>1||Math.abs(this.labelPoint.y)>1){label.hidden=true;return;}
+  const rect=this.e.view.renderer.domElement.getBoundingClientRect(),viewport=$('viewport').getBoundingClientRect();
+  label.style.left=`${rect.left-viewport.left+(this.labelPoint.x+1)*rect.width/2}px`;label.style.top=`${rect.top-viewport.top+(1-this.labelPoint.y)*rect.height/2}px`;
  }
  activate(id=this.e.selected){
   const p=id?this.e.world.pieces.get(id):undefined;if(!p)return;
@@ -208,16 +229,17 @@ export class LogicTools {
   if(this.generation!==this.e.world.generation){this.generation=this.e.world.generation;this.clearSelection();if(this.wiring)this.toggle(false);}
   if(this.revision!==this.e.world.revision){
    this.revision=this.e.world.revision;
-   if(this.selectedWire&&!this.e.world.wires.some(w=>w.id===this.selectedWire))this.clearSelection();
    this.status();
   }
-  if(this.start&&'piece' in this.start&&!this.e.world.pieces.has(this.start.piece)){this.start=null;this.bends=[];this.guide.visible=false;this.status();}
+  if(this.movingWire&&!this.e.world.wires.some(w=>w.id===this.movingWire!.id))this.toggle(false);
+  if(this.start&&'piece' in this.start&&!this.e.world.pieces.has(this.start.piece))this.cancel(!!this.movingWire);
   if(this.wiring&&this.start&&this.pointer){
    const camera=this.e.view.camera.camera,key=this.pointer.join(',')+camera.position.toArray().join(',')+camera.quaternion.toArray().join(',')+this.e.world.revision;
    if(key!==this.previewKey){this.previewKey=key;const [x,y]=this.pointer,port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y),hit=port||wire?null:this.e.view.pick(x,y);
-    if(port)this.preview(port);else if(wire)this.preview({point:this.junction(wire)},wire);else if(hit)this.preview({point:this.surfacePoint(hit.point,hit.normal)});else{this.previewEnd=null;this.previewIssue=null;this.guide.visible=false;this.status();}
+    if(port)this.preview(port);else if(wire)this.preview({point:this.junction(wire)},wire);else if(hit)this.preview({point:this.surfacePoint(hit.point,hit.normal)});else{this.previewEnd=null;this.previewIssue=null;if(this.bends.length)this.preview({point:this.bends.at(-1)!});else{if(this.draftView)this.draftView.root.visible=false;this.status();}}
    }
   }
+  this.lengthUI();
   const circuit=this.e.view.logic.circuit;
   const lights=this.e.selectedPieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting');
   if(lights.length){const manual=lights.filter(p=>!circuit.connected(p.id)),shown=manual.length?manual:lights,toggle=$('light-toggle') as HTMLInputElement;

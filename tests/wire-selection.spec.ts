@@ -21,7 +21,7 @@ async function arrowUp(page:Page,studs=6){
 
 test('Ctrl-click toggles multiple wires and Delete removes only the selected routes in one undo',async({page})=>{
  await setup(page);const original=await wires(page);await click(page,[0,.145,-3]);await click(page,[0,.155,0],true);await click(page,[0,.145,5],true);await click(page,[0,.155,0],true);
- expect(await selected(page)).toEqual({pieces:[],wires:['a','c']});await expect(page.locator('#wire-selection-name')).toHaveText('2 wires selected');
+ expect(await selected(page)).toEqual({pieces:[],wires:['a','c']});await expect(page.locator('#wire-palette-panel')).toBeHidden();
  await page.keyboard.press('Delete');expect((await wires(page)).map((w:any)=>w.id)).toEqual(['b']);
  await page.keyboard.press('Control+z');expect(await wires(page)).toEqual(original);await page.keyboard.press('Control+Shift+z');expect((await wires(page)).map((w:any)=>w.id)).toEqual(['b']);
 });
