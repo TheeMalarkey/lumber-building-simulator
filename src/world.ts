@@ -8,6 +8,8 @@ import { placementSolids, solidOverlap } from "./collision";
 import {wireLength,wireLimit,wireSpaceIssue,wireTouchesPlot,wireRouteIssue} from './wire-design';
 import {WireCollisionIndex} from './wire-collision';
 import type {WireFrame} from './wire-shape';
+import {isDoor,doorProgress,setDoorProgress,doorSearchBounds} from './door-design';
+import {portsFor} from './logic-ports';
 export interface Piece {
   id: string;
   item: string;
@@ -17,6 +19,7 @@ export interface Piece {
   lightOn?: boolean;
   logicOn?: boolean;
   timing?: number;
+  doorOpen?: boolean;
   /** Import-only exception for an unchanged, valid first-version plot edge. */
   legacyLeverBounds?: true;
 }
@@ -32,7 +35,7 @@ export function pieceBounds(p: Piece) {
   // A turned triangle does not occupy every corner of its original box.
   // Reserve the actual two lever poses for placement/land bounds. Snapping
   // uses this same envelope; walking collisions keep the current pose only.
-  if (!p.rotation.every(Number.isInteger) || p.item==='lever') {
+  if (!p.rotation.every(Number.isInteger) || p.item==='lever' || isDoor(p.item)) {
     const solids=placementSolids(p,p.item==='lever');
     return {
       min:[0,1,2].map(i=>Math.min(...solids.map(s=>s.bounds.min.getComponent(i)))) as Vec3,
@@ -47,7 +50,7 @@ export function pieceBounds(p: Piece) {
   };
 }
 function keys(p: Piece) {
-  const b = pieceBounds(p),
+  const b = isDoor(p.item)?doorSearchBounds(p):pieceBounds(p),
     out: string[] = [];
   for (
     let x = Math.floor(b.min[0] / CHUNK);
@@ -71,6 +74,7 @@ export class World {
   pieces = new Map<string, Piece>();
   wires: Wire[]=[];
   logicIds=new Set<string>();
+  doorIds=new Set<string>();
   lightStates=new Map<string,boolean>();
   lightChunks = new Map<string, Set<string>>();
   chunks = new Map<string, Set<string>>();
@@ -86,6 +90,7 @@ export class World {
     if(!this.wireIndex||this.indexedWires!==this.wires){this.wireIndex=new WireCollisionIndex(this.wires,this.pieces);this.indexedWires=this.wires;}
     return this.wireIndex;
   }
+  invalidateWireGeometry(){this.wireIndex=undefined;}
   wirePlacementIssue(wire:Wire){
     return wireRouteIssue(wirePath(wire,this.pieces),wire,this.plots)??(this.allowOverlaps?null:this.wireCollisions.issue(wire,this.pieces));
   }
@@ -103,7 +108,7 @@ export class World {
   }
   private put(p: Piece | null, id: string) {
     const old = this.pieces.get(id);
-    if((old&&this.logicIds.has(id)||p&&["logic","lighting"].includes(ITEMS.get(p.item)!.fixedMaterial??""))&&
+    if((old&&this.logicIds.has(id)||p&&portsFor(p.item).length)&&
        (!p||!old||p.item!==old.item||p.position.some((v,i)=>v!==old.position[i])||p.rotation.some((v,i)=>v!==old.rotation[i])))this.wireIndex=undefined;
     if (old) {
       const k = chunkKey(old.position);
@@ -119,13 +124,16 @@ export class World {
     }
     this.pieces.delete(id);
     this.logicIds.delete(id);
+    this.doorIds.delete(id);
     if(!p)this.lightStates.delete(id);
     this.bounds.delete(id);
     if (p) {
       const copy = structuredClone(p);
+      if(old&&old.item===copy.item&&isDoor(copy.item)&&old.position.every((v,i)=>v===copy.position[i])&&old.rotation.every((v,i)=>v===copy.rotation[i]))setDoorProgress(copy,doorProgress(old));
       this.pieces.set(id, copy);
-      if(["logic","lighting"].includes(ITEMS.get(copy.item)!.fixedMaterial??""))this.logicIds.add(id);
-      this.bounds.set(id, pieceBounds(copy));
+      if(portsFor(copy.item).length)this.logicIds.add(id);
+      if(isDoor(copy.item))this.doorIds.add(id);
+      this.bounds.set(id, isDoor(copy.item)?doorSearchBounds(copy):pieceBounds(copy));
       const k = chunkKey(copy.position);
       if (!this.chunks.has(k)) this.chunks.set(k, new Set());
       this.chunks.get(k)!.add(id);
@@ -228,7 +236,7 @@ export class World {
     const removing = current.includes(id);
     const next = removing ? current.filter(p => p !== id) : [...current, id];
     if (!connectedPlots(next)) return "disconnected";
-    if (removing && [...this.bounds.values()].some(b => touchesPlot(b, id))) return "occupied";
+    if (removing && [...this.pieces.values()].some(p => touchesPlot(pieceBounds(p), id)||(isDoor(p.item)&&touchesPlot(pieceBounds({...p}),id)))) return "occupied";
     if(removing&&this.wires.some(w=>w.kind&&wireTouchesPlot(wirePath(w,this.pieces),w,id)))return 'occupied';
     return null;
   }
@@ -246,7 +254,7 @@ export class World {
     const nextPlots = plots === null ? null : validatePlots(plots);
     for (const key of this.chunks.keys()) this.dirty.add(key);
     this.pieces.clear();
-    this.logicIds.clear();this.lightStates.clear();this.wires=nextWires;
+    this.logicIds.clear();this.doorIds.clear();this.lightStates.clear();this.wires=nextWires;
     this.chunks.clear();
     this.lightChunks.clear();
     this.spatial.clear();

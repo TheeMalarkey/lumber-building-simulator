@@ -1,6 +1,6 @@
 import * as T from 'three';
 import {Circuit} from './logic';
-import {portsFor,portPosition,wirePath,logicAppearance} from './logic-ports';
+import {portsFor,portPosition,portNormal,wirePath,logicAppearance} from './logic-ports';
 import {ITEMS,type Vec3} from './catalog';
 import {chunkKey,type World} from './world';
 import {quaternionRotation} from './placement';
@@ -67,6 +67,16 @@ export class LogicView {
   this.paint();
  }
  refresh(){this.version=-1;this.paint();}
+ doorsMoved(ids:ReadonlySet<string>){
+  if(![...ids].some(id=>this.world.pieces.get(id)?.item!=='hatch'))return;
+  const movingLead=[...ids].some(id=>this.world.pieces.get(id)?.item!=='hatch'&&this.circuit.connected(id));
+  if(movingLead){
+   this.world.invalidateWireGeometry();
+   this.circuit.configure([...this.world.logicIds].map(id=>this.world.pieces.get(id)!),this.world.wires,true);
+   this.topology='';
+  }
+  if(movingLead||this.showSockets)this.paint();
+ }
  /** Hide edited routes from rendering and mesh picking while their world
   * records and live circuit connections remain intact. */
  hideWires(ids:Iterable<string>){
@@ -93,7 +103,7 @@ export class LogicView {
    for(const port of portsFor(piece.item)){
     const on=port.output?this.circuit.output(id):this.circuit.input(id,port.id);
     if(!on&&!this.showSockets&&!this.circuit.unstable.has(id))continue;
-    ports.push({p:portPosition(piece,port.id),normal:new T.Vector3(...port.normal).applyEuler(quaternionRotation(piece.rotation)),color:this.circuit.unstable.has(id)?0xe8a342:on?0x46bef4:port.output?0xf0aa55:0xbdc8cc,
+    ports.push({p:portPosition(piece,port.id),normal:portNormal(piece,port),color:this.circuit.unstable.has(id)?0xe8a342:on?0x46bef4:port.output?0xf0aa55:0xbdc8cc,
       lighting:ITEMS.get(piece.item)!.fixedMaterial==='lighting',radius:piece.item==='pressure-plate'?.119:.149});
    }
   }

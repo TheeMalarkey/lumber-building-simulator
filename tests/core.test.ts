@@ -17,8 +17,8 @@ const piece = (id = "a"): Piece => ({
 describe("catalog", () => {
   it("covers the 69 individually listed obtainable blueprints without duplicate ids", () => {
     expect(CATALOG.filter(p=>!p.fixedMaterial)).toHaveLength(69);
-    expect(CATALOG).toHaveLength(100);
-    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(100);
+    expect(CATALOG).toHaveLength(101);
+    expect(new Set(CATALOG.map((x) => x.id)).size).toBe(101);
   });
   it("preserves thin tile dimensions", () =>
     expect(CATALOG.find((x) => x.id === "tiny-tile")?.size).toEqual([
@@ -227,7 +227,7 @@ describe("collision checks", () => {
           rotation,
           position: [-64, height / 2, -64],
         };
-        if(item.id==='lever')p.position=snapBlueprintOnSurface([-64,0,-64],[0,1,0],item.id,rotation);
+        if(item.id==='lever'||item.id==='hatch')p.position=snapBlueprintOnSurface([-64,0,-64],[0,1,0],item.id,rotation);
         expect(w.canPlace(p), item.id).toBe(true);
         p.position[1] -= 0.0001;
         expect(w.canPlace(p), item.id).toBe(false);

@@ -88,6 +88,24 @@
       "height": 1024,
       "bytes": 1065301,
       "sha256": "5c185eb6380d46323109db1dbd209942c753db907ef88b76a3c108e10a7252c4"
+    },
+    {
+      "file": "classic-diamondplate-color.png",
+      "robloxAssetId": "7546654401",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7546654401",
+      "width": 512,
+      "height": 512,
+      "bytes": 193952,
+      "sha256": "67caf7511dbe2b10a19cc2b114c4e2c86da9eacbc0f454f840eca87bef3a5812"
+    },
+    {
+      "file": "classic-diamondplate-normal.png",
+      "robloxAssetId": "7546654536",
+      "url": "https://assetdelivery.roblox.com/v1/asset/?id=7546654536",
+      "width": 512,
+      "height": 512,
+      "bytes": 386262,
+      "sha256": "b6b74182e376294e54127cd7171d68b1b61f8437b51bb4ddfa4f9f2a1a6c4c14"
     }
   ]
 }

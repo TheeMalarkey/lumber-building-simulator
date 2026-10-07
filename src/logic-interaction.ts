@@ -1,5 +1,6 @@
 import type {Editor} from './editor';
 import type {Piece} from './world';
+import {isDoor,doorProgress} from './door-design';
 
 /** Direct interactions use the visible control surfaces, never the piece bounds. */
 export class LogicInteraction {
@@ -32,7 +33,7 @@ export class LogicInteraction {
       if(event.button===0&&!this.modified)canvas.focus({preventScroll:true});
       const target=event.button===0 && event.buttons===1 && !this.modified ? this.target() : null;
       this.buttons=event.buttons;this.hide();
-      if(target?.item!=='button')return;
+      if(!target||(target.item!=='button'&&!isDoor(target.item)))return;
       event.preventDefault();event.stopImmediatePropagation();
       this.pressed={id:target.id,pointerId:event.pointerId,x:event.clientX,y:event.clientY,generation:e.world.generation};
       canvas.setPointerCapture(event.pointerId);
@@ -49,7 +50,7 @@ export class LogicInteraction {
       this.signature='';
     },true);
     canvas.addEventListener('dblclick',event=>{
-      if(!this.modified&&this.target()?.item==='button'){event.preventDefault();event.stopImmediatePropagation();}
+      const target=this.target();if(!this.modified&&target&&(target.item==='button'||isDoor(target.item))){event.preventDefault();event.stopImmediatePropagation();}
     },true);
     canvas.addEventListener('pointercancel',()=>this.reset());
     canvas.addEventListener('lostpointercapture',()=>{this.pressed=null;this.buttons=0;this.signature='';});
@@ -89,6 +90,7 @@ export class LogicInteraction {
     const hit=view.pick(x,y),p=hit?.id?world.pieces.get(hit.id):undefined;
     // Surface 2 is the orange control; 10 is the lever grip's orange end caps.
     if(p?.item==='lever'&&(hit!.surface===2||hit!.surface===10))return p;
+    if(p&&isDoor(p.item)&&(p.item==='hatch'?[2,3].includes(hit!.surface!):hit!.surface===1))return p;
     return p?.item==='button'&&hit!.surface===2?p:null;
   }
   private cancelPress() {
@@ -106,15 +108,15 @@ export class LogicInteraction {
     if(!this.available()){this.hide();return;}
     const {view,world}=this.e,camera=view.camera.camera,gizmo=view.gizmo.root;
     const signature=[...this.pointer!,...camera.position.toArray(),...camera.quaternion.toArray(),camera.fov,camera.aspect,
-      world.generation,world.revision,view.logic.circuit.version,view.renderDistance,
+      world.generation,world.revision,view.logic.circuit.version,view.doors.version,view.renderDistance,
       gizmo.visible,...gizmo.position.toArray(),gizmo.scale.x,this.canvas.clientWidth,this.canvas.clientHeight].join('|');
     if(signature===this.signature)return;
     const target=this.target();
     if(!target){this.hide();this.signature=signature;return;}
     this.signature=signature;
-    const label=target.item==='button'?'Press button':target.logicOn?'Switch off':'Switch on';
+    const label=isDoor(target.item)?(this.e.view.logic.circuit.connected(target.id)?'Controlled by wire':doorProgress(target)>.5?'Close '+(target.item==='hatch'?'hatch':'door'):'Open '+(target.item==='hatch'?'hatch':'door')):target.item==='button'?'Press button':target.logicOn?'Switch off':'Switch on';
     if(this.label.textContent!==label)this.label.textContent=label;
-    this.clickHint.hidden=target.item!=='button';this.hint.hidden=false;
+    this.clickHint.hidden=target.item!=='button'&&!isDoor(target.item);this.hint.hidden=false;
     this.canvas.classList.add('logic-hovering');
     const [x,y]=this.pointer!;
     const left=`${Math.max(8,Math.min(x+16,innerWidth-this.hint.offsetWidth-8))}px`;

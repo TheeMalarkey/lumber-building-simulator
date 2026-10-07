@@ -5,6 +5,7 @@ import type {Piece} from './world';
 import {NEON_COLORS,type WireStyle} from './wire-design';
 import {wireEndParts,wirePartBounds,wirePartSolid,type WirePart,type WireFrame} from './wire-shape';
 import {solidsOverlap} from './solid';
+import {isDoor,doorTransform,doorProgress} from './door-design';
 
 export type Endpoint={piece:string;port:string}|{point:Vec3};
 export interface Wire extends WireStyle {id:string;from:Endpoint;to:Endpoint;points:Vec3[];frame?:WireFrame}
@@ -16,6 +17,7 @@ export function portsFor(item:string):Port[]{
  const spec=ITEMS.get(item);if(!spec)return [];
  const [w,h,d]=spec.size;
  const port=(id:string,label:string,output:boolean,x:number,y:number,z:number,normal:Vec3):Port=>({id,label,output,position:[x,y,z],normal});
+ if(isDoor(item))return [item==='hatch'?port('in','Open',false,0,0,2.05,[0,0,1]):port('in','Open',false,-w/2+.5,item==='glass-door'?0:(item==='fat-door'?4:3)-h/2,item==='glass-door'?.35:.51,[0,0,1])];
  if(spec.fixedMaterial==='lighting'){
   const positions:Record<string,Vec3>={'lamp':[0,-.4,.22],'floor-lamp':[0,-.48,.22],'wall-light':[.72,.1,.2],'floodlight':[0,.4,-.82],'worklight':[-1.31,.55,.05]};
   return [port('in','Switch',false,...positions[item],[0,0,1])];
@@ -28,7 +30,12 @@ export function portsFor(item:string):Port[]{
 }
 export function portPosition(p:Piece,port:string):Vec3{
  const def=portsFor(p.item).find(v=>v.id===port);if(!def)throw new Error('Unknown socket');
- return new Vector3(...def.position).applyEuler(quaternionRotation(p.rotation)).add(new Vector3(...p.position)).toArray() as Vec3;
+ const local=new Vector3(...def.position);if(isDoor(p.item)&&p.item!=='hatch')local.applyMatrix4(doorTransform(p.item,doorProgress(p)));
+ return local.applyEuler(quaternionRotation(p.rotation)).add(new Vector3(...p.position)).toArray() as Vec3;
+}
+export function portNormal(p:Piece,port:Port){
+ const normal=new Vector3(...port.normal);if(isDoor(p.item)&&p.item!=='hatch')normal.transformDirection(doorTransform(p.item,doorProgress(p)));
+ return normal.applyEuler(quaternionRotation(p.rotation));
 }
 export function endpointPosition(e:Endpoint,pieces:Map<string,Piece>):Vec3{
  return 'point' in e?e.point:portPosition(pieces.get(e.piece)!,e.port);

@@ -5,6 +5,7 @@ import { coveredByPlots, inferPlots, validatePlots } from "./plots";
 import {Vector3} from 'three';
 import {quaternionRotation} from './placement';
 import {originalLeverBounds} from './logic-model-compat';
+import {isDoor} from './door-design';
 export interface Project {
   version: 1;
   name: string;
@@ -45,6 +46,7 @@ export function parseProject(text: string): Project {
       throw new Error("Invalid, duplicate, or unknown piece in project.");
     if(p.lightOn !== undefined && typeof p.lightOn !== 'boolean') throw new Error('Invalid light state.');
     if(p.logicOn!==undefined && typeof p.logicOn!=='boolean')throw new Error('Invalid switch state.');
+    if(p.doorOpen!==undefined && (typeof p.doorOpen!=='boolean'||!isDoor(p.item)))throw new Error('Invalid door state.');
     if(p.timing!==undefined && (!Number.isInteger(p.timing)||p.timing<1||p.timing>12))throw new Error('Invalid timer setting.');
     if(p.legacyLeverBounds!==undefined&&(p.item!=='lever'||p.legacyLeverBounds!==true))throw new Error('Invalid legacy lever placement.');
     ids.add(p.id);
@@ -94,6 +96,7 @@ export function parseProject(text: string): Project {
       position: [...p.position],
       rotation: [...p.rotation],
       ...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),
+      ...(p.doorOpen===undefined?{}:{doorOpen:p.doorOpen}),
       ...(p.timing===undefined?{}:{timing:p.timing}),
       ...(retainedLegacy.has(p.id)?{legacyLeverBounds:true as const}:{}),
       ...(p.lightOn === undefined ? {} : {lightOn:p.lightOn}),

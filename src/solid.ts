@@ -1,5 +1,6 @@
 import { Box3, BufferGeometry, Vector3 } from "three";
 export interface Solid {
+  doorFixed?: boolean;
   vertices: Vector3[];
   normals: Vector3[];
   edges: Vector3[];

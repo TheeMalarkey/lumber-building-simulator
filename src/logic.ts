@@ -43,9 +43,9 @@ export class Circuit {
   }
   return {input:t.input,mask,level:0,nextChange};
  }
- configure(pieces:Piece[],wires:Wire[]){
+ configure(pieces:Piece[],wires:Wire[],movedSockets=false){
   const nodes=pieces.filter(p=>portsFor(p.item).length);
-  const sameTopology=this.wires===wires&&this.pieces.size===nodes.length&&nodes.every(p=>{const old=this.pieces.get(p.id);return old?.item===p.item&&old.position.every((v,i)=>v===p.position[i])&&old.rotation.every((v,i)=>v===p.rotation[i]);});
+  const sameTopology=!movedSockets&&this.wires===wires&&this.pieces.size===nodes.length&&nodes.every(p=>{const old=this.pieces.get(p.id);return old?.item===p.item&&old.position.every((v,i)=>v===p.position[i])&&old.rotation.every((v,i)=>v===p.rotation[i]);});
   this.pieces=new Map(nodes.map(p=>[p.id,p]));
   for(const [id,t] of this.timers)if(!this.pieces.has(id)||(this.pieces.get(id)!.timing??1)!==t.setting)this.timers.delete(id);
   for(const id of this.pulses.keys())if(!this.pieces.has(id))this.pulses.delete(id);

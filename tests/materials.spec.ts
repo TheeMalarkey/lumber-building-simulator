@@ -139,7 +139,7 @@ test("classic maps preload, share textures, and render every material kind witho
   expect(result.sharedWood).toBe(true);
   expect(result.unique).toBe(5);
   expect(result.loaded).toBe(true);
-  expect(result.imageRequests).toBe(9);
+  expect(result.imageRequests).toBe(11);
   expect(result.oakColor).toBe("cc8e69");
   expect(result.stone).toBe("classic-granite-color.png");
   expect(result.frost).toBe("classic-ice-normal.png");

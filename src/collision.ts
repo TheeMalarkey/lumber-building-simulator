@@ -5,27 +5,29 @@ import type { Piece } from "./world";
 
 import { collisionPartsFor } from "./geometry";
 import {solidsOverlap,type Solid} from "./solid";
+import {doorProgress,doorTransform,isDoor} from './door-design';
 // Bound transformed collision data independently of the number of stored blueprints.
-const worldCache = new Map<Piece, { item: string; active: boolean|'travel'; position: Vec3; rotation: Vec3; solids: Solid[] }>();
+const worldCache = new Map<Piece, { item: string; active: boolean|'travel'; door: number; position: Vec3; rotation: Vec3; solids: Solid[] }>();
 const MAX_CACHED_PIECES = 1024;
 const EPS = .0001;
 export function placementSolids(piece: Piece,reserveTravel=false): Solid[] {
   const cached = worldCache.get(piece);
   const active=piece.item==='lever'&&reserveTravel?'travel':piece.item==='lever'&&piece.logicOn===true;
-  if (cached?.item === piece.item && cached.active===active && cached.position.every((v,i)=>v===piece.position[i]) &&
+  const door=isDoor(piece.item)?doorProgress(piece):0,hinge=isDoor(piece.item)?doorTransform(piece.item,door):null;
+  if (cached?.item === piece.item && cached.active===active && cached.door===door && cached.position.every((v,i)=>v===piece.position[i]) &&
       cached.rotation.every((v,i)=>v===piece.rotation[i])) {
     worldCache.delete(piece);worldCache.set(piece,cached);return cached.solids;
   }
   const rotation = quaternionRotation(piece.rotation), position = new Vector3(...piece.position);
   const local=active==='travel'?[...collisionPartsFor(piece.item),...collisionPartsFor(piece.item,true)]:collisionPartsFor(piece.item,active);
   const solids = local.map(s => ({
-    vertices: s.vertices.map(v=>v.clone().applyEuler(rotation).add(position)),
-    normals: s.normals.map(v=>v.clone().applyEuler(rotation)),
-    edges: s.edges.map(v=>v.clone().applyEuler(rotation)),
+    vertices: s.vertices.map(v=>{const out=v.clone();if(hinge&&!s.doorFixed)out.applyMatrix4(hinge);return out.applyEuler(rotation).add(position);}),
+    normals: s.normals.map(v=>{const out=v.clone();if(hinge&&!s.doorFixed)out.transformDirection(hinge);return out.applyEuler(rotation);}),
+    edges: s.edges.map(v=>{const out=v.clone();if(hinge&&!s.doorFixed)out.transformDirection(hinge);return out.applyEuler(rotation);}),
     bounds: new Box3(),
   }));
   for (const s of solids) s.bounds.setFromPoints(s.vertices);
-  worldCache.set(piece,{item:piece.item,active,position:[...piece.position],rotation:[...piece.rotation],solids});
+  worldCache.set(piece,{item:piece.item,active,door,position:[...piece.position],rotation:[...piece.rotation],solids});
   if (worldCache.size>MAX_CACHED_PIECES) worldCache.delete(worldCache.keys().next().value!);
   return solids;
 }

@@ -6,3 +6,4 @@ playwright-report/
 .superpowers/
 *.log
 release/
+artifacts/hatches-and-doors/

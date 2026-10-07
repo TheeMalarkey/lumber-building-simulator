@@ -14,6 +14,7 @@ import { applyPhysicalUVs, TEXTURE_TILE_STUDS } from "./texture-uv";
 import { solidFromGeometry, type Solid } from "./solid";
 import { lightFixtureParts } from "./light-fixtures";
 import { furnitureParts } from "./furniture-geometry";
+import {hatchParts} from './hatch-geometry';
 const cache = new Map<string, BufferGeometry>();
 const collisionCache = new Map<string, Solid[]>();
 export function collisionPartsFor(id: string,active=false) {
@@ -101,6 +102,7 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
       panel(.16, h - .4, px, h / 2);
   };
   switch (item.shape) {
+    case "hatch": parts.push(...hatchParts());break;
     case "logic":
       parts.push(...logicParts(item,logicState));break;
     case "light-fixture":
@@ -268,7 +270,7 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
 
   // Consolidate components by surface: one instanced draw per surface per
   // item/wood/chunk, never a separate mesh or material per placed component.
-  if(!logicState||item.id==='lever')collisionCache.set(item.id+(logicState?.active?'|on':''), parts.flatMap(g => g.userData.collisionSolids ?? solidFromGeometry(g)));
+  if(!logicState||item.id==='lever')collisionCache.set(item.id+(logicState?.active?'|on':''), parts.flatMap(g => (g.userData.collisionSolids ?? solidFromGeometry(g)).map((s:Solid)=>({...s,doorFixed:g.userData.doorFixed===true}))));
   const surfaces = [...new Set(parts.map(g => g.userData.surface ?? 0))].sort();
   const ordered = surfaces.flatMap(surface => parts.filter(g => (g.userData.surface ?? 0) === surface));
   const flat = ordered.map(g => g.index ? g.toNonIndexed() : g);

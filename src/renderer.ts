@@ -15,6 +15,10 @@ import { PLOT_SIZE } from "./plots";
 import { GRID_FRAGMENT } from "./grid";
 import { MoveGizmo } from "./move-gizmo";
 import { pieceBounds } from "./world";
+import {makeHatchMaterials} from './materials';
+import {hatchGeometry} from './hatch-geometry';
+import {isDoor,doorProgress,doorTransform} from './door-design';
+import {DoorMotion} from './door-motion';
 export interface Pick {
   point: Vec3;
   normal: Vec3;
@@ -38,6 +42,8 @@ export class Viewport {
   night = false;
   ambient = new T.HemisphereLight(0xe8f0ff,0x8d9478,2.3);
   furnitureMaterials = makeFurnitureMaterials();
+  hatchMaterials=makeHatchMaterials();
+  doors:DoorMotion;
   private glassDoorMaterials = [this.glassMaterial,this.hardwareMaterials[0]];
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
   loaded = new Map<string, T.Group>();
@@ -81,6 +87,7 @@ export class Viewport {
     public element: HTMLElement,
     public world: World,
   ) {
+    this.doors=new DoorMotion(world);
     this.logic=new LogicView(world);this.worldRoot.add(this.logic.root);
     this.renderer = new T.WebGLRenderer({
       antialias: true,
@@ -195,6 +202,7 @@ export class Viewport {
     this.resize();
   }
   materialFor(item: string, wood: string, lightOn=true): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(item==='hatch')return this.hatchMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "logic")return this.logicMaterials.get(item)!;
     if(ITEMS.get(item)!.fixedMaterial === "lighting") return lightOn ? this.lightMaterials : this.lightOffMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "furniture") return this.furnitureMaterials;
@@ -219,6 +227,7 @@ export class Viewport {
       const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(this.world.lightEnabled(p)) : ITEMS.get(p.item)!.fixedMaterial === "logic" ? "|"+visual.active+"|"+visual.timing : "");
       if (!batches.has(k)) batches.set(k, []);
       batches.get(k)!.push(p);
+      if(p.item==='hatch'){const fixed=k+'|hinge';if(!batches.has(fixed))batches.set(fixed,[]);batches.get(fixed)!.push(p);}
     }
     const old = new Map(
       group.children.map((m) => [m.name, m as T.InstancedMesh]),
@@ -234,7 +243,7 @@ export class Viewport {
       if (!mesh) {
         const first = pieces[0];
         mesh = new T.InstancedMesh(
-          ITEMS.get(first.item)!.fixedMaterial==="logic"?logicGeometryFor(first.item,this.logic.circuit.output(first.id),first.timing??1):geometryFor(first.item),
+          first.item==='hatch'?hatchGeometry(k.endsWith('|hinge')):ITEMS.get(first.item)!.fixedMaterial==="logic"?logicGeometryFor(first.item,this.logic.circuit.output(first.id),first.timing??1):geometryFor(first.item),
           this.materialFor(first.item, first.wood, this.world.lightEnabled(first)),
           Math.max(8, 2 ** Math.ceil(Math.log2(pieces.length))),
         );
@@ -253,6 +262,7 @@ export class Viewport {
         v.fromArray(p.position).sub(group!.position);
         q.setFromEuler(quaternionRotation(p.rotation));
         m.compose(v, q, new T.Vector3(1, 1, 1));
+        if(isDoor(p.item)&&!k.endsWith('|hinge'))m.multiply(doorTransform(p.item,doorProgress(p)));
         mesh!.setMatrixAt(i, m);
       });
       mesh.instanceMatrix.needsUpdate = true;
@@ -324,6 +334,18 @@ export class Viewport {
       if (!this.loaded.has(k)) this.buildChunk(k);
     }
   }
+  private updateDoorMatrices(changed:ReadonlySet<string>){
+    if(!changed.size)return;
+    const matrix=new T.Matrix4(),rotation=new T.Quaternion(),position=new T.Vector3(),scale=new T.Vector3(1,1,1);
+    for(const group of this.loaded.values())for(const child of group.children){
+      const mesh=child as T.InstancedMesh;if(!isDoor(mesh.name.split('|')[0])||mesh.name.endsWith('|hinge'))continue;
+      let dirty=false;(mesh.userData.ids as string[]).forEach((id,index)=>{if(!changed.has(id))return;const p=this.world.pieces.get(id);if(!p)return;
+        matrix.compose(position.fromArray(p.position).sub(group.position),rotation.setFromEuler(quaternionRotation(p.rotation)),scale).multiply(doorTransform(p.item,doorProgress(p)));
+        mesh.setMatrixAt(index,matrix);dirty=true;
+      });
+      if(dirty){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingBox();mesh.computeBoundingSphere();}
+    }
+  }
   pick(clientX: number, clientY: number, exclude?: string | ReadonlySet<string> | null): Pick | null {
     const rect = this.renderer.domElement.getBoundingClientRect();
     const ndc = new T.Vector2(
@@ -345,10 +367,13 @@ export class Viewport {
       if (best && candidate.distance > best.distance) break;
       const p = candidate.piece;
       if (typeof exclude === "string" ? p.id === exclude : exclude?.has(p.id)) continue;
-      this.tmpMesh.geometry = this.pieceGeometry(p,this.logic.circuit.output(p.id));
+      for(const fixed of p.item==='hatch'?[true,false]:[false]){
+      this.tmpMesh.geometry = p.item==='hatch'?hatchGeometry(fixed):this.pieceGeometry(p,this.logic.circuit.output(p.id));
       this.tmpMesh.position.fromArray(p.position);
       this.tmpMesh.rotation.copy(quaternionRotation(p.rotation));
-      this.tmpMesh.updateMatrixWorld(true);
+      this.tmpMesh.updateMatrix();
+      if(isDoor(p.item)&&!fixed)this.tmpMesh.matrix.multiply(doorTransform(p.item,doorProgress(p)));
+      this.tmpMesh.matrixWorld.copy(this.tmpMesh.matrix);
       const hits = this.raycaster.intersectObject(this.tmpMesh, false);
       if (hits[0] && (!best || hits[0].distance < best.distance)) {
         best = hits[0];
@@ -360,6 +385,7 @@ export class Viewport {
         best.normal = hits[0]
           .face!.normal.clone()
           .transformDirection(this.tmpMesh.matrixWorld);
+      }
       }
     }
     if (best)
@@ -429,7 +455,7 @@ export class Viewport {
     const edges=[[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
     let index=0;
     for (const p of pieces) {
-      const b=this.world.bounds.get(p.id) ?? pieceBounds(p);
+      const b=pieceBounds(p);
       for (const edge of edges) for (const corner of edge) for (let axis=0;axis<3;axis++)
         data[index++]=(corner&(1<<axis))?b.max[axis]+.04:b.min[axis]-.04;
     }
@@ -439,6 +465,7 @@ export class Viewport {
   select(p: Piece | null) {
     this.selection.visible = !!p;
     if (p) {
+      if(isDoor(p.item)){const b=pieceBounds(p);this.selection.box.set(new T.Vector3(...b.min),new T.Vector3(...b.max)).expandByScalar(.04);return;}
       const box = geometryFor(p.item).boundingBox!.clone();
       const matrix = new T.Matrix4().compose(
         new T.Vector3(...p.position),
@@ -458,8 +485,14 @@ export class Viewport {
     this.camera.update(Math.min(ms / 1000, 0.05));
     this.onFrame();
     this.logic.tick(now,this.camera.walking?this.camera.walker.position:undefined);
+    const doorChanges=this.doors.tick(ms/1000,this.logic.circuit,this.camera.walking?()=>this.camera.walker.canOccupy(this.camera.walker.position):undefined);
+    if(doorChanges.size){
+      this.logic.doorsMoved(doorChanges);
+      if(this.highlighted.some(p=>doorChanges.has(p.id))){const selected=this.highlighted;this.highlighted=[];this.selectMany(selected);}
+    }
     if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
+    this.updateDoorMatrices(doorChanges);
     this.logic.updateTimers(this.loaded);
     const camera = this.camera.camera;
     this.logic.wires.updateLights(camera.position,now,this.quality);

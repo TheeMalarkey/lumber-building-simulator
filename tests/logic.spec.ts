@@ -4,7 +4,7 @@ import {CATALOG} from '../src/catalog';
 test('builds a visible wired lever circuit, operates lights and persists edits',async({page})=>{
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'||/GL_INVALID/.test(m.text()))errors.push(m.text());});
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
- await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('.catalog-card')).toHaveCount(12);
+ await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('.catalog-card')).toHaveCount(13);
  await page.locator('[data-item="lever"]').click();await expect(page.locator('#wood-picker')).toBeHidden();
  await page.locator('#collapse').click();
  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([

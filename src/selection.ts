@@ -50,7 +50,7 @@ export function selectInRectangle(world: World, camera: PerspectiveCamera,
   const box=new Box3(), ids:string[]=[];
   // One spatial query on release; no per-frame scan or per-piece ray casts.
   for (const p of world.query(camera.position.toArray() as Vec3,distance)) {
-    const b=world.bounds.get(p.id)!;box.min.fromArray(b.min);box.max.fromArray(b.max);
+    const b=pieceBounds(p);box.min.fromArray(b.min);box.max.fromArray(b.max);
     if (box.distanceToPoint(camera.position)<=distance && frustum.intersectsBox(box)) ids.push(p.id);
   }
   return ids;

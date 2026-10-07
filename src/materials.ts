@@ -11,6 +11,8 @@ import { WOODS } from "./catalog";
 // Original pre-2022 Roblox maps, shared across every species and instance.
 // Sources and approximate lighting parameters: docs/reference/wood-materials.md.
 const files = {
+  diamondColor: "classic-diamondplate-color.png",
+  diamondNormal: "classic-diamondplate-normal.png",
   woodColor: "classic-wood-color.png",
   woodNormal: "classic-wood-normal.png",
   graniteColor: "classic-granite-color.png",
@@ -113,4 +115,13 @@ export function makeBlueprintHardwareMaterials() {
     new MeshStandardMaterial({ name: "Sink tap", color: 0xb5b8b9, roughness: .32, metalness: .35 }),
     new MeshStandardMaterial({ name: "Sink basin", color: 0xe7e8e6, roughness: .24 }),
   ];
+}
+
+export function makeHatchMaterials(){
+ return [
+  new MeshStandardMaterial({name:'Hatch motor bar',color:0x53554b,roughness:.82}),
+  new MeshStandardMaterial({name:'Classic diamond plate',color:0xb3b6b8,map:pool?.diamondColor,normalMap:pool?.diamondNormal,normalScale:new Vector2(.65,.65),metalness:.2,roughness:.55}),
+  new MeshStandardMaterial({name:'Hatch orange control',color:0xc78d52,roughness:.6}),
+  new MeshStandardMaterial({name:'Hatch control face',color:0x151714,roughness:.72}),
+ ];
 }

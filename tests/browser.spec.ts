@@ -455,7 +455,7 @@ test("catalog cards stay readable and every category is reachable", async ({
   await page.goto("/");
   await page.waitForFunction(() => !!(window as any).timber);
   await openBuild(page);
-  await expect(page.locator(".catalog-card")).toHaveCount(102);
+  await expect(page.locator(".catalog-card")).toHaveCount(103);
   const card = (await page.locator(".catalog-card").first().boundingBox())!;
   expect(card.height).toBeGreaterThanOrEqual(96);
   expect(card.height).toBeLessThanOrEqual(112);
