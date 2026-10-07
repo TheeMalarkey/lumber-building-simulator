@@ -41,7 +41,7 @@ try{
  await page.locator('#select-tool').click();await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/logic-live.png'});
  await page.setViewportSize({width:390,height:844});await expect(page.locator('[data-item="lever"]')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await openWire(page);await expect(page.locator('#select-tool')).not.toHaveClass(/active/);await expect(page.locator('#wire-palette-panel')).toBeHidden();await page.locator('#select-tool').click();await expect(page.locator('#select-tool')).toHaveClass(/active/);
+ await openWire(page);await expect(page.locator('#select-tool')).not.toHaveClass(/active/);await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();await page.locator('#select-tool').click();await expect(page.locator('#select-tool')).toHaveClass(/active/);
  expect(errors).toEqual([]);writeFileSync('release/pages-verification/logic-live.json',JSON.stringify({target,errors,debugAPI:false,catalog:12,total:102,wiring:true,logicDrivenLight:true,savedSwitch:true,exportReload:true,deleteUndo:true,compactFits:true,modeExit:true},null,2));
  console.log('Production logic: catalog, socket wiring, controlled Worklight, export/reload, delete/undo, compact controls and Wire mode exit passed.');
 }finally{await browser.close();}

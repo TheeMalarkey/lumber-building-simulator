@@ -8,6 +8,8 @@ export default defineConfig({
     "camera.spec.ts",
     "wire-selection.spec.ts",
     "wire-ui.spec.ts",
+    "wire-controls.spec.ts",
+    "palette-colors.spec.ts",
     "wire-relocation.spec.ts",
     "hud.spec.ts",
     "persistence.spec.ts",

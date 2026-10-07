@@ -351,7 +351,8 @@ test("compact toolbars keep wire building and land controls accessible", async (
   expect(await page.locator('.view-controls>button').evaluateAll(buttons => buttons.map(b => b.id))).toEqual(['home','walk-tool','land-tool','undo','redo']);
   await openWire(page);
   expect(await page.evaluate(() => (window as any).timber.editor.logicTools.selectedKind)).toBe('wire');
-  await expect(page.locator('#wire-palette-panel')).toBeHidden();
+  await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();
+  await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await expect(page.locator('#wire-axis-copy-toggle')).toBeVisible();
   await expect(page.locator('#wire-length-label')).toBeHidden();
   await openWire(page, 'neon');
   expect(await page.evaluate(() => (window as any).timber.editor.logicTools.selectedKind)).toBe('neon');

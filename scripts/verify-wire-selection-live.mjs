@@ -31,15 +31,21 @@ try{
   const from=[...center];from[1]+=.7*scale;const to=[...from];to[1]+=studs;
   await page.mouse.move(...xy(from));await page.mouse.down();await page.mouse.move(...xy(to),{steps:8});await page.mouse.up();
  };
- await click([0,.145,-3]);await click([0,.145,5],true);await expect(page.locator('#wire-palette-panel')).toBeHidden();
+ await click([0,.145,-3]);await click([0,.145,5],true);await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();
+ await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await page.locator('#wire-axis-copy-toggle').uncheck();
  await page.setViewportSize({width:390,height:844});await expect(page.locator('#select-tool')).toBeInViewport();
+ await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();
+ const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact.width).toBeLessThan(200);expect(compact.height).toBeLessThan(160);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.setViewportSize({width:1440,height:960});
  await arrowUp([0,.145,1],2);const axisMove=await exported();expect(axisMove.wires.map(w=>w.id)).toEqual(['a','b']);expect(axisMove.pieces).toEqual([]);
  for(const [i,z] of [-3,5].entries()) expect(axisMove.wires[i]).toMatchObject({kind:'wire',from:{point:[-4,2.145,z]},to:{point:[4,2.145,z]},points:[]});
  await page.keyboard.press('Control+z');expect((await exported()).wires).toEqual(wireOnlyFixture.wires);
+ await page.locator('#wire-axis-copy-toggle').check();await arrowUp([0,.145,1],2);const axisCopy=await exported();expect(axisCopy.wires).toHaveLength(4);expect(axisCopy.wires.slice(0,2)).toEqual(wireOnlyFixture.wires);expect(axisCopy.pieces).toEqual([]);
+ for(const [i,z] of [-3,5].entries()){expect(axisCopy.wires[i+2].id).not.toBe(wireOnlyFixture.wires[i].id);expect(axisCopy.wires[i+2]).toMatchObject({kind:'wire',from:{point:[-4,2.145,z]},to:{point:[4,2.145,z]},points:[]});}
+ await page.locator('#wire-axis-copy-toggle').uncheck();await page.locator('#undo').click();expect((await exported()).wires).toEqual(wireOnlyFixture.wires);
  await load();
- await click([0,.145,12]);await expect(page.locator('#wire-palette-panel')).toBeHidden();await click([0,.18,0],true);await expect(page.locator('#wire-palette-panel')).toBeVisible();
- await click([0,.18,0],true);await expect(page.locator('#wire-palette-panel')).toBeHidden();await click([0,.18,0],true);await expect(page.locator('#wire-palette-panel')).toBeVisible();
+ await click([0,.145,12]);await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();await click([0,.18,0],true);await expect(page.locator('#wire-color-toggle')).toBeVisible();
+ await click([0,.18,0],true);await expect(page.locator('#wire-color-toggle')).toBeHidden();await click([0,.18,0],true);await expect(page.locator('#wire-color-toggle')).toBeVisible();
  await page.keyboard.press('Delete');let result=await exported();expect(result.wires??[]).toHaveLength(0);expect(result.pieces).toHaveLength(2);
  await page.keyboard.press('Control+z');expect((await exported()).wires).toEqual(fixture.wires);
  await page.keyboard.press('Control+Shift+z');expect((await exported()).wires??[]).toHaveLength(0);await page.keyboard.press('Control+z');
@@ -59,6 +65,6 @@ try{
  await page.locator('#home').click();await click([0,.145,12]);await click([0,.18,0],true);await expect(page.locator('#wire-palette-panel')).toBeVisible();
  mkdirSync('release/pages-verification',{recursive:true});await expect(page.locator('#toast')).not.toHaveClass(/visible/);await page.screenshot({path:'release/pages-verification/wire-multiselect-live.png'});
  await page.keyboard.press('Delete');const removed=await exported();expect(removed.wires).toHaveLength(1);expect(removed.wires[0].id).toBe(copy.id);expect(removed.pieces).toHaveLength(4);await page.keyboard.press('Control+z');expect((await exported()).wires).toEqual(result.wires);
- expect(errors).toEqual([]);writeFileSync('release/pages-verification/wire-multiselect-live.json',JSON.stringify({target,errors,debugAPI:false,ctrlClickToggle:true,ctrlDragMixedSelection:true,wireAxisMove:true,batchDelete:true,mixedCopy:true,copiedSockets:true,copiedSignal:true,oneStepHistory:true,saveReload:true,compactFits:true},null,2));
+ expect(errors).toEqual([]);writeFileSync('release/pages-verification/wire-multiselect-live.json',JSON.stringify({target,errors,debugAPI:false,ctrlClickToggle:true,ctrlDragMixedSelection:true,wireAxisMove:true,wireAxisCopy:true,batchDelete:true,mixedCopy:true,copiedSockets:true,copiedSignal:true,oneStepHistory:true,saveReload:true,compactFits:true},null,2));
  console.log('Production wire multi-selection: Ctrl-click, Ctrl-drag, batch delete, circuit copying, copied signal, history, persistence and compact controls passed.');
 }finally{await browser.close();}

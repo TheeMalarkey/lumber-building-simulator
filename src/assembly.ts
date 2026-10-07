@@ -71,7 +71,7 @@ export function assemblyIssue(world:World,a:Assembly,copy:boolean):string|null{
   const original=copy?undefined:old.get(w.id),limit=Math.max(wireLimit(w),original?wireLength(wirePath(original,world.pieces)):0);
   if(wireLength(wirePath(w,items))>limit+1e-6)return `Wire exceeds its ${wireLimit(w)}-stud limit.`;
   const space=wireSpaceIssue(wirePath(w,items),w,world.plots);if(space&&(!original||!wireSpaceIssue(wirePath(original,world.pieces),original,world.plots)))return space;
-  const collision=world.wireCollisions.issue(w,items,wireIds)??batch.issue(w,items,undefined,false);if(collision)return collision;
+  const collision=world.allowOverlaps?null:world.wireCollisions.issue(w,items,wireIds)??batch.issue(w,items,undefined,false);if(collision)return collision;
  }return null;
 }
 export function selectWiresInRectangle(world:World,camera:PerspectiveCamera,viewport:{left:number;top:number;width:number;height:number},from:readonly number[],to:readonly number[],distance:number){

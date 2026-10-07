@@ -7,6 +7,7 @@ import {LogicInteraction} from './logic-interaction';
 import type {WireSurface} from './wire-shape';
 import {WireView} from './wire-view';
 import type {Piece} from './world';
+import {setPaletteColor} from './palette-color';
 const $=(id:string)=>document.getElementById(id)!;
 
 export class LogicTools {
@@ -89,14 +90,21 @@ export class LogicTools {
   $('wire-colors').hidden=!open;$('wire-color-toggle').setAttribute('aria-expanded',String(open));
  }
  private colorUI(){
-  const neon=this.wiring||this.e.placing?[]:this.e.selectedWires.filter(w=>w.kind==='neon'),panel=$('wire-palette-panel');
-  const context=this.wiring?this.style.kind??'wire':!this.e.placing&&neon.length?JSON.stringify([[...this.e.selection].sort(),[...this.e.wireSelection].sort()]):'';
+  const selected=this.wiring||this.e.placing?[]:this.e.selectedWires,neon=selected.filter(w=>w.kind==='neon'),panel=$('wire-palette-panel');
+  const context=this.wiring?this.style.kind??'wire':selected.length?JSON.stringify([[...this.e.selection].sort(),[...this.e.wireSelection].sort()]):'';
   if(context!==this.paletteContext){this.paletteContext=context;this.colorPopup(false);}
-  panel.hidden=this.wiring?this.style.kind!=='neon':this.e.placing||!neon.length;
-  panel.classList.toggle('with-inspector',!$('edit-panel').hidden);
+  const hasNeon=this.wiring?this.style.kind==='neon':!!neon.length,withInspector=!$('edit-panel').hidden;
+  const hasOptions=(this.wiring||!!selected.length)&&!withInspector;
+  panel.hidden=!hasOptions&&!hasNeon;
+  panel.classList.toggle('with-inspector',withInspector);
+  $('wire-options').hidden=!hasOptions;$('wire-color-toggle').hidden=!hasNeon;
+  if(!hasNeon)this.colorPopup(false);
+  ($('wire-overlap-toggle') as HTMLInputElement).checked=this.e.world.allowOverlaps;
+  ($('wire-axis-copy-toggle') as HTMLInputElement).checked=this.e.copyWithArrows;
   const colors=this.wiring?[this.style.color??'white']:neon.map(w=>w.color??'white'),color=colors[0]??'white',mixed=new Set(colors).size>1;
   const label=`Neon color: ${mixed?'Mixed colors':NEON_COLORS[color].label}`,toggle=$('wire-color-toggle');
   toggle.title=label;toggle.setAttribute('aria-label',label);
+  setPaletteColor(toggle,colors.map(id=>'#'+NEON_COLORS[id].hex.toString(16).padStart(6,'0')));
   document.querySelectorAll<HTMLButtonElement>('[data-wire-color]').forEach(b=>b.setAttribute('aria-pressed',String(!mixed&&b.dataset.wireColor===color)));
  }
  private cancel(keepMoving=false){
@@ -234,7 +242,7 @@ export class LogicTools {
   if(this.movingWire&&!this.e.world.wires.some(w=>w.id===this.movingWire!.id))this.toggle(false);
   if(this.start&&'piece' in this.start&&!this.e.world.pieces.has(this.start.piece))this.cancel(!!this.movingWire);
   if(this.wiring&&this.start&&this.pointer){
-   const camera=this.e.view.camera.camera,key=this.pointer.join(',')+camera.position.toArray().join(',')+camera.quaternion.toArray().join(',')+this.e.world.revision;
+   const camera=this.e.view.camera.camera,key=this.pointer.join(',')+camera.position.toArray().join(',')+camera.quaternion.toArray().join(',')+this.e.world.revision+this.e.world.allowOverlaps;
    if(key!==this.previewKey){this.previewKey=key;const [x,y]=this.pointer,port=this.hitPort(x,y),wire=port?null:this.hitWire(x,y),hit=port||wire?null:this.e.view.pick(x,y);
     if(port)this.preview(port);else if(wire)this.preview({point:this.junction(wire)},wire);else if(hit)this.preview({point:this.surfacePoint(hit.point,hit.normal)});else{this.previewEnd=null;this.previewIssue=null;if(this.bends.length)this.preview({point:this.bends.at(-1)!});else{if(this.draftView)this.draftView.root.visible=false;this.status();}}
    }

@@ -175,9 +175,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .game-hud #selection-marquee { border-color: var(--hud-active); background: #ffffff22; }
 .game-hud #wire-palette-panel { right: 16px; bottom: 84px; z-index: 12; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding: 6px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 155px); }
 .game-hud #wire-palette-panel.with-inspector { top: 64px; bottom: auto; }
+.game-hud #wire-options { width: 160px; display: flex; flex-direction: column; gap: 10px; padding: 3px; }
+.game-hud #wire-options input { width: 16px; height: 16px; padding: 0; }
 .game-hud #wire-color-toggle { border: 1px solid var(--hud-border); background: var(--hud-field); padding: 5px; }
 .game-hud #wire-color-toggle[aria-expanded="true"] { background: var(--hud-selected); }
 .game-hud #wire-color-toggle svg { width: 20px; height: 20px; }
+.game-hud :is(#wood-toggle, #wire-color-toggle).palette-color,
+.game-hud :is(#wood-toggle, #wire-color-toggle).palette-color:is(:hover, .active, [aria-expanded="true"]) { background: var(--palette-background); color: var(--palette-ink); }
+.game-hud .palette-mixed svg { background: var(--palette-icon-bg); border-radius: 50%; }
 .game-hud #wire-colors { display: grid; grid-template-columns: repeat(3, 32px); gap: 6px; padding: 3px; overflow: auto; scrollbar-width: thin; }
 .game-hud #wire-colors button { width: 32px; height: 32px; flex-shrink: 0; padding: 0; background: var(--wire-color); border: 2px solid #888; border-radius: 4px; }
 .game-hud #wire-colors button:hover:not(:disabled) { background: var(--wire-color); border-color: #fff9; }

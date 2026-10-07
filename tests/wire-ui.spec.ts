@@ -3,7 +3,7 @@ import {openWire,openBuild} from './ui-helpers';
 
 async function setup(page:Page){
   await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
-  await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12]);e.pickSelection(null);e.view.sync(true);e.view.camera.controls.enableDamping=false;e.view.camera.camera.position.set(16,27,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+  await page.evaluate(()=>{const e=(window as any).timber.editor;e.copyWithArrows=false;e.world.load([],[12]);e.pickSelection(null);e.view.sync(true);e.view.camera.controls.enableDamping=false;e.view.camera.camera.position.set(16,27,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
   await expect.poll(()=>page.evaluate(()=>(window as any).timber.editor.logicTools.wiring)).toBe(false);
 }
 async function xy(page:Page,p:number[]){return page.evaluate(async p=>{const {Vector3}=await import('/node_modules/three/build/three.module.js'),e=(window as any).timber.editor,r=e.view.renderer.domElement.getBoundingClientRect();e.view.camera.camera.updateMatrixWorld();const v=new Vector3(...p).project(e.view.camera.camera);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];},p);}
@@ -11,10 +11,13 @@ async function click(page:Page,p:number[]){const v=await xy(page,p);await page.m
 async function choose(page:Page,kind:'wire'|'neon') {await openWire(page,kind);await page.locator('#collapse').click();}
 const draft=(page:Page)=>page.evaluate(()=>{const root=(window as any).timber.editor.view.worldRoot.getObjectByName('Wire placement preview'),tubes=root?.getObjectByName('Wire tubes and ends');return {visible:!!root?.visible,tubes:tubes?.count,opacity:tubes?.material.opacity};});
 
-test('wire tools use a right palette only for neon and no bottom-left control panels',async({page})=>{
+test('wire tools share compact overlap and copy controls with a neon-only color palette',async({page})=>{
   await setup(page);await choose(page,'wire');
   await expect(page.locator('#wiring-panel,#wire-selection-panel')).toHaveCount(0);
-  await expect(page.locator('#wire-palette-panel')).toBeHidden();
+  await expect(page.locator('#wire-palette-panel')).toBeVisible();
+  await expect(page.locator('#wire-color-toggle')).toBeHidden();
+  await expect(page.locator('#wire-overlap-toggle')).toBeVisible();
+  await expect(page.locator('#wire-axis-copy-toggle')).toBeVisible();
   await expect(page.locator('#wire-length-label')).toBeHidden();
   await choose(page,'neon');
   await expect(page.locator('#wire-palette-panel')).toBeVisible();
@@ -87,18 +90,27 @@ test('neon palette stays compact on phones and changing color updates an active 
   await expect.poll(()=>page.evaluate(()=>{const e=(window as any).timber.editor,t=e.view.worldRoot.getObjectByName('Wire placement preview').getObjectByName('Wire tubes and ends');return [...t.instanceColor.array.slice(0,3)];})).toEqual([0,0,1]);
   await page.keyboard.press('Escape');
   await page.setViewportSize({width:390,height:844});await expect(page.locator('#wire-color-toggle')).toBeInViewport();
-  const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact!.width).toBeLessThan(60);expect(compact!.height).toBeLessThan(60);
+  const compact=await page.locator('#wire-palette-panel').boundingBox();expect(compact!.width).toBeLessThan(200);expect(compact!.height).toBeLessThan(160);
+  await expect(page.locator('#wire-overlap-toggle')).toBeInViewport();await expect(page.locator('#wire-axis-copy-toggle')).toBeInViewport();
   await page.locator('#wire-color-toggle').click();await expect(page.locator('[data-wire-color="pink"]')).toBeInViewport();
   await page.mouse.click(180,320);await expect(page.locator('#wire-colors')).toBeHidden();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('multi-wire arrows move even when Copy with arrows was enabled for blueprints',async({page})=>{
+for(const copying of [false,true])test(`multi-wire arrows ${copying?'copy':'move'} when Copy with arrows is ${copying?'enabled':'disabled'}`,async({page})=>{
   await setup(page);await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12],[{id:'w',kind:'wire',from:{point:[-4,.145,0]},to:{point:[4,.145,0]},points:[]},{id:'w2',kind:'wire',from:{point:[-4,.145,4]},to:{point:[4,.145,4]},points:[]}]);e.view.sync(true);});
-  await click(page,[0,.145,0]);await page.keyboard.down('Control');await click(page,[0,.145,4]);await page.keyboard.up('Control');await page.evaluate(()=>(window as any).timber.editor.copyWithArrows=true);
+  await click(page,[0,.145,0]);await page.keyboard.down('Control');await click(page,[0,.145,4]);await page.keyboard.up('Control');
+  const original=await page.evaluate(()=>(window as any).timber.editor.world.wires);
+  await page.locator('#wire-axis-copy-toggle').setChecked(copying);
   const points=await page.evaluate(()=>{const e=(window as any).timber.editor,g=e.view.gizmo,r=e.view.renderer.domElement.getBoundingClientRect(),p=g.root.position.clone();p.y+=g.root.scale.x*.7;const q=p.clone();q.y+=2;const project=(v:any)=>{v.project(e.view.camera.camera);return [r.x+(v.x+1)*r.width/2,r.y+(1-v.y)*r.height/2];};return [project(p),project(q)];});
   await page.mouse.move(points[0][0],points[0][1]);await page.mouse.down();await page.mouse.move(points[1][0],points[1][1],{steps:8});await page.mouse.up();
   const wires=await page.evaluate(()=>(window as any).timber.editor.world.wires);
-  expect(wires).toHaveLength(2);expect(wires[0].id).toBe('w');expect(wires[1].id).toBe('w2');expect(wires[1].from.point[1]).toBeCloseTo(2.145);expect(wires[0].from.point[1]).toBeCloseTo(2.145);expect(wires[0].to.point[1]).toBeCloseTo(2.145);
-  await page.keyboard.press('Control+z');expect(await page.evaluate(()=>(window as any).timber.editor.world.wires[0].from.point[1])).toBeCloseTo(.145);
+  expect(wires).toHaveLength(copying?4:2);expect(wires[0].id).toBe('w');expect(wires[1].id).toBe('w2');
+  if(copying)expect(wires.slice(0,2)).toEqual(original);
+  const moved=copying?wires.slice(2):wires;
+  moved.forEach((wire:any,index:number)=>{
+    expect(wire.kind).toBe(original[index].kind);expect(wire.from.point[1]).toBeCloseTo(2.145);expect(wire.to.point[1]).toBeCloseTo(2.145);
+    if(copying)expect(wire.id).not.toBe(original[index].id);
+  });
+  await page.keyboard.press('Control+z');expect(await page.evaluate(()=>(window as any).timber.editor.world.wires)).toEqual(original);
 });

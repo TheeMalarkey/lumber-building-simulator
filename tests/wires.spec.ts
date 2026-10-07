@@ -8,7 +8,7 @@ async function startWireOnCanvas(page:Page,kind:'wire'|'neon'='wire') {
 
 async function setup(page:Page){
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
- await page.evaluate(()=>{const e=(window as any).timber.editor;e.world.load([],[12]);e.pickSelection(null);e.view.sync(true);e.view.camera.camera.position.set(16,27,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
+ await page.evaluate(()=>{const e=(window as any).timber.editor;e.copyWithArrows=false;e.world.load([],[12]);e.pickSelection(null);e.view.sync(true);e.view.camera.camera.position.set(16,27,30);e.view.camera.controls.target.set(0,0,0);e.view.camera.controls.update();});
  await startWireOnCanvas(page);
 }
 async function xy(page:Page,p:number[]){return page.evaluate(async p=>{const {Vector3}=await import('/node_modules/three/build/three.module.js'),e=(window as any).timber.editor,rect=e.view.renderer.domElement.getBoundingClientRect();e.view.camera.camera.updateMatrixWorld();const v=new Vector3(...p).project(e.view.camera.camera);return [rect.x+(v.x+1)*rect.width/2,rect.y+(1-v.y)*rect.height/2];},p);}
@@ -29,7 +29,8 @@ test('Select picks individual wires for keyboard deletion and undo',async({page}
  ]);e.view.sync(true);});
  await click(page,[0,.145,-3]);
  expect(await selected(page)).toEqual(['regular']);
- await expect(page.locator('#wire-palette-panel')).toBeHidden();
+ await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();
+ await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await expect(page.locator('#wire-axis-copy-toggle')).toBeVisible();
  await page.keyboard.press('Delete');
  expect(await page.evaluate(()=>(window as any).timber.editor.world.wires.map((w:any)=>w.id))).toEqual(['neon']);
  expect(await selected(page)).toEqual([]);

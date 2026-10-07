@@ -61,6 +61,15 @@ describe('mixed blueprint and wire assemblies',()=>{
   expect(assemblyIssue(w,transformAssembly(a,[40,1,0]),true)).toMatch(/active plots/);
   expect(assemblyIssue(w,transformAssembly(a,[0,1,0]),true)).toBeNull();expect(w.canUndo).toBe(false);
  });
+ it('overlap permission allows coincident wire-group copies without bypassing ground or land',()=>{
+  const w=new World();w.load([], [12],[route('a',{point:[-2,.145,0]},{point:[2,.145,0]})]);
+  const a=selectedAssembly(w,[],new Set(['a']));w.allowOverlaps=true;
+  expect(assemblyIssue(w,a,true)).toBeNull();
+  const copied=copyAssembly(a);expect(w.execute([], [...w.wires,...copied.wires])).toBe(true);
+  expect(w.wires).toHaveLength(2);w.undo();expect(w.wires).toHaveLength(1);
+  expect(assemblyIssue(w,transformAssembly(a,[0,-1,0]),false)).toMatch(/above the ground/);
+  expect(assemblyIssue(w,transformAssembly(a,[40,1,0]),true)).toMatch(/active plots/);
+ });
  it('undoes and redoes a copied mixed assembly in a single history step',()=>{
   const w=fixture(),before=structuredClone(w.wires),pieces=[...w.pieces.values()],a=selectedAssembly(w,pieces.slice(0,2),new Set(['loose'])),copy=copyAssembly(transformAssembly(a,[0,6,0]));
   expect(w.execute(copy.pieces.map(after=>({before:null,after})),[...w.wires,...copy.wires])).toBe(true);

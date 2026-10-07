@@ -14,11 +14,33 @@ it('thickens regular tubes and ends without changing the accepted neon dimension
  expect(wireRadius({kind:'wire'})).toBe(.10);expect(wireCollarRadius({kind:'wire'})).toBe(.14);
  expect(wireRadius({kind:'neon'})).toBe(.12);expect(wireCollarRadius({kind:'neon'})).toBe(.15);
 });
-it('rejects penetrating crossings even with blueprint overlap enabled, without recording history',()=>{
- const world=new World();world.load([],null,[host()]);world.allowOverlaps=true;
+it('rejects penetrating crossings when overlap is disabled, without recording history',()=>{
+ const world=new World();world.load([],null,[host()]);
  let issue='';world.onReject=m=>issue=m;
  expect(put(world,wire('cross',[0,1,-4],[0,1,4]))).toBe(false);
  expect(issue).toContain('wire');expect(world.wires).toHaveLength(1);expect(world.canUndo).toBe(false);
+});
+it('allows regular and neon crossings only with overlaps enabled, with reversible history',()=>{
+ for(const kind of ['wire','neon'] as const){
+  const world=new World();world.load([], [12], [host()]);
+  const cross:Wire={...wire('cross',[0,1,-4],[0,1,4]),kind};
+  expect(world.wirePlacementIssue(cross)).toMatch(/wire/);
+  world.allowOverlaps=true;expect(world.wirePlacementIssue(cross)).toBeNull();
+  expect(put(world,cross)).toBe(true);expect(world.wires).toEqual([host(),cross]);
+  world.undo();expect(world.wires).toEqual([host()]);world.redo();expect(world.wires).toEqual([host(),cross]);
+ }
+});
+it('overlap permission keeps full-wire ground, land and length restrictions for previews and commits',()=>{
+ const world=new World();world.load([], [12], [host()]);world.allowOverlaps=true;
+ for(const [candidate,message] of [
+  [wire('buried',[0,.05,-4],[0,.05,4]),'above the ground'],
+  [wire('outside',[19,1,0],[21,1,0]),'active plots'],
+  [wire('long',[-11,1,0],[11,1,0]),'20'],
+  [{...wire('neon-long',[-9,1,0],[9,1,0]),kind:'neon'},'16'],
+ ] as [Wire,string][]){
+  expect(world.wirePlacementIssue(candidate)).toContain(message);
+  expect(put(world,candidate)).toBe(false);expect(world.wires).toEqual([host()]);expect(world.canUndo).toBe(false);
+ }
 });
 it('allows tubes touching on top and separated overpasses, including diagonals',()=>{
  const world=new World();world.load([],null,[host()]);

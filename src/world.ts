@@ -87,7 +87,7 @@ export class World {
     return this.wireIndex;
   }
   wirePlacementIssue(wire:Wire){
-    return wireRouteIssue(wirePath(wire,this.pieces),wire,this.plots)??this.wireCollisions.issue(wire,this.pieces);
+    return wireRouteIssue(wirePath(wire,this.pieces),wire,this.plots)??(this.allowOverlaps?null:this.wireCollisions.issue(wire,this.pieces));
   }
   private past: HistoryEntry[] = [];
   private future: HistoryEntry[] = [];
@@ -185,7 +185,7 @@ export class World {
         if(wireLength(wirePath(w,next))>limit+1e-6){this.onReject(`Cannot move: ${w.kind==='neon'?'neon wire':'wire'} exceeds its ${wireLimit(w)}-stud limit. Reroute or disconnect it first.`);return false;}
         const issue=wireSpaceIssue(wirePath(w,next),w,this.plots);
         if(issue&&(!previous||!wireSpaceIssue(wirePath(previous,this.pieces),previous,this.plots))){this.onReject(issue);return false;}
-        const collision=this.wireCollisions.issue(w,next,ignored)??batch.issue(w,next,undefined,false);
+        const collision=this.allowOverlaps?null:this.wireCollisions.issue(w,next,ignored)??batch.issue(w,next,undefined,false);
         if(collision){this.onReject(collision);return false;}
       }
     }

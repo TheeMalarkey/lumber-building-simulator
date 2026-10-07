@@ -21,6 +21,7 @@ import { PathBuilder } from "./path-builder";
 import { initFloatingCatalog } from "./floating-panel";
 import {selectedAssembly,assemblyAnchors,assemblyBounds,transformAssembly,rotateAssembly,placeAssemblyOnSurface,copyAssembly,assemblyIssue,selectWiresInRectangle,type Assembly} from './assembly';
 import type {Wire} from './logic-ports';
+import {setPaletteColor} from './palette-color';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
@@ -245,6 +246,7 @@ export class Editor {
     const finishLabel = `Wood finish: ${mixedWood ? "Mixed woods" : WOOD_MAP.get(displayedWood)!.name}`;
     $("wood-toggle").setAttribute("aria-label", finishLabel);
     $("wood-toggle").title = finishLabel;
+    setPaletteColor($("wood-toggle"),mixedWood?woodPieces.map(p=>WOOD_MAP.get(p.wood)!.color):[WOOD_MAP.get(displayedWood)!.color]);
     document
       .querySelectorAll<HTMLElement>("[data-wood]")
       .forEach((b) =>
@@ -409,7 +411,7 @@ export class Editor {
   syncGizmo() {
     if (this.paths.syncGizmo()) return;
     const assembly=this.placing?this.held&&this.groupPlacement?{pieces:this.groupPreview,wires:this.groupWirePreview}:null:{pieces:this.selectedPieces,wires:this.selectedWires};
-    if(assembly?.wires.length&&(this.placing||assembly.pieces.length||assembly.wires.length>1)){this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);return;}
+    if(assembly?.wires.length&&(this.placing||assembly.pieces.length||assembly.wires.length>1||this.copyWithArrows)){this.view.gizmo.setCenter(assemblyBounds(assembly,this.world.pieces).center);return;}
     this.view.gizmo.setPieces(this.placing
       ? this.held ? this.groupPlacement ? this.groupPreview : this.ghost ? [this.ghost] : [] : []
       : this.selectedPieces);
@@ -921,7 +923,7 @@ export class Editor {
       this.world.execute(this.selectedPieces.filter(p=>ITEMS.get(p.item)!.fixedMaterial==='lighting'&&!this.view.logic.circuit.connected(p.id)).map(p=>({before:p,after:{...p,lightOn}})));
       this.inspect();
     };
-    $("overlap-toggle").onchange = e => {
+    for(const id of ["overlap-toggle","wire-overlap-toggle"]) $(id).onchange = e => {
       this.world.allowOverlaps=(e.target as HTMLInputElement).checked;
       this.lastPointer="";this.updateGhost();
       // A retained preview must also refresh while the pointer is over the panel.
@@ -931,7 +933,7 @@ export class Editor {
       }
       this.inspect();
     };
-    $("axis-copy-toggle").onchange=e=>{this.copyWithArrows=(e.target as HTMLInputElement).checked;this.inspect();};
+    for(const id of ["axis-copy-toggle","wire-axis-copy-toggle"]) $(id).onchange=e=>{this.copyWithArrows=(e.target as HTMLInputElement).checked;this.inspect();};
     $("project-name").onchange = () => {
       this.dirty = true;
       this.world.revision++;
@@ -1059,7 +1061,7 @@ export class Editor {
           const sourceWires=this.placing?structuredClone(this.groupWirePreview):selectedAssembly(this.world,source,this.wireSelection).wires;
           if (source.length||sourceWires.length) {
             e.preventDefault();e.stopImmediatePropagation();down=null;selectionClicks=[];
-            moveDrag={pointerId:e.pointerId,math,source,preview:source,sourceWires,previewWires:sourceWires,placing:this.placing,copy:this.placing?this.groupPlacement?.copy??false:this.copyWithArrows&&source.length>0,
+            moveDrag={pointerId:e.pointerId,math,source,preview:source,sourceWires,previewWires:sourceWires,placing:this.placing,copy:this.placing?this.groupPlacement?.copy??false:this.copyWithArrows,
               ignore:new Set(source.map(p=>p.id)),internalOverlap:null,delta:null,revision:this.world.revision,allowOverlaps:this.world.allowOverlaps};
             this.view.camera.selecting=true;this.view.camera.controls.enabled=false;this.view.camera.keys.clear();
             canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing";

@@ -3,7 +3,7 @@ import {test,expect,type Page} from '@playwright/test';
 async function setup(page:Page){
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  await page.evaluate(()=>{
-  const e=(window as any).timber.editor;
+  const e=(window as any).timber.editor;e.copyWithArrows=false;
   e.world.load([],[12],[
    {id:'a',kind:'wire',from:{point:[-4,.145,-3]},to:{point:[4,.145,-3]},points:[]},
    {id:'b',kind:'neon',color:'cyan',from:{point:[-4,.155,2]},to:{point:[4,.155,5]},points:[[0,.155,2],[0,.155,5]]},
@@ -85,7 +85,9 @@ for(const kind of ['wire','neon'] as const){
   const original=await wires(page);await click(page,[0,height,-3]);await page.keyboard.press('g');
   await expect.poll(()=>mode(page)).toEqual({wiring:true,placing:false,gizmo:false});
   if(kind==='neon')await expect(page.locator('#wire-color-toggle')).toHaveAttribute('aria-label',/Cyan/);
-  else await expect(page.locator('#wire-palette-panel')).toBeHidden();
+  else await expect(page.locator('#wire-color-toggle')).toBeHidden();
+  await expect(page.locator('#wire-palette-panel')).toBeVisible();
+  await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await expect(page.locator('#wire-axis-copy-toggle')).toBeVisible();
   await click(page,[0,0,-7]);await click(page,[0,0,1]);await page.keyboard.press('Enter');
   await expect.poll(()=>mode(page)).toEqual({wiring:false,placing:false,gizmo:false});
   const after=await wires(page);expect(after).toHaveLength(1);

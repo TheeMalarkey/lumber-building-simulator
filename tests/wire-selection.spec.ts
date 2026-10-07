@@ -3,6 +3,7 @@ async function setup(page:Page,circuit=false){
  await page.goto('/');await page.waitForFunction(()=>!!(window as any).timber);
  await page.evaluate(circuit=>{const e=(window as any).timber.editor;
  const pieces=circuit?[{id:'lever',item:'lever',wood:'oak',position:[-5,.75,0],rotation:[0,0,0],logicOn:true},{id:'lamp',item:'lamp',wood:'oak',position:[5,1,0],rotation:[0,0,0]}]:[];
+ e.copyWithArrows=false;
  const wires=circuit?[{id:'lead',kind:'neon',color:'cyan',from:{piece:'lever',port:'out'},to:{piece:'lamp',port:'in'},points:[[0,.18,0]]},{id:'loose',kind:'wire',from:{point:[-4,.145,5]},to:{point:[4,.145,5]},points:[]}]:[
   {id:'a',kind:'wire',from:{point:[-4,.145,-3]},to:{point:[4,.145,-3]},points:[]},
   {id:'b',kind:'neon',color:'pink',from:{point:[-4,.155,0]},to:{point:[4,.155,0]},points:[]},
@@ -21,7 +22,8 @@ async function arrowUp(page:Page,studs=6){
 
 test('Ctrl-click toggles multiple wires and Delete removes only the selected routes in one undo',async({page})=>{
  await setup(page);const original=await wires(page);await click(page,[0,.145,-3]);await click(page,[0,.155,0],true);await click(page,[0,.145,5],true);await click(page,[0,.155,0],true);
- expect(await selected(page)).toEqual({pieces:[],wires:['a','c']});await expect(page.locator('#wire-palette-panel')).toBeHidden();
+ expect(await selected(page)).toEqual({pieces:[],wires:['a','c']});await expect(page.locator('#wire-palette-panel')).toBeVisible();await expect(page.locator('#wire-color-toggle')).toBeHidden();
+ await expect(page.locator('#wire-overlap-toggle')).toBeVisible();await expect(page.locator('#wire-axis-copy-toggle')).toBeVisible();
  await page.keyboard.press('Delete');expect((await wires(page)).map((w:any)=>w.id)).toEqual(['b']);
  await page.keyboard.press('Control+z');expect(await wires(page)).toEqual(original);await page.keyboard.press('Control+Shift+z');expect((await wires(page)).map((w:any)=>w.id)).toEqual(['b']);
 });
