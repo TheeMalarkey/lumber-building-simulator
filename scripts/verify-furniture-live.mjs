@@ -17,7 +17,7 @@ try {
     buffer:Buffer.from(JSON.stringify({version:1,name:'Store furniture',pieces:fixture,plots:[12]}))});
   await page.locator('#confirm-action').click();if(await page.locator('#project-menu').isVisible()) await page.locator('#menu-tool').click();
   await page.locator('#build-tool').click();await page.locator('[data-category="Store furniture"]').click();
-  await expect(page.locator('#catalog-total')).toHaveText('102');
+  await expect(page.locator('#results-count')).toHaveText('9 items');
   await expect(page.locator('.catalog-card')).toHaveCount(9);
   await expect(page.locator('.card-name')).toHaveText(['Armchair','Loveseat','Couch','Single Bed','Twin Bed','Toilet','Refrigerator','Stove','Dishwasher']);
   await page.locator('[data-item="armchair"]').click();await expect(page.locator('#wood-picker')).toBeHidden();

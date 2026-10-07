@@ -19,7 +19,7 @@ try{
   {id:'light',item:'worklight',wood:'oak',position:[6,1.5,0],rotation:[0,0,0],lightOn:false}];
  await page.locator('#menu-tool').click();await page.locator('#file-input').setInputFiles({name:'logic-check.timber',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,name:'Logic check',plots:[12],pieces:fixture}))});await page.locator('#confirm-action').click();
  if(await page.locator('#project-menu').isVisible())await page.locator('#menu-tool').click();
- await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#catalog-total')).toHaveText('102');await expect(page.locator('.catalog-card')).toHaveCount(12);
+ await page.locator('#build-tool').click();await page.locator('[data-category="Logic"]').click();await expect(page.locator('#results-count')).toHaveText('12 items');await expect(page.locator('.catalog-card')).toHaveCount(12);
  for(const [id,size] of [['signal-delay','2 × 2 × 2'],['signal-sustain','2 × 2 × 2'],['signal-inverter','2 × 1 × 1']])await expect(page.locator(`[data-item="${id}"] .card-size`)).toHaveText(size);
  await page.locator('#select-tool').click();
  const rect=await page.locator('#viewport>canvas').boundingBox(),camera=new PerspectiveCamera(45,rect.width/rect.height,.1,4000);camera.position.set(40,30,44);camera.lookAt(0,4,0);camera.updateMatrixWorld();

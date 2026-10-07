@@ -65,10 +65,9 @@ export function shell() {
 <div class="menu-stats"><span id="mode-label">Select mode</span><span id="draw-calls">— draw calls</span><span id="scene-label">Creative workspace</span></div>
 </aside>
 <aside id="build-panel" class="catalog-panel hud-panel" aria-label="Blueprint library" hidden>
-<div class="catalog-heading"><h1>Build catalog <span id="catalog-total">${catalogTotal}</span></h1>${button("collapse","close","Close blueprint library")}</div>
-<label class="search">${icon("search")}<input id="search" placeholder="Find a building piece…" autocomplete="off" aria-label="Search building pieces"><kbd>/</kbd></label>
+<div class="catalog-heading"><label class="search">${icon("search")}<input id="search" placeholder="Search items…" autocomplete="off" aria-label="Search building pieces"></label><span id="results-count" role="status">${catalogTotal} items</span>${button("collapse","close","Close blueprint library")}</div>
 <nav id="categories" aria-label="Blueprint categories">${CATEGORIES.map((c,i)=>`<button data-category="${c}" class="category ${i===0?"active":""}">${c==="All pieces"?"All":c}</button>`).join("")}</nav>
-<div class="library-caption"><span id="results-count">${catalogTotal} items</span><span>SELECT TO BUILD</span></div><div id="catalog" class="catalog-grid"></div>
+<div id="catalog" class="catalog-grid"></div>
 </aside>
 <aside id="edit-panel" class="inspector hud-panel" aria-label="Blueprint controls" hidden>
 <div class="piece-summary"><img id="piece-preview" alt="Selected blueprint preview"><div class="piece-caption"><span id="piece-category"></span><h3 id="piece-name"></h3><span id="piece-size"></span></div><div class="wood-picker" id="wood-picker"><button id="wood-toggle" class="icon-btn" aria-label="Wood finish: Oak" title="Wood finish: Oak" aria-expanded="false" aria-controls="woods">${icon("palette")}</button></div>${button("close-edit","close","Cancel or deselect (Escape)")}</div>

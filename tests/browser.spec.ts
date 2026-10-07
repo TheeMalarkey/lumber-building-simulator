@@ -462,7 +462,7 @@ test("catalog cards stay readable and every category is reachable", async ({
   await page.getByRole("button", { name: "Floors", exact: true }).click();
   await expect(page.locator(".catalog-card")).toHaveCount(8);
   await page.getByRole("button", { name: "All", exact: true }).click();
-  await page.getByPlaceholder("Find a building piece…").fill("sink");
+  await page.getByRole("textbox", { name: "Search building pieces" }).fill("sink");
   await expect(page.locator(".catalog-card")).toHaveCount(1);
 });
 test("place rotate recolor move delete undo and export preserve a real build", async ({
