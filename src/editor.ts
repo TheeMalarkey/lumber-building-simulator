@@ -157,6 +157,7 @@ export class Editor {
     if(await this.replace({version:1,name:DEMO_NAME,plots:[12],pieces,wires:createDemoWires(pieces),logicModelVersion:3}))this.exampleView();
   }
   get project(): Project {
+    this.view.transport.flush();
     const pieces=[...this.world.pieces.values()];
     return {
       version: 1,
@@ -276,7 +277,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
-    if(placing)this.view.transport.stop();
+    if(placing)this.view.transport.endGrab();
     if(this.logicTools?.wiring)this.logicTools.toggle(false);
     this.paths.cancel();
     this.held = false;
@@ -630,11 +631,12 @@ export class Editor {
       return;
     }
     this.saving = true;
-    const revision = this.world.revision;
     const gen = this.generation;
     $("save-state").textContent = "Saving…";
     try {
-      await saveProject(this.project);
+      const project = this.project;
+      const revision = this.world.revision;
+      await saveProject(project);
       if (gen === this.generation && revision === this.world.revision) {
         this.dirty = false;
         this.savedRevision = revision;
@@ -725,7 +727,7 @@ export class Editor {
     this.setMode(false);
     const modal = this.prepareDialog();
     $("modal-content").innerHTML =
-      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Open catalog</span><span><kbd>/</kbd></span><span>Search blueprints</span><span>Click the search bar</span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Zoom</span><span>Mouse wheel</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run</span><span>Left drag · X / Y / Z</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>The Build catalog includes 100 building items and Wire / Neon Wire tools. Choose a wire in Build or use a circuit socket shortcut; click surfaces for bends, Enter or a second click on the final point finishes a wire, Backspace removes a bend, and Escape cancels. Neon colors use the right-side palette; the route midpoint shows its length and limit. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
+      `<h2>Room for your imagination.</h2><p>Choose a blueprint, then click in the world to place it. Everything in the starter workshop is editable.</p><div class="control-list"><span>Blueprint library</span><span><kbd>B</kbd> or Build button</span><span>Open catalog</span><span><kbd>/</kbd></span><span>Search blueprints</span><span>Click the search bar</span><span>Walk / free camera</span><span><kbd>C</kbd> or Walk camera button</span><span>Move</span><span><kbd>W A S D</kbd></span><span>Walk: jump / run</span><span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Look around</span><span>Hold <kbd>RMB</kbd></span><span>Up / down · faster</span><span><kbd>E Q</kbd> · <kbd>Shift</kbd></span><span>Pan free camera</span><span>Shift + right drag</span><span>Camera movement speed</span><span>Settings · 1–5</span><span>Zoom</span><span>Mouse wheel</span><span>Grab loose wood</span><span>Hold left mouse · wheel adjusts distance</span><span>Rotate / tilt</span><span><kbd>R</kbd> / <kbd>T</kbd></span><span>Select / move</span><span><kbd>V</kbd> / <kbd>G</kbd></span><span>Add / remove a selection</span><span><kbd>Ctrl</kbd> + click</span><span>Select a group (Select mode)</span><span><kbd>Ctrl</kbd> + left drag</span><span>Build a straight run</span><span>Left drag · X / Y / Z</span><span>Move selection on an axis</span><span>Drag X / Y / Z arrows</span><span>Hold / release placement</span><span><kbd>L</kbd> · arrows adjust preview</span><span>Pick up a placed piece</span><span>Double-click</span><span>Duplicate / delete</span><span><kbd>Ctrl D</kbd> / <kbd>Del</kbd></span><span>Undo / redo</span><span><kbd>Ctrl Z</kbd> / <kbd>Ctrl Shift Z</kbd></span><span>Focus / cancel</span><span><kbd>F</kbd> / <kbd>Esc</kbd></span></div><p>The Build catalog includes 100 building items and Wire / Neon Wire tools. Choose a wire in Build or use a circuit socket shortcut; click surfaces for bends, Enter or a second click on the final point finishes a wire, Backspace removes a bend, and Escape cancels. Neon colors use the right-side palette; the route midpoint shows its length and limit. Hover an orange lever handle or button cap and press E to operate it; the orange button also accepts a click. Select a component for its controls or timer settings. Walk onto pressure plates to activate them. Wood blueprint names and dimensions follow the <a href="https://lumber-tycoon-2.fandom.com/wiki/Blueprints" target="_blank" rel="noreferrer">LT2 community reference</a>. Model details, finishes, and snapping are reconstructed and have not been verified against a live LT2 client. An independent fan building tool.</p><p>Build on up to 25 connected plots, each 40 × 40 studs. There is no piece-count cap. Available memory and browser storage determine practical capacity. Export important projects as backups.</p><div class="dialog-actions"><button class="confirm" id="close-modal">Let’s build</button></div>`;
     $("close-modal").onclick = () => modal.close();
     modal.showModal();
   }

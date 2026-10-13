@@ -367,8 +367,9 @@ export class Viewport {
       this.raycaster.ray.direction.toArray() as Vec3,
       this.renderDistance,
     );
-    let best: T.Intersection | null = null;
-    let id: string | undefined;
+    const loose=this.transport.simulation.running?this.transport.pick(this.raycaster,exclude):null;
+    let best: T.Intersection | null = loose?.hit??null;
+    let id: string | undefined=loose?.id;
     let surface: number | undefined;
     for (const candidate of candidates) {
       if (best && candidate.distance > best.distance) break;
@@ -513,7 +514,6 @@ export class Viewport {
     if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
     this.transport.update(ms/1000,this.logic.circuit);
-    if(this.camera.walking&&this.transport.simulation.running)this.transport.stop();
     for(const group of this.loaded.values())for(const mesh of group.children)if(mesh.name.startsWith('loose-plank|'))mesh.visible=!this.transport.simulation.running;
     this.updateDoorMatrices(doorChanges);
     this.logic.updateTimers(this.loaded);

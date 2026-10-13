@@ -73,6 +73,7 @@ function keys(p: Piece) {
 }
 export class World {
   pieces = new Map<string, Piece>();
+  looseIds=new Set<string>();
   wires: Wire[]=[];
   logicIds=new Set<string>();
   doorIds=new Set<string>();
@@ -107,7 +108,7 @@ export class World {
   get canRedo() {
     return this.future.length > 0;
   }
-  private put(p: Piece | null, id: string) {
+  private put(p: Piece | null, id: string, renderDirty=true) {
     const old = this.pieces.get(id);
     if((old&&this.logicIds.has(id)||p&&portsFor(p.item).length)&&
        (!p||!old||p.item!==old.item||p.position.some((v,i)=>v!==old.position[i])||p.rotation.some((v,i)=>v!==old.rotation[i])))this.wireIndex=undefined;
@@ -117,13 +118,14 @@ export class World {
       this.lightChunks.get(k)?.delete(id);
       if (!this.lightChunks.get(k)?.size) this.lightChunks.delete(k);
       if (!this.chunks.get(k)?.size) this.chunks.delete(k);
-      this.dirty.add(k);
+      if(renderDirty)this.dirty.add(k);
       for (const key of keys(old)) {
         this.spatial.get(key)?.delete(id);
         if (!this.spatial.get(key)?.size) this.spatial.delete(key);
       }
     }
     this.pieces.delete(id);
+    this.looseIds.delete(id);
     this.logicIds.delete(id);
     this.doorIds.delete(id);
     if(!p)this.lightStates.delete(id);
@@ -132,6 +134,7 @@ export class World {
       const copy = structuredClone(p);
       if(old&&old.item===copy.item&&isDoor(copy.item)&&old.position.every((v,i)=>v===copy.position[i])&&old.rotation.every((v,i)=>v===copy.rotation[i]))setDoorProgress(copy,doorProgress(old));
       this.pieces.set(id, copy);
+      if(copy.item==='loose-plank')this.looseIds.add(id);
       if(portsFor(copy.item).length)this.logicIds.add(id);
       if(isDoor(copy.item))this.doorIds.add(id);
       this.bounds.set(id, isDoor(copy.item)?doorSearchBounds(copy):pieceBounds(copy));
@@ -142,12 +145,21 @@ export class World {
         if(!this.lightChunks.has(k)) this.lightChunks.set(k,new Set());
         this.lightChunks.get(k)!.add(id);
       }
-      this.dirty.add(k);
+      if(renderDirty)this.dirty.add(k);
       for (const key of keys(copy)) {
         if (!this.spatial.has(key)) this.spatial.set(key, new Set());
         this.spatial.get(key)!.add(id);
       }
     }
+  }
+  /** Physics poses update spatial queries and saves without filling undo history. */
+  updateLoosePoses(poses:Piece[]){
+    let changed=false;
+    for(const p of poses){const old=this.pieces.get(p.id);if(old?.item!=='loose-plank')continue;
+      if(old.position.every((v,i)=>Math.abs(v-p.position[i])<1e-5)&&old.rotation.every((v,i)=>Math.abs(v-p.rotation[i])<1e-5))continue;
+      this.put({...old,position:p.position,rotation:p.rotation},p.id,false);changed=true;
+    }
+    if(changed){this.revision++;this.onChange();}
   }
   private apply(changes: HistoryEntry, reverse = false) {
     if (!Array.isArray(changes) && "changes" in changes) {
@@ -255,6 +267,7 @@ export class World {
     const nextPlots = plots === null ? null : validatePlots(plots);
     for (const key of this.chunks.keys()) this.dirty.add(key);
     this.pieces.clear();
+    this.looseIds.clear();
     this.logicIds.clear();this.doorIds.clear();this.lightStates.clear();this.wires=nextWires;
     this.chunks.clear();
     this.lightChunks.clear();

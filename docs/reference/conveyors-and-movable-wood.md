@@ -116,3 +116,11 @@ Further user feedback called for taller upper and lower gray rail sections and l
 The model's bottom remains at the original saved local Y of -0.5. Placement, collision and land bounds use its real raised geometry, preserving existing support contact while including the new height. Existing conveyors keep their saved positions and rotations, but layouts built for the old incorrect travel axis may need rearranging.
 
 Local comparison screenshots use the actual unboxed reference beside the rebuilt mesh, plus top, side, underside and in-scene views. Downloaded reference images and review screenshots remain outside the published application. Rendering comparisons support the silhouette correction; they do not prove exact materials or LT2 physics constants.
+
+## Live loose wood
+
+Loose Plank now runs continuously in Free and Walk cameras. Holding left mouse in Select mode attaches a physical constraint at the clicked point; mouse movement pulls it without grid snapping, the wheel adjusts distance, and releasing drops it with its current momentum. Gravity, rotation, plank stacking, detailed blueprint collision and conveyor contact remain active. Ctrl-click retains editor selection. Each grab produces one undo step, while ordinary simulation snapshots do not add history entries.
+
+Wood positions and rotations synchronize into project records, and saving or exporting captures the current pose. Loose wood may rest outside active land; construction pieces still require active plots. Building or changing camera no longer resets wood. Pause freezes simulation and Reset restores the wood's positions at load or initial placement before pausing. This remains a fixed-size plank implementation; raw logs, sawmill sizing, player pushing and measured LT2 mass/friction/grab constants are not implemented.
+
+The simulation uses a 120 Hz fixed step, sleeping bodies, nearby static collision and shared instanced meshes. Pose updates avoid rebuilding static render chunks. These are simulator engineering choices, not claims about LT2's internal engine.

@@ -77,9 +77,9 @@ export function parseProject(text: string): Project {
     const offset=new Vector3(0,(ITEMS.get(p.item)!.size[1]-oldHeight)/2,0).applyEuler(quaternionRotation(p.rotation));
     return {...p,position:new Vector3(...p.position).add(offset).toArray() as Piece['position']};
   });
-  const plots = v.plots === undefined ? inferPlots(pieces.map(pieceBounds)) : validatePlots(v.plots);
+  const plots = v.plots === undefined ? inferPlots(pieces.filter(p=>p.item!=='loose-plank').map(pieceBounds)) : validatePlots(v.plots);
   const retainedLegacy=new Set<string>();
-  for(const p of pieces)if(!coveredByPlots(pieceBounds(p),plots)){
+  for(const p of pieces)if(p.item!=='loose-plank'&&!coveredByPlots(pieceBounds(p),plots)){
     if(p.item==='lever'&&(v.logicModelVersion===undefined||p.legacyLeverBounds===true)&&coveredByPlots(originalLeverBounds(p),plots))retainedLegacy.add(p.id);
     else throw new Error("Blueprints must stay inside the project's active plots.");
   }

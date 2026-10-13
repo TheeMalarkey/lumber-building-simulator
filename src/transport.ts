@@ -1,5 +1,5 @@
 import * as C from 'cannon-es';
-import {Vector3,Quaternion} from 'three';
+import {Vector3,Quaternion,Euler} from 'three';
 import {ITEMS,type Vec3} from './catalog';
 import {pieceBounds,type World,type Piece} from './world';
 import type {Circuit} from './logic';
@@ -32,6 +32,10 @@ export class Transport {
  private conveyors=new Map<number,Piece>();
  private rollerMaterial=new C.Material({friction:0,restitution:0});
  private accumulator=0;
+ private woodSources=new Map<string,Piece>();
+ private groundBodies:C.Body[]=[];private plotSignature='';private revision=-1;
+ private grip:{id:string;body:C.Body;cursor:C.Body;constraint:C.PointToPointConstraint;target:C.Vec3}|null=null;
+ get grabbedId(){return this.grip?.id??null;}
  constructor(private source:World){
   this.physics.broadphase=new C.SAPBroadphase(this.physics);
   (this.physics.solver as C.GSSolver).iterations=12;
@@ -40,16 +44,48 @@ export class Transport {
  }
  start(){
   this.stop();this.running=true;
-  const ground=new C.Body({mass:0,shape:new C.Plane()});ground.position.y=this.source.plots===null?0:-.1;ground.quaternion.setFromEuler(-Math.PI/2,0,0);this.physics.addBody(ground);
-  for(const id of this.source.plots??[]){const [x,z]=plotCenter(id),b=new C.Body({mass:0,shape:new C.Box(new C.Vec3(20,.05,20)),position:new C.Vec3(x,-.05,z)});this.physics.addBody(b);}
-  for(const p of this.source.pieces.values())if(p.item==='loose-plank'){
-   const [x,y,z]=ITEMS.get(p.item)!.size,q=new Quaternion().setFromEuler(quaternionRotation(p.rotation));
-   const body=new C.Body({mass:x*y*z,shape:new C.Box(new C.Vec3(x/2,y/2,z/2)),position:new C.Vec3(...p.position),quaternion:new C.Quaternion(q.x,q.y,q.z,q.w),sleepSpeedLimit:.08,sleepTimeLimit:1});
-   body.material=new C.Material({friction:.6,restitution:0});body.linearDamping=.04;body.angularDamping=.15;this.bodies.set(p.id,body);this.physics.addBody(body);
-  }
-  this.syncStatic();
+  this.syncSource();this.syncStatic();
  }
- stop(){this.running=false;for(const b of [...this.physics.bodies])this.physics.removeBody(b);this.bodies.clear();this.fixed.clear();this.conveyors.clear();this.accumulator=0;}
+ syncSource(){
+  if(!this.running||this.revision===this.source.revision)return;
+  this.revision=this.source.revision;
+  const plots=JSON.stringify(this.source.plots);
+  if(plots!==this.plotSignature){
+   this.plotSignature=plots;for(const b of this.groundBodies)this.physics.removeBody(b);this.groundBodies=[];
+   const ground=new C.Body({mass:0,shape:new C.Plane()});ground.position.y=this.source.plots===null?0:-.1;ground.quaternion.setFromEuler(-Math.PI/2,0,0);this.groundBodies.push(ground);
+   for(const id of this.source.plots??[]){const [x,z]=plotCenter(id);this.groundBodies.push(new C.Body({mass:0,shape:new C.Box(new C.Vec3(20,.05,20)),position:new C.Vec3(x,-.05,z)}));}
+   for(const b of this.groundBodies)this.physics.addBody(b);for(const b of this.bodies.values())b.wakeUp();
+  }
+  for(const [id,b] of this.bodies)if(!this.source.looseIds.has(id)){if(this.grabbedId===id)this.releaseGrab();this.physics.removeBody(b);this.bodies.delete(id);this.woodSources.delete(id);}
+  for(const id of this.source.looseIds){const p=this.source.pieces.get(id)!,previous=this.woodSources.get(id);let body=this.bodies.get(id);
+   if(previous===p)continue;
+   const [x,y,z]=ITEMS.get(p.item)!.size,q=new Quaternion().setFromEuler(quaternionRotation(p.rotation));
+   if(!body){
+    body=new C.Body({mass:x*y*z,shape:new C.Box(new C.Vec3(x/2,y/2,z/2)),position:new C.Vec3(...p.position),quaternion:new C.Quaternion(q.x,q.y,q.z,q.w),sleepSpeedLimit:.08,sleepTimeLimit:1});
+    body.material=new C.Material({friction:.6,restitution:0});body.linearDamping=.04;body.angularDamping=.15;this.bodies.set(p.id,body);this.physics.addBody(body);
+   }else if(previous&&(!previous.position.every((v,i)=>v===p.position[i])||!previous.rotation.every((v,i)=>v===p.rotation[i]))){
+    if(this.grabbedId===id)this.releaseGrab();body.position.set(...p.position);body.quaternion.set(q.x,q.y,q.z,q.w);body.velocity.setZero();body.angularVelocity.setZero();body.force.setZero();body.torque.setZero();body.aabbNeedsUpdate=true;body.wakeUp();
+   }
+   this.woodSources.set(id,p);
+  }
+ }
+ acceptPoses(){for(const id of this.bodies.keys()){const p=this.source.pieces.get(id);if(p)this.woodSources.set(id,p);}this.revision=this.source.revision;}
+ poses():Piece[]{
+  const result:Piece[]=[];
+  for(const [id,b] of this.bodies){const p=this.source.pieces.get(id);if(!p)continue;
+   const q=b.quaternion,e=new Euler().setFromQuaternion(new Quaternion(q.x,q.y,q.z,q.w),'YXZ');
+   result.push({...p,position:[b.position.x,b.position.y,b.position.z],rotation:[e.x,e.y,e.z].map(v=>((v/(Math.PI/2)%4)+4)%4) as Vec3});
+  }return result;
+ }
+ grab(id:string,point:Vec3){
+  this.syncSource();const body=this.bodies.get(id);if(!body)return false;this.releaseGrab();
+  const cursor=new C.Body({mass:0,type:C.Body.KINEMATIC,position:new C.Vec3(...point),collisionFilterGroup:0,collisionFilterMask:0}),pivot=body.pointToLocalFrame(new C.Vec3(...point));
+  const constraint=new C.PointToPointConstraint(body,pivot,cursor,new C.Vec3(),body.mass*180);constraint.collideConnected=false;
+  this.physics.addBody(cursor);this.physics.addConstraint(constraint);body.allowSleep=false;body.wakeUp();this.grip={id,body,cursor,constraint,target:new C.Vec3(...point)};return true;
+ }
+ moveGrab(point:Vec3){if(this.grip&&point.every(Number.isFinite))this.grip.target.set(...point);}
+ releaseGrab(){if(!this.grip)return;const {body,cursor,constraint}=this.grip;this.grip=null;this.physics.removeConstraint(constraint);this.physics.removeBody(cursor);body.allowSleep=true;body.wakeUp();}
+ stop(){this.releaseGrab();this.running=false;for(const b of [...this.physics.bodies])this.physics.removeBody(b);this.bodies.clear();this.woodSources.clear();this.groundBodies=[];this.plotSignature='';this.revision=-1;this.fixed.clear();this.conveyors.clear();this.accumulator=0;}
  private syncStatic(){
   // Load only model components near wood. Spatial queries include long pieces.
   const wanted=new Map<string,Piece>();
@@ -66,8 +102,11 @@ export class Transport {
  }
  step(dt:number,circuit:Circuit){
   if(!this.running)return;
-  this.accumulator+=Math.min(.1,Math.max(0,dt));this.syncStatic();
+  this.syncSource();this.accumulator+=Math.min(.1,Math.max(0,dt));this.syncStatic();
   while(this.accumulator>=STEP){
+   if(this.grip){const {target,cursor,body}=this.grip,delta=target.vsub(cursor.position),length=delta.length();if(length>30*STEP)delta.scale(30*STEP/length,delta);cursor.position.vadd(delta,cursor.position);body.wakeUp();}
+   // Bound travel per substep below half the thinnest plank dimension.
+   for(const b of this.bodies.values()){const speed=b.velocity.length();if(speed>48)b.velocity.scale(48/speed,b.velocity);}
    this.physics.step(STEP);
    const contacts=new Map<C.Body,{direction:C.Vec3;point:C.Vec3;count:number}>();
    for(const c of this.physics.contacts){

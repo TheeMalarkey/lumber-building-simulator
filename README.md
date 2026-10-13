@@ -1,6 +1,6 @@
 # Timber Studio
 
-A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 101 placeable items: 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures, 12 logic components and an upward-opening Hatch. Basic, Half, Fat and Glass Doors open manually or from wires. Delay and Sustain faces show travelling signal bands and draining power meters reconstructed from in-game footage. Build wired circuits, use 20 wood finishes, explore with free and walking cameras, and save editable local projects.
+A desktop 3D building sandbox inspired by Lumber Tycoon 2. It includes 103 placeable items: 69 wood blueprints, five glass pieces, nine store furnishings, five working light fixtures, 12 logic components, an upward-opening Hatch, Straight Conveyor and Loose Plank. Basic, Half, Fat and Glass Doors open manually or from wires. Delay and Sustain faces show travelling signal bands and draining power meters reconstructed from in-game footage. Build wired circuits, use 20 wood finishes, explore with free and walking cameras, and save editable local projects.
 
 **[Open Timber Studio in your browser](https://theemalarkey.github.io/lumber-building-simulator/)** — no installation required.
 
@@ -18,6 +18,8 @@ Open http://127.0.0.1:5178. For a production build, run `npm run build`, then `n
 The portable ZIP contains the compiled site and a small Node server. Extract it, double-click **Start Studio.cmd**, and keep its console open. It does not need npm packages. Your browser will open the editor. Node.js must be installed.
 
 ## Build
+
+**Build → Transport → Loose Plank** creates independent physical wood. In Select mode, hold **left mouse** on a plank to pull it freely without grid snapping; scroll while holding to move it closer or farther away, then release to drop it. This works in Free and Walk cameras. Gravity, collisions and conveyor contact remain active during dragging. **Escape**, lost focus or cancelled pointer input releases the wood. **Ctrl-click** still selects it for copying or deletion. Each drag is undoable, and current positions and rotations are saved, including loose wood carried onto grass outside active plots. **Pause wood** pauses simulation; **Reset** restores positions from loading/placement and pauses. Exact LT2 physics constants are not yet calibrated.
 
 **Build → Store furniture** contains Armchair, Loveseat, Couch, Single Bed, Twin Bed, Toilet, Refrigerator, Stove and Dishwasher. They have fixed original-style finishes, detailed collision shapes, and the usual move/copy/rotate/tilt/save tools. Designs follow inspected game references; dimensions and fine details are estimates documented in [the furniture reference](docs/reference/store-furniture.md). Appliance doors are currently closed and static; sitting interactions are not implemented.
 
@@ -80,9 +82,9 @@ Names and outer dimensions follow the [community blueprint table](https://lumber
 
 Wood grain, granite, ice, and foil use original pre-2022 maps published in [Roblox's material reference](https://create.roblox.com/docs/parts/materials), bundled locally. Texture scale is consistent across pieces and the catalog previews use the same materials. Lighting and roughness remain approximations; sources and texture budgets are in `docs/reference/wood-materials.md`.
 
-Walk mode is a local Roblox-style reconstruction with an animated R6-proportioned avatar and a 70-degree follow camera. The body uses 2×2×1-stud torso and 1×2×1-stud limbs, with the classic head mesh and corrected shoulder/eye heights. Sources and dimensions are in `docs/reference/walk-avatar.md`. Movement uses 16 studs/second walking, 24 running, and a 50-stud/second jump impulse. Walking and follow-camera collision use the rendered component shapes: wedge slopes, individual stair treads, table legs and cabinet openings. The player still uses a simple body volume. There is no ladder climbing, multiplayer, or dynamic-object physics.
+Walk mode is a local Roblox-style reconstruction with an animated R6-proportioned avatar and a 70-degree follow camera. The body uses 2×2×1-stud torso and 1×2×1-stud limbs, with the classic head mesh and corrected shoulder/eye heights. Sources and dimensions are in `docs/reference/walk-avatar.md`. Movement uses 16 studs/second walking, 24 running, and a 50-stud/second jump impulse. Walking and follow-camera collision use the rendered component shapes: wedge slopes, individual stair treads, table legs and cabinet openings. The player still uses a simple body volume rather than a rigid body that pushes wood. There is no ladder climbing or multiplayer.
 
-Construction, glass, store furniture, lighting and basic wired logic are available. Machinery, conveyors, active doors, advanced logic boards/displays/sensors, vehicles, harvesting and Roblox save import/export remain outside the current scope. This is an independent fan tool.
+Construction, glass, store furniture, lighting, wired logic, operable doors/hatches, Straight Conveyor and draggable loose planks are available. Other conveyor variants, raw logs, sawmills, advanced logic boards/displays/sensors, vehicles, harvesting and Roblox save import/export remain outside the current scope. This is an independent fan tool.
 
 ## Performance
 
