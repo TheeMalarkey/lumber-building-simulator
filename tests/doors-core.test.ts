@@ -42,6 +42,12 @@ describe('hinged structures',()=>{
   const circuit=new Circuit(),motion=new DoorMotion(world);step(world,motion,circuit);expect(doorProgress(world.pieces.get('h')!)).toBe(1);
   const lever=world.pieces.get('lever')!;world.execute([{before:lever,after:{...lever,logicOn:false}}]);step(world,motion,circuit);expect(doorProgress(world.pieces.get('h')!)).toBe(0);
  });
+ it('opens a door flush beside its hinge-side wall',()=>{
+  const world=new World();world.load([{id:'door',item:'basic-door',wood:'oak',position:[0,4,0],rotation:[0,0,0],doorOpen:true},{id:'jamb',item:'smooth-wall',wood:'oak',position:[4,4,0],rotation:[0,0,0]}],[12]);
+  const motion=new DoorMotion(world);step(world,motion,new Circuit());
+  expect(motion.blocked.has('door')).toBe(false);
+  expect(doorProgress(world.pieces.get('door')!)).toBe(1);
+ });
  it('moves door collision out of the opening for a walking character',()=>{
   const world=new World();world.load([{id:'door',item:'basic-door',wood:'oak',position:[0,4,0],rotation:[0,0,0]}],[12]);
   const walker=new WalkPhysics(world),position=new Vector3(0,0,0);expect(walker.canOccupy(position)).toBe(false);

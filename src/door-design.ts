@@ -9,9 +9,10 @@ const poses=new WeakMap<Piece,number>();
 // begin closed, then the motion controller opens through the same safe sweep.
 export const doorProgress=(p:Piece)=>poses.get(p)??0;
 export const setDoorProgress=(p:Piece,value:number)=>poses.set(p,Math.max(0,Math.min(1,value)));
-/** Positive local X rotation lifts the hatch panel above its stationary bar. */
+/** Door hinges sit on the leaf face so its thickness clears a flush jamb.
+ * Positive local X rotation lifts the hatch panel above its stationary bar. */
 export function doorTransform(item:string,progress:number){
- const hatch=item==='hatch',pivot=hatch?new Vector3(0,-.4,1.5):new Vector3(ITEMS.get(item)!.size[0]/2,0,0);
+ const hatch=item==='hatch',pivot=hatch?new Vector3(0,-.4,1.5):new Vector3(ITEMS.get(item)!.size[0]/2,0,item==='glass-door'?.1:.25);
  const rotation=hatch?new Matrix4().makeRotationX(progress*Math.PI/2):new Matrix4().makeRotationY(progress*Math.PI/2);
  return new Matrix4().makeTranslation(...pivot.toArray()).multiply(rotation).multiply(new Matrix4().makeTranslation(-pivot.x,-pivot.y,-pivot.z));
 }
