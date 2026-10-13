@@ -268,7 +268,7 @@ export class LogicTools {
   const p=this.e.selectedPieces[0];if(!p||$('logic-controls').hidden)return;
   if(p.item==='straight-conveyor'){
    const wired=circuit.connected(p.id);($('logic-action') as HTMLButtonElement).disabled=wired;
-   $('logic-status').textContent=(wired?'Wire control · ':'')+((wired?circuit.input(p.id):p.logicOn)?'Reverse':'Forward')+' · estimated scale / speed';return;
+   $('logic-status').textContent=(wired?'Wire control · ':'')+((wired?circuit.input(p.id):p.logicOn)?'Reverse':'Forward');return;
   }
   if(isDoor(p.item)){
    const wired=circuit.connected(p.id),button=$('logic-action') as HTMLButtonElement;button.disabled=wired;button.textContent=p.doorOpen?'Close':'Open';

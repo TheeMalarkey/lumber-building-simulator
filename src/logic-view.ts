@@ -59,6 +59,10 @@ export class LogicView {
   for(const id of this.world.logicIds){const p=this.world.pieces.get(id)!;if(ITEMS.get(p.item)!.fixedMaterial==='logic'){
     const visual=logicAppearance(p.item,this.circuit.output(id),p.timing??1),state=String(visual.active)+'|'+visual.timing;if(this.displays.get(id)!==state){this.displays.set(id,state);this.world.dirty.add(chunkKey(p.position));}continue;
    }
+   if(p.item==='straight-conveyor'){
+    const state=String(this.circuit.connected(id)?this.circuit.input(id):!!p.logicOn);
+    if(this.displays.get(id)!==state){this.displays.set(id,state);this.world.dirty.add(chunkKey(p.position));}continue;
+   }
    if(ITEMS.get(p.item)!.fixedMaterial!=='lighting')continue;
    const before=this.world.lightEnabled(p),connected=this.circuit.connected(id),after=connected?this.circuit.input(id):p.lightOn!==false;
    if(connected)this.world.lightStates.set(id,after);else this.world.lightStates.delete(id);

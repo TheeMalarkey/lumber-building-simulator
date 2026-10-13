@@ -104,7 +104,7 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
   };
   switch (item.shape) {
     case "hatch": parts.push(...hatchParts());break;
-    case "conveyor": parts.push(...conveyorParts());break;
+    case "conveyor": parts.push(...conveyorParts(logicState?.active));break;
     case "logic":
       parts.push(...logicParts(item,logicState));break;
     case "light-fixture":

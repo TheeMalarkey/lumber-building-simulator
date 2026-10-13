@@ -30,6 +30,7 @@ export class Transport {
  physics=new C.World({gravity:new C.Vec3(0,-35,0),allowSleep:true});
  private fixed=new Map<string,{body:C.Body;piece:Piece;pose:number}>();
  private conveyors=new Map<number,Piece>();
+ private rollerMaterial=new C.Material({friction:0,restitution:0});
  private accumulator=0;
  constructor(private source:World){
   this.physics.broadphase=new C.SAPBroadphase(this.physics);
@@ -59,7 +60,7 @@ export class Transport {
   for(const [id,{body,piece,pose}] of this.fixed)if(!wanted.has(id)||wanted.get(id)!==piece||(isDoor(piece.item)&&doorProgress(piece)!==pose)){this.physics.removeBody(body);this.conveyors.delete(body.id);this.fixed.delete(id);for(const wood of this.bodies.values())wood.wakeUp();}
   for(const [id,p] of wanted)if(!this.fixed.has(id)){
    const b=new C.Body({mass:0,position:new C.Vec3(...p.position)});
-   placementSolids(p).forEach((s,i)=>{const {shape,center}=convex(s);if(p.item==='straight-conveyor'&&i>=4&&i<12)shape.material=new C.Material({friction:0,restitution:0});b.addShape(shape,new C.Vec3(center.x-p.position[0],center.y-p.position[1],center.z-p.position[2]));});
+   placementSolids(p).forEach((s,i)=>{const {shape,center}=convex(s);if(p.item==='straight-conveyor'&&i>=4&&i<12)shape.material=this.rollerMaterial;b.addShape(shape,new C.Vec3(center.x-p.position[0],center.y-p.position[1],center.z-p.position[2]));});
    this.physics.addBody(b);this.fixed.set(id,{body:b,piece:p,pose:isDoor(p.item)?doorProgress(p):0});if(p.item==='straight-conveyor')this.conveyors.set(b.id,p);
   }
  }
@@ -73,12 +74,11 @@ export class Transport {
     const p=this.conveyors.get(c.bi.id)??this.conveyors.get(c.bj.id);if(!p)continue;
     const belt=this.conveyors.has(c.bi.id)?c.bi:c.bj,wood=belt===c.bi?c.bj:c.bi;if(wood.mass===0)continue;
     const offset=belt===c.bi?c.ri:c.rj,point=belt.position.vadd(offset),q=new Quaternion().setFromEuler(quaternionRotation(p.rotation));
-    const local=new Vector3(point.x-p.position[0],point.y-p.position[1],point.z-p.position[2]).applyQuaternion(q.clone().invert());
     const normal=new Vector3(c.ni.x,c.ni.y,c.ni.z).multiplyScalar(belt===c.bi?1:-1).applyQuaternion(q.clone().invert());
     // Only roller contact drives wood: no invisible belt volume or side pull.
-    if(Math.abs(local.x)>1.8||Math.abs(normal.y)<.55)continue;
+    if((belt===c.bi?c.si:c.sj).material!==this.rollerMaterial||Math.abs(normal.y)<.55)continue;
     const reverse=circuit.connected(p.id)?circuit.input(p.id):!!p.logicOn;
-    const dir=new Vector3(0,0,(reverse?-1:1)*Math.sign(normal.y)).applyQuaternion(q),entry=contacts.get(wood);
+    const dir=new Vector3((reverse?-1:1)*Math.sign(normal.y),0,0).applyQuaternion(q),entry=contacts.get(wood);
     if(entry){entry.direction.vadd(new C.Vec3(dir.x,dir.y,dir.z),entry.direction);entry.point.vadd(point,entry.point);entry.count++;}
     else contacts.set(wood,{direction:new C.Vec3(dir.x,dir.y,dir.z),point,count:1});
    }

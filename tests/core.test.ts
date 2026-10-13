@@ -227,7 +227,7 @@ describe("collision checks", () => {
           rotation,
           position: [-64, height / 2, -64],
         };
-        if(item.id==='lever'||item.id==='hatch'||item.shape==='door'||item.shape==='glass-door')p.position=snapBlueprintOnSurface([-64,0,-64],[0,1,0],item.id,rotation);
+        if(item.id==='lever'||item.id==='hatch'||item.id==='straight-conveyor'||item.shape==='door'||item.shape==='glass-door')p.position=snapBlueprintOnSurface([-64,0,-64],[0,1,0],item.id,rotation);
         expect(w.canPlace(p), item.id).toBe(true);
         p.position[1] -= 0.0001;
         expect(w.canPlace(p), item.id).toBe(false);

@@ -1,6 +1,6 @@
 # Conveyors and movable wood reference
 
-Research date: 2026-10-12. Scope: the current conveyor family and loose logs/planks. This modeling brief distinguishes visible evidence from measurements still needed. No application code changed.
+Research date: 2026-10-12. Scope: the current conveyor family and loose logs/planks. This modeling brief distinguishes visible evidence from measurements still needed. The first Straight Conveyor implementation and its correction are recorded below.
 
 ## Evidence confidence
 
@@ -34,7 +34,7 @@ All ten images below were directly inspected. They show one perspective/state ea
 
 | Product | Observed details | Source image |
 | --- | --- | --- |
-| Straight | Pale cylindrical rollers; charcoal rails with stepped lower flanges; orange circular control with a short tab; no rubber belt or integral legs. Approximately eight rollers visible, pending a top-view count. | [Straight](https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/32/THUMBstraight.png/revision/latest?cb=20220126205915) |
+| Straight | Eight long pale cylindrical rollers spanning between the short charcoal rails; tall stepped lower blocks and thin raised lips; small centered orange circular control with a short tab; no rubber belt or integral legs. | [Straight](https://static.wikia.nocookie.net/lumber-tycoon-2/images/3/32/THUMBstraight.png/revision/latest?cb=20220126205915) |
 | Tilted | Exposed rollers, taller dark side profiles and tabbed control. Perspective does not establish rise or slope. Do not assume a rotated straight model is sufficient. | [Tilted](https://static.wikia.nocookie.net/lumber-tycoon-2/images/7/76/THUMBvertical.png/revision/latest?cb=20260928001339) |
 | Funnel | Roller bed with side profiles tapering downward toward an open edge. The image does not establish a wider mouth. | [Funnel](https://static.wikia.nocookie.net/lumber-tycoon-2/images/d/de/THUMBfunnel.png/revision/latest?cb=20220126205915) |
 | Tight Turn | Fan of tapered rollers converging at an inner corner; segmented curved outer rail and compact inner post. | [Turn](https://static.wikia.nocookie.net/lumber-tycoon-2/images/6/6e/THUMBturn.png/revision/latest?cb=20220126205915) |
@@ -61,7 +61,9 @@ The [Sawmills reference](https://lumber-tycoon-2.fandom.com/wiki/Category:Sawmil
 
 [Aptyn's auto wood sorter tutorial](https://www.youtube.com/watch?v=hz95SJBruM0), published June 18, 2023, is a useful system reference. The frame around [4:25](https://www.youtube.com/watch?v=hz95SJBruM0&t=265s) was directly inspected: connected roller beds, yellow diverters, detectors and small wood pieces show transport surfaces in use. No speed or dimensions were measured.
 
-Description-provided chapters for further inspection: 5:48 construction; 13:19 potential issues; 15:35 turning; 17:41 wood spacing. These chapters are not claimed as watched. The description recommends ice wood for lower friction; this is not a measured friction coefficient.
+Additional frames directly inspected during the correction: 6:08 construction preview and 9:31, 9:36 and 9:41 showing straight conveyors held or fitted above glass doors. These corroborate the long rollers between short stepped rails. They do not establish exact hardware dimensions or transport speed.
+
+Description-provided chapters for further inspection: 13:19 potential issues; 15:35 turning; 17:41 wood spacing. These chapters are not claimed as watched in full. The description recommends ice wood for lower friction; this is not a measured friction coefficient.
 
 [2016 conveyor switch demonstration](https://www.youtube.com/watch?v=Aii15It2pmE): located but not watched this pass. Use only as supplementary evidence; prefer current footage if details conflict.
 
@@ -69,9 +71,9 @@ Description-provided chapters for further inspection: 5:48 construction; 13:19 p
 
 | Parameter | Required evidence | Current status |
 | --- | --- | --- |
-| Overall width, depth, height | Top/side views with a known-size blueprint in the same plane | Unknown for all variants |
+| Overall width, depth, height | Top/side views with a known-size blueprint in the same plane | Straight footprint: 4 x 8, from the user's flat-wall comparison. Exact rail height remains reconstructed; other variants unknown. |
 | Usable width | Inner rail-to-rail measurement | Unknown |
-| Roller count, radius, spacing | Close top/end views | Straight provisionally eight; other counts unverified |
+| Roller count, radius, spacing | Close top/end views | Eight straight rollers visible; their radius and spacing remain reconstructed; other counts unverified |
 | Crest and rail elevations | Calibrated side view | Unknown |
 | Tilt rise and run | Both endpoints against a grid | Unknown; no assumed angle |
 | Turn radius and angle | Calibrated top view | Fan shape observed; dimensions unknown |
@@ -103,4 +105,14 @@ Reuse existing selection, wiring, controls, copying and undo. Save species, dime
 5. Benchmark empty layouts separately from moving-wood layouts using frame time and simulation cost.
 6. Expand to funnel/tilted, turns, diverters, sweeper and supports after their geometry and transfers are verified.
 
-The visual references support reconstruction work. Exact scale and motion fidelity still require measurements and both-state screenshots.
+The visual references support reconstruction work. Fine hardware scale and motion fidelity still require measurements and both-state screenshots.
+
+## Straight Conveyor correction
+
+The first model put the rollers along the wrong dimension and used a short-roller, long-travel layout. The corrected model keeps a 4 x 8 footprint, with eight long rollers along local Z and transport across local X. The footprint follows the user's clarification that it is the size of a wall laid flat and sideways; it is not claimed as an independently measured online dimension.
+
+Further user feedback called for taller upper and lower gray rail sections and lower blocks extending farther outward. The rebuilt profile uses 0.8-stud lower sections, 0.6-stud upper lips, and a 0.25-stud outward ledge. The 1.4-stud total rail height is a reconstruction, not a verified original measurement. Roller ends terminate inside the rails to prevent coplanar faces flickering through them. The orange control and wire anchor sit together on the raised rail, and the tab changes pose for manual or wired reversal.
+
+The model's bottom remains at the original saved local Y of -0.5. Placement, collision and land bounds use its real raised geometry, preserving existing support contact while including the new height. Existing conveyors keep their saved positions and rotations, but layouts built for the old incorrect travel axis may need rearranging.
+
+Local comparison screenshots use the actual unboxed reference beside the rebuilt mesh, plus top, side, underside and in-scene views. Downloaded reference images and review screenshots remain outside the published application. Rendering comparisons support the silhouette correction; they do not prove exact materials or LT2 physics constants.

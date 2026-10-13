@@ -6,15 +6,16 @@ import {NEON_COLORS,type WireStyle} from './wire-design';
 import {wireEndParts,wirePartBounds,wirePartSolid,type WirePart,type WireFrame} from './wire-shape';
 import {solidsOverlap} from './solid';
 import {isDoor,doorTransform,doorProgress} from './door-design';
+import {CONVEYOR_SOCKET} from './conveyor';
 
 export type Endpoint={piece:string;port:string}|{point:Vec3};
 export interface Wire extends WireStyle {id:string;from:Endpoint;to:Endpoint;points:Vec3[];frame?:WireFrame}
 export interface Port {id:string;label:string;output:boolean;position:Vec3;normal:Vec3}
 export const isLogic=(p:Piece)=>ITEMS.get(p.item)?.fixedMaterial==='logic';
 export const portKey=(id:string,port:string)=>id+':'+port;
-export const logicAppearance=(item:string,active:boolean,timing=1)=>({active:(item==='lever'||item==='button')&&active,timing:item==='signal-delay'||item==='signal-sustain'?timing:1});
+export const logicAppearance=(item:string,active:boolean,timing=1)=>({active:(item==='lever'||item==='button'||item==='straight-conveyor')&&active,timing:item==='signal-delay'||item==='signal-sustain'?timing:1});
 export function portsFor(item:string):Port[]{
- if(item==='straight-conveyor')return [{id:'in',label:'Reverse',output:false,position:[2.2,.02,-2.6],normal:[1,0,0]}];
+ if(item==='straight-conveyor')return [{id:'in',label:'Reverse',output:false,position:[...CONVEYOR_SOCKET],normal:[0,0,1]}];
  const spec=ITEMS.get(item);if(!spec)return [];
  const [w,h,d]=spec.size;
  const port=(id:string,label:string,output:boolean,x:number,y:number,z:number,normal:Vec3):Port=>({id,label,output,position:[x,y,z],normal});

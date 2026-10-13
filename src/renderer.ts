@@ -231,7 +231,7 @@ export class Viewport {
     for (const id of this.world.chunks.get(key) ?? []) {
       const p = this.world.pieces.get(id)!;
       const visual=logicAppearance(p.item,this.logic.circuit.output(p.id),p.timing??1);
-      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(this.world.lightEnabled(p)) : ITEMS.get(p.item)!.fixedMaterial === "logic" ? "|"+visual.active+"|"+visual.timing : "");
+      const k = p.item + "|" + (ITEMS.get(p.item)!.fixedMaterial ?? p.wood) + (p.item==='straight-conveyor'?'|'+this.conveyorReverse(p):ITEMS.get(p.item)!.fixedMaterial === "lighting" ? "|"+(this.world.lightEnabled(p)) : ITEMS.get(p.item)!.fixedMaterial === "logic" ? "|"+visual.active+"|"+visual.timing : "");
       if (!batches.has(k)) batches.set(k, []);
       batches.get(k)!.push(p);
       if(p.item==='hatch'){const fixed=k+'|hinge';if(!batches.has(fixed))batches.set(fixed,[]);batches.get(fixed)!.push(p);}
@@ -250,7 +250,7 @@ export class Viewport {
       if (!mesh) {
         const first = pieces[0];
         mesh = new T.InstancedMesh(
-          first.item==='hatch'?hatchGeometry(k.endsWith('|hinge')):ITEMS.get(first.item)!.fixedMaterial==="logic"?logicGeometryFor(first.item,this.logic.circuit.output(first.id),first.timing??1):geometryFor(first.item),
+          first.item==='hatch'?hatchGeometry(k.endsWith('|hinge')):this.pieceGeometry(first,this.logic.circuit.output(first.id)),
           this.materialFor(first.item, first.wood, this.world.lightEnabled(first)),
           Math.max(8, 2 ** Math.ceil(Math.log2(pieces.length))),
         );
@@ -415,7 +415,9 @@ export class Viewport {
     return null;
   }
   private openPreviewGeometry = new Map<string,T.BufferGeometry>();
+  private conveyorReverse(p:Piece){const c=this.logic.circuit;return c.connected(p.id)?c.input(p.id):!!p.logicOn;}
   private pieceGeometry(p:Piece,active=!!p.logicOn,preview=false) {
+    if(p.item==='straight-conveyor')return logicGeometryFor(p.item,preview?!!p.logicOn:this.conveyorReverse(p),1);
     if(preview&&isDoor(p.item)&&p.doorOpen){
       if(!this.openPreviewGeometry.has(p.item)){
         const leaf=(p.item==='hatch'?hatchGeometry(false):geometryFor(p.item)).clone().applyMatrix4(doorTransform(p.item,1));
@@ -444,7 +446,7 @@ export class Viewport {
     const batches = new Map<string, Piece[]>();
     for (const p of pieces) {
       const state=logicAppearance(p.item,!!p.logicOn,p.timing??1);
-      const key=ITEMS.get(p.item)!.fixedMaterial==='logic'?`${p.item}|${state.active}|${state.timing}`:`${p.item}|${!!p.doorOpen}`;
+      const key=ITEMS.get(p.item)!.fixedMaterial==='logic'||p.item==='straight-conveyor'?`${p.item}|${state.active}|${state.timing}`:`${p.item}|${!!p.doorOpen}`;
       if (!batches.has(key)) batches.set(key,[]);batches.get(key)!.push(p);
     }
     const old = new Map(this.groupGhosts.children.map(m=>[m.name,m as T.InstancedMesh]));

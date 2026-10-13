@@ -35,7 +35,8 @@ export function pieceBounds(p: Piece) {
   // A turned triangle does not occupy every corner of its original box.
   // Reserve the actual two lever poses for placement/land bounds. Snapping
   // uses this same envelope; walking collisions keep the current pose only.
-  if (!p.rotation.every(Number.isInteger) || p.item==='lever' || isDoor(p.item)) {
+  // Conveyor rails rise above the original saved origin; use their real envelope.
+  if (!p.rotation.every(Number.isInteger) || p.item==='lever' || p.item==='straight-conveyor' || isDoor(p.item)) {
     const solids=placementSolids(p,p.item==='lever');
     return {
       min:[0,1,2].map(i=>Math.min(...solids.map(s=>s.bounds.min.getComponent(i)))) as Vec3,
