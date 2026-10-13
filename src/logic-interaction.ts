@@ -90,6 +90,7 @@ export class LogicInteraction {
     const hit=view.pick(x,y),p=hit?.id?world.pieces.get(hit.id):undefined;
     // Surface 2 is the orange control; 10 is the lever grip's orange end caps.
     if(p?.item==='lever'&&(hit!.surface===2||hit!.surface===10))return p;
+    if(p?.item==='straight-conveyor'&&hit!.surface===2)return p;
     if(p&&isDoor(p.item)&&(p.item==='hatch'?[2,3].includes(hit!.surface!):hit!.surface===1))return p;
     return p?.item==='button'&&hit!.surface===2?p:null;
   }
@@ -115,7 +116,8 @@ export class LogicInteraction {
     if(!target){this.hide();this.signature=signature;return;}
     this.signature=signature;
     const label=isDoor(target.item)?(this.e.view.logic.circuit.connected(target.id)?'Controlled by wire':doorProgress(target)>.5?'Close '+(target.item==='hatch'?'hatch':'door'):'Open '+(target.item==='hatch'?'hatch':'door')):target.item==='button'?'Press button':target.logicOn?'Switch off':'Switch on';
-    if(this.label.textContent!==label)this.label.textContent=label;
+    const text=target.item==='straight-conveyor'?(view.logic.circuit.connected(target.id)?'Controlled by wire':'Reverse conveyor'):label;
+    if(this.label.textContent!==text)this.label.textContent=text;
     this.clickHint.hidden=target.item!=='button'&&!isDoor(target.item);this.hint.hidden=false;
     this.canvas.classList.add('logic-hovering');
     const [x,y]=this.pointer!;

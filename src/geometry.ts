@@ -15,6 +15,7 @@ import { solidFromGeometry, type Solid } from "./solid";
 import { lightFixtureParts } from "./light-fixtures";
 import { furnitureParts } from "./furniture-geometry";
 import {hatchParts} from './hatch-geometry';
+import {conveyorParts} from './conveyor';
 const cache = new Map<string, BufferGeometry>();
 const collisionCache = new Map<string, Solid[]>();
 export function collisionPartsFor(id: string,active=false) {
@@ -103,6 +104,7 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
   };
   switch (item.shape) {
     case "hatch": parts.push(...hatchParts());break;
+    case "conveyor": parts.push(...conveyorParts());break;
     case "logic":
       parts.push(...logicParts(item,logicState));break;
     case "light-fixture":

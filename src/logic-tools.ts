@@ -227,7 +227,7 @@ export class LogicTools {
  }
  activate(id=this.e.selected){
   const p=id?this.e.world.pieces.get(id):undefined;if(!p)return;
-  if(p.item==='lever')this.e.world.execute([{before:p,after:{...p,logicOn:!p.logicOn}}]);
+  if(p.item==='lever'||p.item==='straight-conveyor'&&!this.e.view.logic.circuit.connected(p.id))this.e.world.execute([{before:p,after:{...p,logicOn:!p.logicOn}}]);
   else if(p.item==='button')this.e.view.logic.circuit.press(p.id);
   else if(isDoor(p.item)&&!this.e.view.logic.circuit.connected(p.id))this.e.world.execute([{before:p,after:{...p,doorOpen:!p.doorOpen}}]);
   this.inspect();
@@ -239,6 +239,7 @@ export class LogicTools {
   if(!p||!ports.length)return;
   const action=$('logic-action');action.hidden=!['lever','button'].includes(p.item)&&!isDoor(p.item);action.textContent=isDoor(p.item)?(p.doorOpen?'Close':'Open'):p.item==='lever'?(p.logicOn?'Switch off':'Switch on'):'Press button';
   const timer=p.item==='signal-delay'||p.item==='signal-sustain';$('logic-timer-row').hidden=!timer;($('logic-timing') as HTMLSelectElement).value=String(p.timing??1);
+  if(p.item==='straight-conveyor'){action.hidden=false;action.textContent='Reverse direction';}
   $('logic-ports').replaceChildren(...ports.map(port=>{const b=document.createElement('button');b.dataset.port=port.id;b.textContent=port.label;b.title='Start a wire at '+port.label;return b;}));
   this.previousStatus='';this.tick();
  }
@@ -265,6 +266,10 @@ export class LogicTools {
    $('light-label').textContent=!manual.length?'Controlled by wire':manual.length<lights.length?'Unwired lights on':'Light on';
   }
   const p=this.e.selectedPieces[0];if(!p||$('logic-controls').hidden)return;
+  if(p.item==='straight-conveyor'){
+   const wired=circuit.connected(p.id);($('logic-action') as HTMLButtonElement).disabled=wired;
+   $('logic-status').textContent=(wired?'Wire control · ':'')+((wired?circuit.input(p.id):p.logicOn)?'Reverse':'Forward')+' · estimated scale / speed';return;
+  }
   if(isDoor(p.item)){
    const wired=circuit.connected(p.id),button=$('logic-action') as HTMLButtonElement;button.disabled=wired;button.textContent=p.doorOpen?'Close':'Open';
    $('logic-status').textContent=this.e.view.doors.blocked.has(p.id)?'Movement blocked':wired?'Controlled by wire · '+(doorProgress(p)>.5?'Open':'Closed'):doorProgress(p)>.5?'Open':'Closed';return;

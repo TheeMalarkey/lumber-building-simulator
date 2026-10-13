@@ -289,3 +289,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   }
   .game-hud:has(.inspector:not([hidden])) #catalog-resize { display: none; }
 }
+.transport-controls {position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;gap:4px;padding:4px;background:rgba(15,17,17,.78);border:1px solid #ffffff24;border-radius:6px;z-index:8;}
+.transport-controls[hidden] {display:none;}
+.transport-controls button {background:transparent;color:#eee;border:0;padding:7px 10px;border-radius:3px;cursor:pointer;font-size:12px;}
+.transport-controls button:hover {background:#ffffff20;}
+@media(max-width:650px){.transport-controls{top:60px;}}

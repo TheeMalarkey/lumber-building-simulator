@@ -22,6 +22,7 @@ import { initFloatingCatalog } from "./floating-panel";
 import {selectedAssembly,assemblyAnchors,assemblyBounds,transformAssembly,rotateAssembly,placeAssemblyOnSurface,copyAssembly,assemblyIssue,selectWiresInRectangle,type Assembly} from './assembly';
 import type {Wire} from './logic-ports';
 import {setPaletteColor} from './palette-color';
+import {TransportControls} from './transport-controls';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id)! as T;
 const BELOW_GROUND_MESSAGE = "No part of a blueprint can go below ground.";
@@ -78,6 +79,7 @@ export class Editor {
     this.catalog();
     this.inspect();
     this.bind();
+    const transportControls=new TransportControls(this);
     this.view.camera.onModeChange = () => this.updateCameraUI();
     this.updateCameraUI();
     this.world.onChange = () => {
@@ -94,6 +96,7 @@ export class Editor {
       $("draw-calls").textContent = `${this.view.stats.drawCalls} draw calls`;
     };
     this.view.onFrame = () => {
+      transportControls.tick();
       this.paths.tick();this.logicTools.tick();
       if (this.placing && this.pointer && !this.view.camera.flying) {
         const key =
@@ -273,6 +276,7 @@ export class Editor {
     this.inspect();
   }
   setMode(placing: boolean) {
+    if(placing)this.view.transport.stop();
     if(this.logicTools?.wiring)this.logicTools.toggle(false);
     this.paths.cancel();
     this.held = false;

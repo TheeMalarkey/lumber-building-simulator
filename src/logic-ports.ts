@@ -14,6 +14,7 @@ export const isLogic=(p:Piece)=>ITEMS.get(p.item)?.fixedMaterial==='logic';
 export const portKey=(id:string,port:string)=>id+':'+port;
 export const logicAppearance=(item:string,active:boolean,timing=1)=>({active:(item==='lever'||item==='button')&&active,timing:item==='signal-delay'||item==='signal-sustain'?timing:1});
 export function portsFor(item:string):Port[]{
+ if(item==='straight-conveyor')return [{id:'in',label:'Reverse',output:false,position:[2.2,.02,-2.6],normal:[1,0,0]}];
  const spec=ITEMS.get(item);if(!spec)return [];
  const [w,h,d]=spec.size;
  const port=(id:string,label:string,output:boolean,x:number,y:number,z:number,normal:Vec3):Port=>({id,label,output,position:[x,y,z],normal});

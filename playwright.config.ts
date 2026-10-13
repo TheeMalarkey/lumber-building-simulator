@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests",
   testMatch: [
+    "transport.spec.ts",
     "doors.spec.ts", "visual-fixes.spec.ts",
     "demo.spec.ts",
     "timer-face.spec.ts",

@@ -20,6 +20,8 @@ import {makeHatchMaterials} from './materials';
 import {hatchGeometry} from './hatch-geometry';
 import {isDoor,doorProgress,doorTransform} from './door-design';
 import {DoorMotion} from './door-motion';
+import {makeConveyorMaterials} from './conveyor';
+import {TransportView} from './transport-view';
 export interface Pick {
   point: Vec3;
   normal: Vec3;
@@ -45,6 +47,8 @@ export class Viewport {
   furnitureMaterials = makeFurnitureMaterials();
   hatchMaterials=makeHatchMaterials();
   doors:DoorMotion;
+  transport:TransportView;
+  conveyorMaterials=makeConveyorMaterials();
   private glassDoorMaterials = [this.glassMaterial,this.hardwareMaterials[0]];
   private blueprintMaterials = new Map([...this.materials].map(([id, wood]) => [id, [wood, ...this.hardwareMaterials]]));
   loaded = new Map<string, T.Group>();
@@ -89,6 +93,7 @@ export class Viewport {
     public world: World,
   ) {
     this.doors=new DoorMotion(world);
+    this.transport=new TransportView(world,this.materials);this.worldRoot.add(this.transport.root);
     this.logic=new LogicView(world);this.worldRoot.add(this.logic.root);
     this.renderer = new T.WebGLRenderer({
       antialias: true,
@@ -203,6 +208,7 @@ export class Viewport {
     this.resize();
   }
   materialFor(item: string, wood: string, lightOn=true): T.MeshStandardMaterial | T.MeshStandardMaterial[] {
+    if(item==='straight-conveyor')return this.conveyorMaterials;
     if(item==='hatch')return this.hatchMaterials;
     if(ITEMS.get(item)!.fixedMaterial === "logic")return this.logicMaterials.get(item)!;
     if(ITEMS.get(item)!.fixedMaterial === "lighting") return lightOn ? this.lightMaterials : this.lightOffMaterials;
@@ -367,6 +373,7 @@ export class Viewport {
     for (const candidate of candidates) {
       if (best && candidate.distance > best.distance) break;
       const p = candidate.piece;
+      if(p.item==='loose-plank'&&this.transport.simulation.running)continue;
       if (typeof exclude === "string" ? p.id === exclude : exclude?.has(p.id)) continue;
       for(const fixed of p.item==='hatch'?[true,false]:[false]){
       this.tmpMesh.geometry = p.item==='hatch'?hatchGeometry(fixed):this.pieceGeometry(p,this.logic.circuit.output(p.id));
@@ -503,6 +510,9 @@ export class Viewport {
     }
     if(this.logic.lightChanged)this.fixtureLighting.invalidate();
     this.sync();
+    this.transport.update(ms/1000,this.logic.circuit);
+    if(this.camera.walking&&this.transport.simulation.running)this.transport.stop();
+    for(const group of this.loaded.values())for(const mesh of group.children)if(mesh.name.startsWith('loose-plank|'))mesh.visible=!this.transport.simulation.running;
     this.updateDoorMatrices(doorChanges);
     this.logic.updateTimers(this.loaded);
     const camera = this.camera.camera;

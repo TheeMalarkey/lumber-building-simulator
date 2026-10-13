@@ -11,6 +11,7 @@ export type Shape =
   | "door"
   | "glass-door"
   | "hatch"
+  | "conveyor"
   | "store-furniture"
   | "light-fixture"
   | "logic"
@@ -44,6 +45,7 @@ export const CATEGORIES = [
   "Lighting",
   "Logic",
   "Wires",
+  "Transport",
   "Other",
 ];
 export const CATALOG: CatalogItem[] = [];
@@ -171,6 +173,8 @@ for(const [id,name,size] of [
 ] as [string,string,Vec3][]) CATALOG.push({id,name,size,category:'Logic',shape:'logic',woodCost:0,fixedMaterial:'logic',
  dimensionsEstimated:!['signal-inverter','signal-delay','signal-sustain'].includes(id)});
 CATALOG.push({id:'hatch',name:'Hatch',size:[4,1,4],category:'Logic',shape:'hatch',woodCost:0,fixedMaterial:'mechanism'});
+CATALOG.push({id:'straight-conveyor',name:'Straight Conveyor',category:'Transport',size:[4,1,8],boundsSize:[4.5,1,8],shape:'conveyor',woodCost:0,fixedMaterial:'mechanism',dimensionsEstimated:true});
+CATALOG.push({id:'loose-plank',name:'Test Plank',category:'Transport',size:[2,1,4],shape:'box',woodCost:0});
 export const ITEMS = new Map(CATALOG.map((x) => [x.id, x]));
 export interface Wood {
   id: string;
