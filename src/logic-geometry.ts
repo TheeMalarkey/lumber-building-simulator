@@ -106,7 +106,7 @@ function labelTexture(draw:(c:CanvasRenderingContext2D)=>void){
  return new MeshStandardMaterial({map:t,transparent:true,alphaTest:.05,roughness:.95,depthWrite:false});
 }
 function symbol(c:CanvasRenderingContext2D,id:string){
- c.strokeStyle='#898a80';c.lineWidth=7;c.lineJoin='round';c.lineCap='butt';
+ c.strokeStyle='#b4b5aa';c.lineWidth=9;c.lineJoin='round';c.lineCap='butt';
  const not=id==='signal-inverter',isAnd=id.includes('and'),xor=id.includes('xor')||id.includes('xnor'),neg=not||id.includes('nand')||id.includes('nor');
  c.beginPath();
  if(not){c.moveTo(65,40);c.lineTo(174,128);c.lineTo(65,216);c.closePath();}

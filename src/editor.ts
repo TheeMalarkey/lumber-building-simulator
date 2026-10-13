@@ -32,7 +32,7 @@ export class Editor {
   view: Viewport;
   paths: PathBuilder;
   logicTools:LogicTools;
-  logicConfig:{logicOn?:boolean;timing?:number}={};
+  logicConfig:{logicOn?:boolean;timing?:number;doorOpen?:boolean}={};
   thumbnails: Map<string, string>;
   item = "smooth-wall";
   wood = "oak";
@@ -602,7 +602,7 @@ export class Editor {
     this.wood = p.wood;
     this.rotation = [...p.rotation];
     this.lightOn = p.lightOn !== false;
-    this.logicConfig={...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),...(p.timing===undefined?{}:{timing:p.timing})};
+    this.logicConfig={...(p.doorOpen===undefined?{}:{doorOpen:p.doorOpen}),...(p.logicOn===undefined?{}:{logicOn:p.logicOn}),...(p.timing===undefined?{}:{timing:p.timing})};
     this.moving = copy ? null : p.id;
     this.setMode(true);
     this.moving = copy ? null : p.id;

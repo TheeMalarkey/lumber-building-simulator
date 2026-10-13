@@ -91,8 +91,10 @@ export function furnitureParts(item: CatalogItem): BufferGeometry[] {
     for(const x of [-w/2+.1,w/2-.1]) box(.2,bodyH-.32,d,x,bodyH/2,0,s);
     box(w-.4,bodyH-.32,.16,0,bodyH/2,-d/2+.08,s);
     if(fridge) {
+      // Recessed dark gasket keeps the existing door gap readable in daylight.
+      box(.09,bodyH-.42,.035,0,bodyH/2,1.85,1);
       for(const side of [-1,1]) {
-        box(1.77,bodyH-.42,.16,side*.91,bodyH/2,1.8,2);
+        box(1.73,bodyH-.42,.16,side*.91,bodyH/2,1.8,2);
         box(.16,1.4,.22,side*.28,2.85,1.89,4);
       }
       for(const y of [1.6,3.2,4.8]) box(w-.4,.1,d-.4,0,y,0,2);

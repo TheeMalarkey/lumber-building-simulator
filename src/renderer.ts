@@ -1,3 +1,4 @@
+import {mergeGeometries} from "three/addons/utils/BufferGeometryUtils.js";
 import {makeLogicMaterials} from "./logic-geometry";
 import {LogicView} from "./logic-view";
 import {logicAppearance} from "./logic-ports";
@@ -406,13 +407,23 @@ export class Viewport {
       return { point: ground.toArray() as Vec3, normal: [0, 1, 0] };
     return null;
   }
-  private pieceGeometry(p:Piece,active=!!p.logicOn) {
+  private openPreviewGeometry = new Map<string,T.BufferGeometry>();
+  private pieceGeometry(p:Piece,active=!!p.logicOn,preview=false) {
+    if(preview&&isDoor(p.item)&&p.doorOpen){
+      if(!this.openPreviewGeometry.has(p.item)){
+        const leaf=(p.item==='hatch'?hatchGeometry(false):geometryFor(p.item)).clone().applyMatrix4(doorTransform(p.item,1));
+        const geometry=p.item==='hatch'?mergeGeometries([leaf,hatchGeometry(true)])!:leaf;
+        if(p.item==='hatch')leaf.dispose();
+        this.openPreviewGeometry.set(p.item,geometry);
+      }
+      return this.openPreviewGeometry.get(p.item)!;
+    }
     return ITEMS.get(p.item)!.fixedMaterial==='logic'?logicGeometryFor(p.item,active,p.timing??1):geometryFor(p.item);
   }
   showGhost(p: Piece | null, valid = true) {
     this.ghost.visible = !!p;
     if (!p) return;
-    this.ghost.geometry = this.pieceGeometry(p);
+    this.ghost.geometry = this.pieceGeometry(p,!!p.logicOn,true);
     this.ghost.position.fromArray(p.position);
     this.ghost.rotation.copy(quaternionRotation(p.rotation));
     (this.ghost.material as T.MeshStandardMaterial).color.set(
@@ -426,7 +437,7 @@ export class Viewport {
     const batches = new Map<string, Piece[]>();
     for (const p of pieces) {
       const state=logicAppearance(p.item,!!p.logicOn,p.timing??1);
-      const key=ITEMS.get(p.item)!.fixedMaterial==='logic'?`${p.item}|${state.active}|${state.timing}`:p.item;
+      const key=ITEMS.get(p.item)!.fixedMaterial==='logic'?`${p.item}|${state.active}|${state.timing}`:`${p.item}|${!!p.doorOpen}`;
       if (!batches.has(key)) batches.set(key,[]);batches.get(key)!.push(p);
     }
     const old = new Map(this.groupGhosts.children.map(m=>[m.name,m as T.InstancedMesh]));
@@ -435,7 +446,7 @@ export class Viewport {
       let mesh=old.get(item);old.delete(item);
       if (mesh && mesh.instanceMatrix.count<batch.length) {this.groupGhosts.remove(mesh);mesh.dispose();mesh=undefined;}
       if (!mesh) {
-        mesh=new T.InstancedMesh(this.pieceGeometry(batch[0]),material,Math.max(8,2**Math.ceil(Math.log2(batch.length))));
+        mesh=new T.InstancedMesh(this.pieceGeometry(batch[0],!!batch[0].logicOn,true),material,Math.max(8,2**Math.ceil(Math.log2(batch.length))));
         mesh.name=item;mesh.frustumCulled=false;this.groupGhosts.add(mesh);
       }
       mesh.count=batch.length;
@@ -574,15 +585,21 @@ export class Viewport {
     const mesh = new T.Mesh();
     scene.add(mesh);
 
+    const glassOutline = new T.LineSegments(new T.BufferGeometry(), new T.LineBasicMaterial({color:0xc6e2ed,transparent:true,opacity:.7}));
+    scene.add(glassOutline);
     for (const item of CATALOG) {
       mesh.geometry = geometryFor(item.id);
       mesh.material = this.materialFor(item.id, "oak");
       const n = Math.max(...item.size);
+      glassOutline.visible=item.fixedMaterial==="glass";
+      if(glassOutline.visible){glassOutline.geometry.dispose();glassOutline.geometry=new T.EdgesGeometry(mesh.geometry,35);}
       camera.position.set(n * 1.65, n * 1.18, n * 1.8);
       camera.lookAt(0, 0, 0);
       r.render(scene, camera);
       result.set(item.id, r.domElement.toDataURL("image/webp", 0.8));
     }
+    glassOutline.geometry.dispose();
+    glassOutline.material.dispose();
     r.dispose();
 
     return result;
