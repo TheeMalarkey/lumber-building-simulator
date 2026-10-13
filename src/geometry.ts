@@ -174,11 +174,12 @@ export function buildGeometry(item: CatalogItem,logicState?:{active:boolean;timi
       break;
     }
     case "glass-door":
-      box(w,h,d);
+      box(w-.02,h,d);
       for(const side of [-1,1]) cylinder(.3,.25,-w/2+.5,h/2,side*.225,"z",1);
       break;
     case "door":
-      box(w, h, .5, 0, h / 2, 0);
+      // A small jamb clearance lets the far corner sweep past a snug frame.
+      box(w-.08, h, .5, 0, h / 2, 0);
       // Thumbnail-derived proportions: half/basic knobs near three studs,
       // wide door centered. Fine hardware measurements remain estimates.
       for (const side of [-1, 1])
